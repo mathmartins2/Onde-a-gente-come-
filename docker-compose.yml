@@ -1,0 +1,20 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: restaurant-draw-database
+    environment:
+      POSTGRES_USER: restaurant
+      POSTGRES_PASSWORD: restaurant
+      POSTGRES_DB: restaurant_draw
+    ports:
+      - "5544:5432"
+    volumes:
+      - restaurant-draw-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U restaurant -d restaurant_draw"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  restaurant-draw-data:

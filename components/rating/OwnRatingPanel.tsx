@@ -1,0 +1,217 @@
+'use client'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { motion } from 'framer-motion'
+import { useRef, useState } from 'react'
+import { Check, Eye, Lock } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { classNames } from '@/lib/utilities/classNames'
+
+const scoreOptions = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+
+type SessionState = {
+  visitId: string
+  restaurantName: string
+  isRevealed: boolean
+  pendingMembers: Array<{ id: string; displayName: string }>
+  ratedMemberIds: string[]
+}
+
+type RevealResult = {
+  finalScore: number | null
+  ratings: Array<{
+    memberId: string
+    displayName: string
+    score: number
+    comment: string | null
+    isRecommender: boolean
+  }>
+}
+
+type OwnRatingPanelProps = {
+  visitId: string
+  currentMemberId: string
+  allMembers: Array<{ id: string; displayName: string }>
+}
+
+export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRatingPanelProps) => {
+  const queryClient = useQueryClient()
+  const commentRef = useRef<HTMLTextAreaElement>(null)
+  const [score, setScore] = useState<number | null>(null)
+
+  const sessionQuery = useQuery({
+    queryKey: ['rating-session', visitId],
+    queryFn: async () => {
+      const response = await apiClient.get<SessionState>(`/visits/${visitId}`)
+      return response.data
+    },
+    refetchInterval: 5000,
+  })
+
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      apiClient.post(`/visits/${visitId}/my-rating`, {
+        score,
+        comment: commentRef.current?.value ?? '',
+      }),
+    onSuccess: () => {
+      toast.success('Nota guardada. Ninguém vê até todo mundo dar.')
+      queryClient.invalidateQueries({ queryKey: ['rating-session', visitId] })
+    },
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível salvar')),
+  })
+
+  const revealMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiClient.post<RevealResult>(`/visits/${visitId}/reveal`)
+      return response.data
+    },
+    onError: (error) => toast.error(extractErrorMessage(error, 'Ainda não dá pra revelar')),
+  })
+
+  const session = sessionQuery.data
+  if (sessionQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
+  if (!session) return <p className="text-sm text-[var(--muted)]">Visita não encontrada.</p>
+
+  const memberById = new Map(allMembers.map((member) => [member.id, member]))
+  const hasRated = session.ratedMemberIds.includes(currentMemberId)
+  const everyoneRated = session.pendingMembers.length === 0
+  const reveal = revealMutation.data
+
+  if (reveal) {
+    return (
+      <div className="flex flex-col gap-3">
+        {reveal.ratings.map((rating, index) => (
+          <motion.div
+            key={rating.memberId}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.35 }}
+          >
+            <Card className="flex items-center justify-between py-3.5">
+              <div>
+                <p className="text-sm">
+                  {rating.displayName}
+                  {rating.isRecommender ? (
+                    <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">colocou</span>
+                  ) : null}
+                </p>
+                {rating.comment ? (
+                  <p className="mt-0.5 text-xs text-[var(--muted)]">{rating.comment}</p>
+                ) : null}
+              </div>
+              <span className="text-xl font-semibold tabular-nums">{rating.score.toFixed(1)}</span>
+            </Card>
+          </motion.div>
+        ))}
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: reveal.ratings.length * 0.35 + 0.3, type: 'spring' }}
+        >
+          <Card className="border-[var(--accent)] bg-gradient-to-b from-[var(--accent)]/15 to-transparent py-8 text-center">
+            <p className="text-xs uppercase tracking-widest text-[var(--muted)]">nota final</p>
+            <p className="mt-2 text-6xl font-semibold tabular-nums">
+              {reveal.finalScore === null ? '—' : reveal.finalScore.toFixed(2)}
+            </p>
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              quem não colocou o lugar pesou mais nessa conta
+            </p>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Card className="flex flex-col gap-2.5">
+        <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">quem já deu nota</p>
+        {allMembers.map((member) => {
+          const done = session.ratedMemberIds.includes(member.id)
+          return (
+            <div key={member.id} className="flex items-center justify-between text-sm">
+              <span className={done ? '' : 'text-[var(--muted)]'}>
+                {done ? '✓' : '○'} {member.displayName}
+              </span>
+              <span className="text-xs text-[var(--muted)]">
+                {done ? 'guardada' : 'faltando'}
+              </span>
+            </div>
+          )
+        })}
+      </Card>
+
+      {hasRated ? (
+        <Card className="flex flex-col items-center gap-3 py-8 text-center">
+          <Lock size={20} className="text-[var(--muted)]" />
+          <p className="text-sm">Sua nota está guardada</p>
+          <p className="text-xs text-[var(--muted)]">
+            {everyoneRated
+              ? 'Todo mundo já deu. Pode revelar.'
+              : `Faltam ${session.pendingMembers.length} pessoa(s).`}
+          </p>
+          {everyoneRated ? (
+            <Button
+              size="large"
+              className="mt-2 w-full"
+              onClick={() => revealMutation.mutate()}
+              disabled={revealMutation.isPending}
+            >
+              <Eye size={18} />
+              Revelar a nota final
+            </Button>
+          ) : null}
+        </Card>
+      ) : (
+        <Card className="flex flex-col gap-4">
+          <p className="text-center text-sm">Que nota você dá?</p>
+
+          <div className="text-center">
+            <span className="text-5xl font-semibold tabular-nums">
+              {score === null ? '—' : score.toFixed(1)}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {scoreOptions.map((option) => (
+              <button
+                key={option}
+                onClick={() => setScore(option)}
+                className={classNames(
+                  'h-10 w-12 rounded-lg border text-sm tabular-nums transition-colors',
+                  score === option
+                    ? 'border-[var(--accent)] bg-[var(--accent)] text-black'
+                    : 'border-[var(--border)] bg-[var(--surface-raised)]',
+                )}
+              >
+                {option.toFixed(1)}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            ref={commentRef}
+            placeholder="comentário (opcional)"
+            maxLength={400}
+            rows={2}
+            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none"
+          />
+
+          <Button
+            size="large"
+            disabled={score === null || submitMutation.isPending}
+            onClick={() => submitMutation.mutate()}
+          >
+            <Check size={18} />
+            Guardar minha nota
+          </Button>
+        </Card>
+      )}
+    </div>
+  )
+}
