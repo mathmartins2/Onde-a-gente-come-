@@ -100,6 +100,11 @@ export const selfRatingSchema = z.object({
 })
 
 
+
+export const banDecisionSchema = z.object({
+  restaurantId: z.uuid('Restaurante inválido').nullable(),
+})
+
 export const priceEntrySchema = z.object({
   amount: z.coerce
     .number()

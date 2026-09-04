@@ -114,12 +114,20 @@ export const addRestaurantToPool = async (
   restaurantId: string,
   memberId: string,
 ) => {
-  await database
+  const inserted = await database
     .insert(schema.sessionPoolEntries)
     .values({ sessionId, restaurantId, addedByMemberId: memberId })
     .onConflictDoNothing()
+    .returning({ id: schema.sessionPoolEntries.id })
 
   await appendToMemberRanking(sessionId, memberId, restaurantId)
+
+  if (inserted.length === 0) return
+
+  await database
+    .update(schema.sessionParticipants)
+    .set({ isReady: false, readyAt: null })
+    .where(eq(schema.sessionParticipants.sessionId, sessionId))
 }
 
 export const saveMemberPreferences = async (
@@ -236,12 +244,17 @@ export const loadSessionState = async (sessionId: string) => {
     .innerJoin(schema.members, eq(schema.members.id, schema.vetoes.memberId))
     .where(eq(schema.vetoes.roundNumber, session.roundNumber))
 
+  const decidedMemberIds = new Set(vetoRows.map((veto) => veto.memberId))
+  const everyoneDecidedBan =
+    participantRows.length > 0 &&
+    participantRows.every((participant) => decidedMemberIds.has(participant.memberId))
+
   const banOutcome = resolveBannedRestaurant(
     vetoRows.flatMap((veto) =>
       veto.restaurantId ? [{ memberId: veto.memberId, restaurantId: veto.restaurantId }] : [],
     ),
   )
-  const bannedRestaurantId = banOutcome.bannedRestaurantId
+  const bannedRestaurantId = everyoneDecidedBan ? banOutcome.bannedRestaurantId : null
   const nominatorQuality = await loadNominatorQuality()
   const visitHistory = await loadVisitHistoryByRestaurant()
 
@@ -310,7 +323,7 @@ export const loadSessionState = async (sessionId: string) => {
       addedByMemberId: row.addedByMemberId,
       addedByName: row.addedByName,
       isBanned: row.restaurantId === bannedRestaurantId,
-      banVotes: banVotesByRestaurant.get(row.restaurantId) ?? 0,
+      banVotes: everyoneDecidedBan ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
     })),
     myPreferences: preferencesByMember,
     contenders: contenders.map((contender) => ({
@@ -321,9 +334,12 @@ export const loadSessionState = async (sessionId: string) => {
     quorum,
     banOutcome: {
       bannedRestaurantId,
-      isTied: banOutcome.isTied,
-      totalVotes: vetoRows.filter((veto) => veto.restaurantId !== null).length,
+      isTied: everyoneDecidedBan && banOutcome.isTied,
+      everyoneDecided: everyoneDecidedBan,
+      decidedCount: decidedMemberIds.size,
+      participantCount: participantRows.length,
     },
+    banDecidedMemberIds: [...decidedMemberIds],
     banVotesByMember: new Map(
       vetoRows.flatMap((veto) =>
         veto.restaurantId ? [[veto.memberId, veto.restaurantId] as const] : [],

@@ -27,6 +27,7 @@ export const GET = async () =>
       quorum: state.quorum,
       banOutcome: state.banOutcome,
       myBanVote: state.banVotesByMember.get(member.id) ?? null,
+      myBanDecided: state.banDecidedMemberIds.includes(member.id),
       everyoneReady: state.everyoneReady,
       hasJoined: state.participants.some((participant) => participant.memberId === member.id),
       myRankedRestaurantIds: [...myPreferences]

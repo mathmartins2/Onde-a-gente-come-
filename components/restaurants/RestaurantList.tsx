@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { RestaurantForm, type EditableRestaurant } from './RestaurantForm'
 
-type Restaurant = EditableRestaurant & { createdBy: string | null }
+type Restaurant = EditableRestaurant & { createdBy: string | null; createdByName: string | null }
 
 export const RestaurantList = () => {
   const queryClient = useQueryClient()
@@ -23,16 +23,6 @@ export const RestaurantList = () => {
     },
   })
 
-  const membersQuery = useQuery({
-    queryKey: ['members'],
-    queryFn: async () => {
-      const response = await apiClient.get<{
-        members: Array<{ id: string; displayName: string }>
-      }>('/members')
-      return response.data.members
-    },
-  })
-
   const closeEditor = () => {
     setEditingRestaurantId(null)
     queryClient.invalidateQueries({ queryKey: ['restaurants'] })
@@ -42,17 +32,11 @@ export const RestaurantList = () => {
     return <p className="text-sm text-[var(--muted)]">Carregando...</p>
   }
 
-  const nameByMemberId = new Map(
-    (membersQuery.data ?? []).map((member) => [member.id, member.displayName]),
-  )
-
   return (
     <div className="flex flex-col gap-2">
       {(restaurantsQuery.data ?? []).map((restaurant) => {
         const isEditing = editingRestaurantId === restaurant.id
-        const suggestedBy = restaurant.createdBy
-          ? (nameByMemberId.get(restaurant.createdBy) ?? null)
-          : null
+        const suggestedBy = restaurant.createdByName
 
         if (isEditing) {
           return (

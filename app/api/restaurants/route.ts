@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { asc } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { restaurantSchema } from '@/lib/validation/schemas'
@@ -8,8 +8,23 @@ import { regionConfiguration } from '@/lib/scoring/configuration'
 export const GET = async () =>
   withMember(async () => {
     const rows = await database
-      .select()
+      .select({
+        id: schema.restaurants.id,
+        name: schema.restaurants.name,
+        address: schema.restaurants.address,
+        neighborhood: schema.restaurants.neighborhood,
+        city: schema.restaurants.city,
+        postalCode: schema.restaurants.postalCode,
+        latitude: schema.restaurants.latitude,
+        longitude: schema.restaurants.longitude,
+        cuisines: schema.restaurants.cuisines,
+        phone: schema.restaurants.phone,
+        website: schema.restaurants.website,
+        createdBy: schema.restaurants.createdBy,
+        createdByName: schema.members.displayName,
+      })
       .from(schema.restaurants)
+      .leftJoin(schema.members, eq(schema.members.id, schema.restaurants.createdBy))
       .orderBy(asc(schema.restaurants.name))
 
     return NextResponse.json({ restaurants: rows })

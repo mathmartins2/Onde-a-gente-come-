@@ -51,9 +51,12 @@ export type SessionState = {
   banOutcome: {
     bannedRestaurantId: string | null
     isTied: boolean
-    totalVotes: number
+    everyoneDecided: boolean
+    decidedCount: number
+    participantCount: number
   }
   myBanVote: string | null
+  myBanDecided: boolean
   everyoneReady: boolean
   hasJoined: boolean
   myRankedRestaurantIds: string[]
