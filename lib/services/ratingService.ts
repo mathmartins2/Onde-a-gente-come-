@@ -160,6 +160,7 @@ export const submitRating = async (input: SubmitRatingInput) => {
     serviceScore: String(input.scores.service),
     ambienceScore: String(input.scores.ambience),
     menuScore: String(input.scores.menu),
+    waitTimeScore: String(input.scores.waitTime),
     comment: input.comment,
     appliedWeight: String(appliedWeight),
   })
@@ -208,6 +209,7 @@ export const revealVisit = async (visitId: string) => {
       serviceScore: schema.ratings.serviceScore,
       ambienceScore: schema.ratings.ambienceScore,
       menuScore: schema.ratings.menuScore,
+      waitTimeScore: schema.ratings.waitTimeScore,
       comment: schema.ratings.comment,
     })
     .from(schema.ratings)
@@ -239,6 +241,7 @@ export const revealVisit = async (visitId: string) => {
       service: averageOf(ratingRows.map((rating) => rating.serviceScore)),
       ambience: averageOf(ratingRows.map((rating) => rating.ambienceScore)),
       menu: averageOf(ratingRows.map((rating) => rating.menuScore)),
+      waitTime: averageOf(ratingRows.map((rating) => rating.waitTimeScore)),
     },
     ratings: ratingRows.map((rating) => ({
       memberId: rating.memberId,
@@ -249,6 +252,7 @@ export const revealVisit = async (visitId: string) => {
       service: rating.serviceScore === null ? null : Number(rating.serviceScore),
       ambience: rating.ambienceScore === null ? null : Number(rating.ambienceScore),
       menu: rating.menuScore === null ? null : Number(rating.menuScore),
+      waitTime: rating.waitTimeScore === null ? null : Number(rating.waitTimeScore),
       comment: rating.comment,
       isRecommender: rating.memberId === visit.recommendedByMemberId,
     })),
@@ -261,10 +265,11 @@ export type CriterionScores = {
   service: number
   ambience: number
   menu: number
+  waitTime: number
 }
 
 export const calculateOverallScore = (scores: CriterionScores) => {
-  const values = [scores.flavor, scores.price, scores.service, scores.ambience, scores.menu]
+  const values = [scores.flavor, scores.price, scores.service, scores.ambience, scores.menu, scores.waitTime]
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
@@ -311,6 +316,7 @@ export const submitOwnRating = async (input: {
     serviceScore: String(input.scores.service),
     ambienceScore: String(input.scores.ambience),
     menuScore: String(input.scores.menu),
+    waitTimeScore: String(input.scores.waitTime),
   }
 
   await database
@@ -346,6 +352,7 @@ export type RatingDraftInput = {
   service: number | null
   ambience: number | null
   menu: number | null
+  waitTime: number | null
   comment: string | null
 }
 
@@ -358,6 +365,7 @@ export const saveRatingDraft = async (input: RatingDraftInput) => {
     serviceScore: toNumericText(input.service),
     ambienceScore: toNumericText(input.ambience),
     menuScore: toNumericText(input.menu),
+    waitTimeScore: toNumericText(input.waitTime),
     comment: input.comment,
     updatedAt: new Date(),
   }
@@ -379,6 +387,7 @@ export const loadRatingDraft = async (visitId: string, memberId: string) => {
       serviceScore: schema.ratingDrafts.serviceScore,
       ambienceScore: schema.ratingDrafts.ambienceScore,
       menuScore: schema.ratingDrafts.menuScore,
+      waitTimeScore: schema.ratingDrafts.waitTimeScore,
       comment: schema.ratingDrafts.comment,
     })
     .from(schema.ratingDrafts)
@@ -396,6 +405,7 @@ export const loadRatingDraft = async (visitId: string, memberId: string) => {
     service: draft.serviceScore === null ? null : Number(draft.serviceScore),
     ambience: draft.ambienceScore === null ? null : Number(draft.ambienceScore),
     menu: draft.menuScore === null ? null : Number(draft.menuScore),
+    waitTime: draft.waitTimeScore === null ? null : Number(draft.waitTimeScore),
     comment: draft.comment,
   }
 }

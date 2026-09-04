@@ -78,6 +78,13 @@
       "when": 1788560403552,
       "tag": "0010_elite_star_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788562414563,
+      "tag": "0011_sudden_snowbird",
+      "breakpoints": true
     }
   ]
 }

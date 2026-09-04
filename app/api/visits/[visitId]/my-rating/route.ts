@@ -26,6 +26,7 @@ export const POST = async (request: Request, context: { params: Promise<{ visitI
         service: parsed.data.service,
         ambience: parsed.data.ambience,
       menu: parsed.data.menu,
+      waitTime: parsed.data.waitTime,
       },
       comment: parsed.data.comment ? parsed.data.comment : null,
     })

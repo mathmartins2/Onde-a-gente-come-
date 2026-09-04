@@ -36,6 +36,7 @@ type RevealResult = {
     service: number | null
     ambience: number | null
     menu: number | null
+    waitTime: number | null
     comment: string | null
     isRecommender: boolean
   }>

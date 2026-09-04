@@ -87,6 +87,7 @@ export const ratingSchema = z.object({
   service: criterionScore,
   ambience: criterionScore,
   menu: criterionScore,
+  waitTime: criterionScore,
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 
@@ -98,6 +99,7 @@ export const selfRatingSchema = z.object({
   service: criterionScore,
   ambience: criterionScore,
   menu: criterionScore,
+  waitTime: criterionScore,
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 
@@ -114,6 +116,7 @@ export const ratingDraftSchema = z.object({
   service: criterionScore.nullable(),
   ambience: criterionScore.nullable(),
   menu: criterionScore.nullable(),
+  waitTime: criterionScore.nullable(),
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 

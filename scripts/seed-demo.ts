@@ -8,10 +8,11 @@ type CriterionScores = {
   service: number
   ambience: number
   menu: number
+  waitTime: number
 }
 
 const averageOf = (scores: CriterionScores) =>
-  (scores.flavor + scores.price + scores.service + scores.ambience + scores.menu) / 5
+  (scores.flavor + scores.price + scores.service + scores.ambience + scores.menu + scores.waitTime) / 6
 
 const run = async () => {
   const { database, schema } = await import('@/lib/database/client')
@@ -35,10 +36,10 @@ const run = async () => {
       recommendedBy: 'math',
       monthsAgo: 3,
       ratings: {
-        math: { flavor: 5, price: 4, service: 5, ambience: 5, menu: 5 },
-        alucard: { flavor: 4, price: 3, service: 4, ambience: 4, menu: 4 },
-        romario: { flavor: 5, price: 3, service: 4, ambience: 5, menu: 5 },
-        vini: { flavor: 4, price: 3, service: 4, ambience: 4, menu: 4 },
+        math: { flavor: 5, price: 4, service: 5, ambience: 5, menu: 5, waitTime: 5 },
+        alucard: { flavor: 4, price: 3, service: 4, ambience: 4, menu: 4, waitTime: 4 },
+        romario: { flavor: 5, price: 3, service: 4, ambience: 5, menu: 5, waitTime: 5 },
+        vini: { flavor: 4, price: 3, service: 4, ambience: 4, menu: 4, waitTime: 4 },
       },
       prices: [{ by: 'math', amount: '234.40' }],
     },
@@ -47,10 +48,10 @@ const run = async () => {
       recommendedBy: 'romario',
       monthsAgo: 1,
       ratings: {
-        math: { flavor: 3, price: 2, service: 3, ambience: 4, menu: 4 },
-        alucard: { flavor: 3, price: 2, service: 2, ambience: 3, menu: 3 },
-        romario: { flavor: 5, price: 4, service: 5, ambience: 5, menu: 5 },
-        vini: { flavor: 3, price: 2, service: 3, ambience: 3, menu: 3 },
+        math: { flavor: 3, price: 2, service: 3, ambience: 4, menu: 4, waitTime: 4 },
+        alucard: { flavor: 3, price: 2, service: 2, ambience: 3, menu: 3, waitTime: 3 },
+        romario: { flavor: 5, price: 4, service: 5, ambience: 5, menu: 5, waitTime: 5 },
+        vini: { flavor: 3, price: 2, service: 3, ambience: 3, menu: 3, waitTime: 3 },
       },
       prices: [{ by: 'romario', amount: '240.00' }],
     },
@@ -124,6 +125,7 @@ const run = async () => {
           serviceScore: String(scores.service),
           ambienceScore: String(scores.ambience),
           menuScore: String(scores.menu),
+          waitTimeScore: String(scores.waitTime),
           appliedWeight: String(resolveRatingWeight(member.id, recommender.id)),
           createdAt: drawnAt,
         },

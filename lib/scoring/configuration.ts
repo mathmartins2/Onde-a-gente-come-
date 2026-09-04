@@ -26,6 +26,7 @@ export const ratingCriteria = [
   { key: 'service', label: 'Atendimento', column: 'serviceScore' },
   { key: 'ambience', label: 'Ambiente', column: 'ambienceScore' },
   { key: 'menu', label: 'Menu', column: 'menuScore' },
+  { key: 'waitTime', label: 'Tempo de espera', column: 'waitTimeScore' },
 ] as const
 
 export type RatingCriterionKey = (typeof ratingCriteria)[number]['key']
