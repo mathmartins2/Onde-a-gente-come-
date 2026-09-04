@@ -65,9 +65,17 @@ export const RulesScreen = () => (
             ranqueou. Quem lista 6 não tem mais voz que quem lista 1.
           </p>
           <Formula>ponto = (tamanho da lista − posição + 1) ÷ soma de 1 até o tamanho</Formula>
-          <p>
-            Numa lista de 3: 1º vale 0,50 · 2º vale 0,33 · 3º vale 0,17. Somando 1,00.
+          <p>Numa lista de 3: 1º vale 0,50 · 2º vale 0,33 · 3º vale 0,17. Somando 1,00.</p>
+          <p className="text-[var(--warning)]">
+            Por isso um 1º lugar não vale sempre o mesmo: quem ranqueia poucos lugares concentra
+            mais ponto em cada um.
           </p>
+          <div className="flex flex-col gap-0.5 rounded-lg bg-[var(--surface-raised)] px-3 py-2 font-mono text-[11px]">
+            <span>lista de 1 lugar → 1º vale 1,000</span>
+            <span>lista de 2 lugares → 1º vale 0,667</span>
+            <span>lista de 3 lugares → 1º vale 0,500</span>
+            <span>lista de 5 lugares → 1º vale 0,333</span>
+          </div>
         </Step>
 
         <Step number={4} title="O peso final de cada lugar">

@@ -519,7 +519,12 @@ export const SessionScreen = () => {
 
       {state.contenders.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-sm font-semibold">Chances agora</h2>
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold">Chances agora</h2>
+            <Link href="/rules" className="text-[10px] uppercase tracking-wide text-[var(--accent)]">
+              como é calculado
+            </Link>
+          </div>
           <Card className="flex flex-col gap-2.5">
             {state.contenders.map((contender) => (
               <div key={contender.restaurantId} className="flex flex-col gap-1">
@@ -538,8 +543,14 @@ export const SessionScreen = () => {
                 <p className="text-[10px] text-[var(--muted)]">
                   {contender.supporters} quiseram · {contender.topChoiceCount} em 1º · colocado na
                   rodada por {contender.addedByName}
+                </p>
+                <p className="font-mono text-[10px] text-[var(--muted)]">
+                  {contender.bordaPoints.toFixed(3)} pontos
+                  {contender.ownerWeight !== 1
+                    ? ` × ${contender.ownerWeight.toFixed(2)} (peso de ${contender.addedByName})`
+                    : ''}
                   {contender.revisitWeight < 1
-                    ? ` · já foram (${Math.round(contender.revisitWeight * 100)}%)`
+                    ? ` × ${contender.revisitWeight.toFixed(2)} (já foram)`
                     : ''}
                 </p>
               </div>
