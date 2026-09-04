@@ -64,6 +64,20 @@
       "when": 1788544814606,
       "tag": "0008_faulty_trish_tilby",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788560269763,
+      "tag": "0009_common_frank_castle",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788560403552,
+      "tag": "0010_elite_star_brand",
+      "breakpoints": true
     }
   ]
 }

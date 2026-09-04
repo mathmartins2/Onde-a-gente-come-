@@ -139,6 +139,7 @@ export const ratings = pgTable(
     priceScore: numeric('price_score', { precision: 3, scale: 1 }),
     serviceScore: numeric('service_score', { precision: 3, scale: 1 }),
     ambienceScore: numeric('ambience_score', { precision: 3, scale: 1 }),
+    menuScore: numeric('menu_score', { precision: 3, scale: 1 }),
     comment: text('comment'),
     appliedWeight: numeric('applied_weight', { precision: 4, scale: 2 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -167,6 +168,28 @@ export const authenticationAttempts = pgTable(
 )
 
 
+
+
+export const ratingDrafts = pgTable(
+  'rating_drafts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    visitId: uuid('visit_id')
+      .notNull()
+      .references(() => visits.id, { onDelete: 'cascade' }),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    flavorScore: numeric('flavor_score', { precision: 3, scale: 1 }),
+    priceScore: numeric('price_score', { precision: 3, scale: 1 }),
+    serviceScore: numeric('service_score', { precision: 3, scale: 1 }),
+    ambienceScore: numeric('ambience_score', { precision: 3, scale: 1 }),
+    menuScore: numeric('menu_score', { precision: 3, scale: 1 }),
+    comment: text('comment'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('rating_drafts_visit_member_unique').on(table.visitId, table.memberId)],
+)
 
 export const visitPriceEntries = pgTable(
   'visit_price_entries',

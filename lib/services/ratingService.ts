@@ -88,6 +88,13 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
   }
 }
 
+export const discardRatingDraft = async (visitId: string, memberId: string) => {
+  await database
+    .delete(schema.ratingDrafts)
+    .where(
+      and(eq(schema.ratingDrafts.visitId, visitId), eq(schema.ratingDrafts.memberId, memberId)),
+    )
+}
 export type SubmitRatingInput = {
   visitId: string
   memberId: string
@@ -152,9 +159,12 @@ export const submitRating = async (input: SubmitRatingInput) => {
     priceScore: String(input.scores.price),
     serviceScore: String(input.scores.service),
     ambienceScore: String(input.scores.ambience),
+    menuScore: String(input.scores.menu),
     comment: input.comment,
     appliedWeight: String(appliedWeight),
   })
+
+  await discardRatingDraft(input.visitId, input.memberId)
 
   return { ok: true as const }
 }
@@ -197,6 +207,7 @@ export const revealVisit = async (visitId: string) => {
       priceScore: schema.ratings.priceScore,
       serviceScore: schema.ratings.serviceScore,
       ambienceScore: schema.ratings.ambienceScore,
+      menuScore: schema.ratings.menuScore,
       comment: schema.ratings.comment,
     })
     .from(schema.ratings)
@@ -227,6 +238,7 @@ export const revealVisit = async (visitId: string) => {
       price: averageOf(ratingRows.map((rating) => rating.priceScore)),
       service: averageOf(ratingRows.map((rating) => rating.serviceScore)),
       ambience: averageOf(ratingRows.map((rating) => rating.ambienceScore)),
+      menu: averageOf(ratingRows.map((rating) => rating.menuScore)),
     },
     ratings: ratingRows.map((rating) => ({
       memberId: rating.memberId,
@@ -236,6 +248,7 @@ export const revealVisit = async (visitId: string) => {
       price: rating.priceScore === null ? null : Number(rating.priceScore),
       service: rating.serviceScore === null ? null : Number(rating.serviceScore),
       ambience: rating.ambienceScore === null ? null : Number(rating.ambienceScore),
+      menu: rating.menuScore === null ? null : Number(rating.menuScore),
       comment: rating.comment,
       isRecommender: rating.memberId === visit.recommendedByMemberId,
     })),
@@ -247,10 +260,11 @@ export type CriterionScores = {
   price: number
   service: number
   ambience: number
+  menu: number
 }
 
 export const calculateOverallScore = (scores: CriterionScores) => {
-  const values = [scores.flavor, scores.price, scores.service, scores.ambience]
+  const values = [scores.flavor, scores.price, scores.service, scores.ambience, scores.menu]
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
@@ -296,6 +310,7 @@ export const submitOwnRating = async (input: {
     priceScore: String(input.scores.price),
     serviceScore: String(input.scores.service),
     ambienceScore: String(input.scores.ambience),
+    menuScore: String(input.scores.menu),
   }
 
   await database
@@ -318,5 +333,71 @@ export const submitOwnRating = async (input: {
       },
     })
 
+  await discardRatingDraft(input.visitId, input.memberId)
+
   return { ok: true as const }
 }
+
+export type RatingDraftInput = {
+  visitId: string
+  memberId: string
+  flavor: number | null
+  price: number | null
+  service: number | null
+  ambience: number | null
+  menu: number | null
+  comment: string | null
+}
+
+const toNumericText = (value: number | null) => (value === null ? null : String(value))
+
+export const saveRatingDraft = async (input: RatingDraftInput) => {
+  const draftColumns = {
+    flavorScore: toNumericText(input.flavor),
+    priceScore: toNumericText(input.price),
+    serviceScore: toNumericText(input.service),
+    ambienceScore: toNumericText(input.ambience),
+    menuScore: toNumericText(input.menu),
+    comment: input.comment,
+    updatedAt: new Date(),
+  }
+
+  await database
+    .insert(schema.ratingDrafts)
+    .values({ visitId: input.visitId, memberId: input.memberId, ...draftColumns })
+    .onConflictDoUpdate({
+      target: [schema.ratingDrafts.visitId, schema.ratingDrafts.memberId],
+      set: draftColumns,
+    })
+}
+
+export const loadRatingDraft = async (visitId: string, memberId: string) => {
+  const rows = await database
+    .select({
+      flavorScore: schema.ratingDrafts.flavorScore,
+      priceScore: schema.ratingDrafts.priceScore,
+      serviceScore: schema.ratingDrafts.serviceScore,
+      ambienceScore: schema.ratingDrafts.ambienceScore,
+      menuScore: schema.ratingDrafts.menuScore,
+      comment: schema.ratingDrafts.comment,
+    })
+    .from(schema.ratingDrafts)
+    .where(
+      and(eq(schema.ratingDrafts.visitId, visitId), eq(schema.ratingDrafts.memberId, memberId)),
+    )
+    .limit(1)
+
+  const draft = rows.at(0)
+  if (!draft) return null
+
+  return {
+    flavor: draft.flavorScore === null ? null : Number(draft.flavorScore),
+    price: draft.priceScore === null ? null : Number(draft.priceScore),
+    service: draft.serviceScore === null ? null : Number(draft.serviceScore),
+    ambience: draft.ambienceScore === null ? null : Number(draft.ambienceScore),
+    menu: draft.menuScore === null ? null : Number(draft.menuScore),
+    comment: draft.comment,
+  }
+}
+
+

@@ -98,8 +98,8 @@ check "no maximo um veto por pessoa por rodada" "$(query "SELECT count(*) FROM (
 check "toda culinaria esta em ingles" "$(query "SELECT count(*) FROM restaurants WHERE EXISTS (SELECT 1 FROM unnest(cuisines) AS value WHERE value ~ '[áàâãéêíóôõúçÁ]');")" "0"
 check "um preco por visita no maximo" "$(query "SELECT count(*) FROM (SELECT visit_id FROM visit_price_entries GROUP BY visit_id HAVING count(*) > 1) duplicated;")" "0"
 check "um voto de banimento por pessoa por turno" "$(query "SELECT count(*) FROM (SELECT member_id, round_number, ban_round FROM vetoes GROUP BY 1,2,3 HAVING count(*) > 1) duplicated;")" "0"
-check "toda nota tem os 4 criterios" "$(query "SELECT count(*) FROM ratings WHERE flavor_score IS NULL OR price_score IS NULL OR service_score IS NULL OR ambience_score IS NULL;")" "0"
-check "nota final bate com a media dos criterios" "$(query "SELECT count(*) FROM ratings WHERE abs(score - (flavor_score + price_score + service_score + ambience_score) / 4.0) > 0.01;")" "0"
+check "toda nota tem os 5 criterios" "$(query "SELECT count(*) FROM ratings WHERE flavor_score IS NULL OR price_score IS NULL OR service_score IS NULL OR ambience_score IS NULL OR menu_score IS NULL;")" "0"
+check "nota final bate com a media dos criterios" "$(query "SELECT count(*) FROM ratings WHERE abs(score - (flavor_score + price_score + service_score + ambience_score + menu_score) / 5.0) > 0.01;")" "0"
 check "plano B nunca igual ao vencedor" "$(query "SELECT count(*) FROM draws WHERE fallback_restaurant_id = restaurant_id;")" "0"
 
 echo

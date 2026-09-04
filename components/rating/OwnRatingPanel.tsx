@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, Eye, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
@@ -35,6 +35,7 @@ type RevealResult = {
     price: number | null
     service: number | null
     ambience: number | null
+    menu: number | null
     comment: string | null
     isRecommender: boolean
   }>
@@ -50,6 +51,48 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
   const queryClient = useQueryClient()
   const commentRef = useRef<HTMLTextAreaElement>(null)
   const [scores, setScores] = useState<CriteriaScores>(emptyCriteriaScores)
+  const [hasLoadedDraft, setHasLoadedDraft] = useState(false)
+
+  const draftQuery = useQuery({
+    queryKey: ['rating-draft', visitId],
+    queryFn: async () => {
+      const response = await apiClient.get<{
+        draft: (CriteriaScores & { comment: string | null }) | null
+      }>(`/visits/${visitId}/draft`)
+      return response.data.draft
+    },
+    staleTime: Infinity,
+  })
+
+  const saveDraftMutation = useMutation({
+    mutationFn: (nextScores: CriteriaScores) =>
+      apiClient.put(`/visits/${visitId}/draft`, {
+        ...nextScores,
+        comment: commentRef.current?.value ?? '',
+      }),
+  })
+
+  useEffect(() => {
+    if (hasLoadedDraft || draftQuery.isLoading) return
+
+    const draft = draftQuery.data
+    if (draft) {
+      const restored = emptyCriteriaScores()
+      ratingCriteria.forEach((criterion) => {
+        const value = draft[criterion.key]
+        if (value !== null && value !== undefined) restored[criterion.key] = value
+      })
+      setScores(restored)
+      if (commentRef.current && draft.comment) commentRef.current.value = draft.comment
+    }
+
+    setHasLoadedDraft(true)
+  }, [hasLoadedDraft, draftQuery.isLoading, draftQuery.data])
+
+  const updateScores = (nextScores: CriteriaScores) => {
+    setScores(nextScores)
+    saveDraftMutation.mutate(nextScores)
+  }
 
   const sessionQuery = useQuery({
     queryKey: ['rating-session', visitId],
@@ -69,6 +112,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
     onSuccess: () => {
       toast.success('Nota guardada. Ninguém vê até todo mundo dar.')
       queryClient.invalidateQueries({ queryKey: ['rating-session', visitId] })
+      queryClient.invalidateQueries({ queryKey: ['rating-draft', visitId] })
     },
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível salvar')),
   })
@@ -205,7 +249,17 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
             </p>
           </div>
 
-          <CriteriaForm scores={scores} onChange={setScores} />
+          <CriteriaForm scores={scores} onChange={updateScores} />
+
+          {saveDraftMutation.isPending ? (
+            <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              salvando rascunho...
+            </p>
+          ) : draftQuery.data ? (
+            <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              rascunho salvo · só você vê
+            </p>
+          ) : null}
 
           <textarea
             ref={commentRef}
@@ -213,6 +267,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
             maxLength={400}
             rows={2}
             className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none"
+            onBlur={() => saveDraftMutation.mutate(scores)}
           />
 
           <Button

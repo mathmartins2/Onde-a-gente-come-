@@ -86,6 +86,7 @@ export const ratingSchema = z.object({
   price: criterionScore,
   service: criterionScore,
   ambience: criterionScore,
+  menu: criterionScore,
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 
@@ -96,6 +97,7 @@ export const selfRatingSchema = z.object({
   price: criterionScore,
   service: criterionScore,
   ambience: criterionScore,
+  menu: criterionScore,
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 
@@ -103,6 +105,16 @@ export const selfRatingSchema = z.object({
 
 export const banDecisionSchema = z.object({
   restaurantId: z.uuid('Restaurante inválido').nullable(),
+})
+
+
+export const ratingDraftSchema = z.object({
+  flavor: criterionScore.nullable(),
+  price: criterionScore.nullable(),
+  service: criterionScore.nullable(),
+  ambience: criterionScore.nullable(),
+  menu: criterionScore.nullable(),
+  comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 
 export const priceEntrySchema = z.object({

@@ -29,6 +29,7 @@ export const POST = async (request: Request, context: { params: Promise<{ visitI
         price: parsed.data.price,
         service: parsed.data.service,
         ambience: parsed.data.ambience,
+      menu: parsed.data.menu,
       },
       comment: parsed.data.comment ? parsed.data.comment : null,
     })
