@@ -85,8 +85,17 @@ export const RulesScreen = () => (
 
         <Step number={5} title="Banimento por votação">
           <p>
-            Votar é opcional, 1 voto por pessoa. O mais votado fica fora do sorteio. Só 1 lugar é
-            banido por rodada. Se der empate em primeiro, ninguém é banido.
+            Votar é opcional, 1 voto por pessoa, e dá pra trocar ou tirar o voto até o sorteio. O
+            mais votado fica fora, e só 1 lugar é banido por rodada.
+          </p>
+          <p>
+            <strong className="text-[var(--foreground)]">Ninguém vê os votos antes do sorteio</strong>
+            {' '}— nem a contagem — pra ninguém votar reagindo ao placar.
+          </p>
+          <p>
+            Se der empate em primeiro, a rodada entra em{' '}
+            <strong className="text-[var(--foreground)]">segundo turno</strong>: todo mundo perde o
+            ready e vota de novo, só entre os empatados. Empatou de novo, ninguém é banido.
           </p>
         </Step>
 
@@ -102,6 +111,23 @@ export const RulesScreen = () => (
 
         <Step number={7} title="Sorteia quando todos derem ready">
           <p>Batido o quórum, o botão destrava com todo mundo da sessão pronto.</p>
+          <p>
+            Adicionar um lugar novo derruba o ready de todos — assim ninguém fica &quot;pronto&quot;
+            sem ter ranqueado o que entrou depois.
+          </p>
+        </Step>
+
+        <Step number={8} title="Sai o vencedor e o plano B">
+          <p>
+            O sorteio escolhe também um{' '}
+            <strong className="text-[var(--foreground)]">segundo lugar</strong>, pelo mesmo peso,
+            para o caso do primeiro não rolar. Na hora de dar a nota vocês dizem em qual foram, e a
+            nota vai para o lugar certo.
+          </p>
+          <p>
+            A revelação mostra em sequência o banido, o plano B e o vencedor — com a chance que ele
+            tinha.
+          </p>
         </Step>
       </Card>
     </section>
@@ -192,7 +218,16 @@ export const RulesScreen = () => (
         <div>
           <p className="text-sm font-semibold text-[var(--foreground)]">Ninguém vê antes da hora</p>
           <p className="mt-1">
-            As notas ficam escondidas até todo mundo dar a sua. Só então a nota final aparece.
+            As notas ficam escondidas até todo mundo dar a sua. Só então a nota final aparece. Nem o
+            ranking nem as estatísticas enxergam nota de rolê ainda não revelado.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold text-[var(--foreground)]">O lugar é de quem cadastrou</p>
+          <p className="mt-1">
+            Quem registrou o restaurante é o indicador dele, mesmo que outra pessoa tenha trazido
+            para a rodada. É esse crédito que conta para o peso e para a nota.
           </p>
         </div>
 

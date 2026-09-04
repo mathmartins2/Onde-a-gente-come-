@@ -25,6 +25,8 @@ export const GET = async () =>
       pool: state.pool,
       contenders: state.contenders,
       quorum: state.quorum,
+      needsBanRunoff: state.needsBanRunoff,
+      banRunoff: state.banRunoff,
       banOutcome: state.banOutcome,
       myBanVote: state.banVotesByMember.get(member.id) ?? null,
       everyoneReady: state.everyoneReady,

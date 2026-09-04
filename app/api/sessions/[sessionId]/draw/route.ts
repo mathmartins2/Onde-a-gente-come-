@@ -20,6 +20,7 @@ export const POST = async (_request: Request, context: { params: Promise<{ sessi
         restaurantId: result.selection.restaurantId,
         addedByMemberId: result.selection.addedByMemberId,
         fallbackRestaurantId: result.selection.fallbackRestaurantId,
+        bannedRestaurantName: result.bannedRestaurantName,
         contenders: result.contenders,
       })
     }
@@ -28,6 +29,16 @@ export const POST = async (_request: Request, context: { params: Promise<{ sessi
       return NextResponse.json(
         {
           error: `Precisa de pelo menos ${result.quorum.requiredCount} de ${result.quorum.totalMemberCount} membros na sessão. Tem ${result.quorum.presentCount}.`,
+        },
+        { status: 409 },
+      )
+    }
+
+    if (result.reason === 'BAN_TIE') {
+      return NextResponse.json(
+        {
+          error: 'Empate na votação de banimento. Faça o desempate antes de sortear.',
+          tiedRestaurantIds: result.tiedRestaurantIds,
         },
         { status: 409 },
       )

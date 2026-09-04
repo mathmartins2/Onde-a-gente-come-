@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { fetchSessionState, type SessionState } from '@/lib/http/sessionQueries'
+import { DrawReveal, type DrawRevealData } from './DrawReveal'
 import { PendingRatings } from './PendingRatings'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { classNames } from '@/lib/utilities/classNames'
@@ -31,16 +32,9 @@ type CatalogRestaurant = {
   createdByName: string | null
 }
 
-type DrawOutcome = {
-  restaurantId: string
+type DrawOutcome = DrawRevealData & {
   addedByMemberId: string
   visitId: string
-  contenders: Array<{
-    restaurantId: string
-    name: string
-    addedByName: string
-    chance: number
-  }>
 }
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(1)}%`
@@ -59,55 +53,29 @@ const DrawOutcomeCard = ({ outcome }: { outcome: DrawOutcome }) => {
   )
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-      <Card className="border-[var(--accent)] bg-gradient-to-b from-[var(--accent)]/12 to-transparent text-center">
-        <Sparkles className="mx-auto text-[var(--accent)]" size={22} />
-        <p className="mt-2 text-xs uppercase tracking-widest text-[var(--muted)]">vai ser em</p>
-        <p className="mt-1 text-2xl font-semibold">{winner?.name ?? 'Restaurante'}</p>
-        <p className="mt-1 text-sm text-[var(--muted)]">indicação de {winner?.addedByName ?? ''}</p>
+    <div className="flex flex-col gap-3">
+      <DrawReveal data={outcome} />
 
+      <div className="flex flex-col gap-2">
         {winner ? (
           <a
             href={buildGoogleMapsUrl({ name: winner.name })}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--accent)] underline"
+            className="inline-flex items-center justify-center gap-1.5 text-xs text-[var(--accent)] underline"
           >
             <ExternalLink size={12} />
             abrir no Google Maps
           </a>
         ) : null}
 
-        <div className="mt-4 flex flex-col gap-1.5 text-left">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-            como estavam as chances
-          </p>
-          {outcome.contenders.map((contender) => (
-            <div
-              key={contender.restaurantId}
-              className={classNames(
-                'flex items-baseline justify-between rounded-lg px-2.5 py-1.5 text-sm',
-                contender.restaurantId === outcome.restaurantId
-                  ? 'bg-[var(--accent)]/15'
-                  : 'bg-[var(--surface-raised)]',
-              )}
-            >
-              <span className="truncate">
-                {contender.name}
-                <span className="ml-2 text-xs text-[var(--muted)]">{contender.addedByName}</span>
-              </span>
-              <span className="tabular-nums text-xs">{formatPercentage(contender.chance)}</span>
-            </div>
-          ))}
-        </div>
-
         <Link href={`/visits/${outcome.visitId}/rate`}>
-          <Button variant="secondary" className="mt-4 w-full">
+          <Button variant="secondary" className="w-full">
             Dar as notas depois do rolê
           </Button>
         </Link>
-      </Card>
-    </motion.div>
+      </div>
+    </div>
   )
 }
 
@@ -205,6 +173,15 @@ export const SessionScreen = () => {
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível votar')),
   })
 
+  const startRunoffMutation = useMutation({
+    mutationFn: () => apiClient.post(`/sessions/${sessionId}/ban-runoff`),
+    onSuccess: () => {
+      toast.info('Empate! Votação de desempate aberta.')
+      invalidateSession()
+    },
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível desempatar')),
+  })
+
   const clearBanDecisionMutation = useMutation({
     mutationFn: () => apiClient.delete('/vetoes'),
     onSuccess: () => invalidateSession(),
@@ -216,8 +193,7 @@ export const SessionScreen = () => {
       const response = await apiClient.post<DrawOutcome>(`/sessions/${sessionId}/draw`)
       return response.data
     },
-    onSuccess: async (data) => {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+    onSuccess: (data) => {
       setOutcome(data)
       invalidateSession()
     },
@@ -249,6 +225,11 @@ export const SessionScreen = () => {
     (item) => !item.isBanned && !ranking.includes(item.restaurantId),
   )
   const alreadyInPool = new Set(state.pool.map((item) => item.restaurantId))
+  const isRunoff = state.banRunoff.round > 1
+  const runoffRestaurantIds = state.banRunoff.restaurantIds
+  const votableForBan = runoffRestaurantIds
+    ? state.pool.filter((item) => runoffRestaurantIds.includes(item.restaurantId))
+    : state.pool
 
   return (
     <div className="flex flex-col gap-5">
@@ -444,19 +425,28 @@ export const SessionScreen = () => {
 
       <section>
         <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold">Banir um lugar</h2>
+          <h2 className="text-sm font-semibold">
+            {isRunoff ? `Desempate · ${state.banRunoff.round}º turno` : 'Banir um lugar'}
+          </h2>
           <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
             {state.banOutcome.decidedCount}/{state.banOutcome.participantCount} votaram
           </span>
         </div>
 
         <Card className="flex flex-col gap-2">
-          <p className="text-xs text-[var(--muted)]">
-            O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, e o
-            resultado só aparece quando todo mundo der ready.
-          </p>
+          {isRunoff ? (
+            <p className="text-xs text-[var(--warning)]">
+              Deu empate. Votem de novo, só entre os empatados. Se empatar outra vez, ninguém é
+              banido.
+            </p>
+          ) : (
+            <p className="text-xs text-[var(--muted)]">
+              O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, e o
+              resultado só aparece depois do sorteio.
+            </p>
+          )}
 
-          {state.pool.map((item) => {
+          {votableForBan.map((item) => {
             const isMyVote = state.myBanVote === item.restaurantId
 
             return (
@@ -506,7 +496,7 @@ export const SessionScreen = () => {
 
           {state.banOutcome.isRevealed ? null : (
             <p className="text-xs text-[var(--muted)]">
-              Os votos ficam escondidos até todo mundo dar ready.
+              Os votos ficam escondidos até o sorteio acontecer.
             </p>
           )}
 
@@ -579,12 +569,31 @@ export const SessionScreen = () => {
         </Button>
       </div>
 
+      {state.needsBanRunoff ? (
+        <Card className="flex flex-col items-center gap-3 border-[var(--warning)] py-6 text-center">
+          <p className="text-2xl">🤝</p>
+          <p className="text-sm font-medium">Empate na votação de banimento</p>
+          <p className="text-xs text-[var(--muted)]">
+            O sorteio fica travado até resolver. Todo mundo vota de novo, só entre os empatados.
+          </p>
+          <Button
+            size="large"
+            className="w-full"
+            onClick={() => startRunoffMutation.mutate()}
+            disabled={startRunoffMutation.isPending}
+          >
+            Abrir votação de desempate
+          </Button>
+        </Card>
+      ) : null}
+
       <Button
         size="large"
         onClick={() => drawMutation.mutate()}
         disabled={
           !state.everyoneReady ||
           !state.quorum.hasQuorum ||
+          state.needsBanRunoff ||
           drawMutation.isPending ||
           state.contenders.length === 0
         }

@@ -1,16 +1,84 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Trophy } from 'lucide-react'
+import { Ban, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { fetchHistory, type HistoryRound } from '@/lib/http/historyQueries'
 import { classNames } from '@/lib/utilities/classNames'
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
 
-const RoundCard = ({ round }: { round: HistoryRound }) => (
+const BallotLog = ({ round }: { round: HistoryRound }) => (
+  <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-3">
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+        o rank de cada um
+      </p>
+      {round.ballots.length === 0 ? (
+        <p className="text-xs text-[var(--muted)]">Sem registro (rodada antiga).</p>
+      ) : null}
+      {round.ballots.map((ballot) => (
+        <div key={ballot.memberId} className="text-xs">
+          <span className="font-medium text-[var(--foreground)]">{ballot.displayName}</span>
+          <span className="text-[var(--muted)]">
+            {ballot.ranking.length === 0
+              ? ' não ranqueou nada'
+              : ` ${ballot.ranking.map((entry) => `${entry.position}º ${entry.restaurantName}`).join(' · ')}`}
+          </span>
+        </div>
+      ))}
+    </div>
+
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+        votos pra banir{round.banRound > 1 ? ` (${round.banRound}º turno)` : ''}
+      </p>
+      {round.ballots.map((ballot) => (
+        <div key={`ban-${ballot.memberId}`} className="text-xs">
+          <span className="font-medium text-[var(--foreground)]">{ballot.displayName}</span>
+          <span className="text-[var(--muted)]">
+            {!ballot.banVote
+              ? ' não votou'
+              : ballot.banVote.restaurantName === null
+                ? ' não quis banir ninguém'
+                : ` votou pra banir ${ballot.banVote.restaurantName}`}
+          </span>
+        </div>
+      ))}
+      {round.bannedRestaurantName ? (
+        <p className="inline-flex items-center gap-1.5 text-xs text-red-400">
+          <Ban size={11} />
+          banido: {round.bannedRestaurantName}
+        </p>
+      ) : (
+        <p className="text-xs text-[var(--muted)]">Ninguém foi banido.</p>
+      )}
+    </div>
+
+    {round.fallback?.name ? (
+      <div>
+        <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">plano B sorteado</p>
+        <p className="text-xs">
+          🥈 {round.fallback.name}
+          <span className="ml-2 text-[var(--muted)]">
+            indicação de {round.fallback.addedByName}
+          </span>
+          {round.usedFallback ? (
+            <span className="ml-2 text-[10px] uppercase text-[var(--warning)]">foi esse</span>
+          ) : null}
+        </p>
+      </div>
+    ) : null}
+  </div>
+)
+
+const RoundCard = ({ round }: { round: HistoryRound }) => {
+  const [isLogOpen, setIsLogOpen] = useState(false)
+
+  return (
   <Card className="flex flex-col gap-4">
     <div className="flex items-baseline justify-between">
       <span className="text-xs uppercase tracking-widest text-[var(--muted)]">
@@ -102,8 +170,19 @@ const RoundCard = ({ round }: { round: HistoryRound }) => (
     {round.isRevealed || round.ratings.length > 0 ? null : (
       <p className="text-xs text-[var(--muted)]">notas ainda não reveladas</p>
     )}
+
+    <button
+      onClick={() => setIsLogOpen((open) => !open)}
+      className="inline-flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+    >
+      {isLogOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      {isLogOpen ? 'esconder quem votou em quem' : 'ver quem votou em quem'}
+    </button>
+
+    {isLogOpen ? <BallotLog round={round} /> : null}
   </Card>
-)
+  )
+}
 
 export const HistoryScreen = () => {
   const historyQuery = useQuery({ queryKey: ['history'], queryFn: fetchHistory })

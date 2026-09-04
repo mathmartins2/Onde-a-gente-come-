@@ -24,6 +24,13 @@ export type HistoryRating = {
   isRecommender: boolean
 }
 
+export type HistoryBallot = {
+  memberId: string
+  displayName: string
+  ranking: Array<{ position: number; restaurantId: string; restaurantName: string }>
+  banVote: { restaurantId: string | null; restaurantName: string | null } | null
+}
+
 export type HistoryRound = {
   drawId: string
   roundNumber: number
@@ -34,6 +41,11 @@ export type HistoryRound = {
   contenders: HistoryContender[]
   participants: HistoryParticipant[]
   visitId: string | null
+  ballots: HistoryBallot[]
+  bannedRestaurantName: string | null
+  banRound: number
+  fallback: { restaurantId: string | null; name?: string; addedByName?: string } | null
+  usedFallback: boolean
   finalScore: number | null
   isRevealed: boolean
   ratings: HistoryRating[]

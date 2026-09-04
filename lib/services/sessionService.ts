@@ -249,10 +249,16 @@ export const loadSessionState = async (sessionId: string) => {
     })
     .from(schema.vetoes)
     .innerJoin(schema.members, eq(schema.members.id, schema.vetoes.memberId))
-    .where(eq(schema.vetoes.roundNumber, session.roundNumber))
+    .where(
+      and(
+        eq(schema.vetoes.roundNumber, session.roundNumber),
+        eq(schema.vetoes.banRound, session.banRound),
+      ),
+    )
 
   const decidedMemberIds = new Set(vetoRows.map((veto) => veto.memberId))
-  const everyoneIsReady =
+  const isAlreadyDrawn = session.status === drawnStatus
+  const everyoneReadyNow =
     participantRows.length > 0 && participantRows.every((participant) => participant.isReady)
 
   const banOutcome = resolveBannedRestaurant(
@@ -260,7 +266,8 @@ export const loadSessionState = async (sessionId: string) => {
       veto.restaurantId ? [{ memberId: veto.memberId, restaurantId: veto.restaurantId }] : [],
     ),
   )
-  const bannedRestaurantId = everyoneIsReady ? banOutcome.bannedRestaurantId : null
+  const bannedRestaurantId = banOutcome.bannedRestaurantId
+  const visibleBannedRestaurantId = isAlreadyDrawn ? bannedRestaurantId : null
   const nominatorQuality = await loadNominatorQuality()
   const visitHistory = await loadVisitHistoryByRestaurant()
 
@@ -329,8 +336,8 @@ export const loadSessionState = async (sessionId: string) => {
       addedByMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
       addedByName: row.ownerName ?? row.putInRoundByName,
       putInRoundByName: row.putInRoundByName,
-      isBanned: row.restaurantId === bannedRestaurantId,
-      banVotes: everyoneIsReady ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
+      isBanned: row.restaurantId === visibleBannedRestaurantId,
+      banVotes: isAlreadyDrawn ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
     })),
     myPreferences: preferencesByMember,
     contenders: contenders.map((contender) => ({
@@ -342,14 +349,48 @@ export const loadSessionState = async (sessionId: string) => {
         '',
     })),
     quorum,
+    needsBanRunoff: !isAlreadyDrawn && everyoneReadyNow && banOutcome.isTied,
+    banRunoff: {
+      round: session.banRound,
+      restaurantIds: (session.banRunoffRestaurantIds as string[] | null) ?? null,
+      tiedRestaurantIds: banOutcome.isTied
+        ? banOutcome.tally
+            .filter((entry) => entry.votes === banOutcome.tally[0]?.votes)
+            .map((entry) => entry.restaurantId)
+        : [],
+    },
+    bannedRestaurantName:
+      poolRows.find((row) => row.restaurantId === bannedRestaurantId)?.name ?? null,
     banOutcome: {
-      bannedRestaurantId,
-      isTied: everyoneIsReady && banOutcome.isTied,
-      isRevealed: everyoneIsReady,
+      bannedRestaurantId: visibleBannedRestaurantId,
+      isTied: isAlreadyDrawn && banOutcome.isTied,
+      isRevealed: isAlreadyDrawn,
       decidedCount: decidedMemberIds.size,
       participantCount: participantRows.length,
     },
     banDecidedMemberIds: [...decidedMemberIds],
+    detailedBallots: participantRows.map((participant) => ({
+      memberId: participant.memberId,
+      displayName: participant.displayName,
+      ranking: (preferencesByMember.get(participant.memberId) ?? [])
+        .sort((first, second) => first.position - second.position)
+        .map((entry) => ({
+          position: entry.position,
+          restaurantId: entry.restaurantId,
+          restaurantName:
+            poolRows.find((row) => row.restaurantId === entry.restaurantId)?.name ?? 'Restaurante',
+        })),
+      banVote: (() => {
+        const vote = vetoRows.find((veto) => veto.memberId === participant.memberId)
+        if (!vote) return null
+        if (!vote.restaurantId) return { restaurantId: null, restaurantName: null }
+        return {
+          restaurantId: vote.restaurantId,
+          restaurantName:
+            poolRows.find((row) => row.restaurantId === vote.restaurantId)?.name ?? 'Restaurante',
+        }
+      })(),
+    })),
     banVotesByMember: new Map(
       vetoRows.flatMap((veto) =>
         veto.restaurantId ? [[veto.memberId, veto.restaurantId] as const] : [],
@@ -361,6 +402,30 @@ export const loadSessionState = async (sessionId: string) => {
     rawParticipants: participants,
     rawPreferences: preferences,
   }
+}
+
+
+export const startBanRunoff = async (sessionId: string) => {
+  const state = await loadSessionState(sessionId)
+  if (!state) return { ok: false as const, reason: 'NOT_FOUND' as const }
+  if (!state.needsBanRunoff) return { ok: false as const, reason: 'NO_TIE' as const }
+
+  const nextBanRound = state.session.banRound + 1
+
+  await database
+    .update(schema.drawSessions)
+    .set({
+      banRound: nextBanRound,
+      banRunoffRestaurantIds: state.banRunoff.tiedRestaurantIds,
+    })
+    .where(eq(schema.drawSessions.id, sessionId))
+
+  await database
+    .update(schema.sessionParticipants)
+    .set({ isReady: false, readyAt: null })
+    .where(eq(schema.sessionParticipants.sessionId, sessionId))
+
+  return { ok: true as const, banRound: nextBanRound }
 }
 
 export const runSessionDraw = async (sessionId: string) => {
@@ -375,6 +440,13 @@ export const runSessionDraw = async (sessionId: string) => {
   if (!state.everyoneReady) {
     const missing = state.participants.filter((participant) => !participant.isReady)
     return { ok: false as const, reason: 'NOT_READY' as const, missing }
+  }
+  if (state.needsBanRunoff) {
+    return {
+      ok: false as const,
+      reason: 'BAN_TIE' as const,
+      tiedRestaurantIds: state.banRunoff.tiedRestaurantIds,
+    }
   }
 
   const selection = selectSessionWinner(
@@ -398,6 +470,22 @@ export const runSessionDraw = async (sessionId: string) => {
         weightSnapshot: {
           participants: state.participants,
           contenders: state.contenders,
+          ballots: state.detailedBallots,
+          bannedRestaurantName: state.bannedRestaurantName,
+          banRound: state.session.banRound,
+          fallback: state.contenders.find(
+            (contender) => contender.restaurantId === selection.fallbackRestaurantId,
+          )
+            ? {
+                restaurantId: selection.fallbackRestaurantId,
+                name: state.contenders.find(
+                  (contender) => contender.restaurantId === selection.fallbackRestaurantId,
+                )?.name,
+                addedByName: state.contenders.find(
+                  (contender) => contender.restaurantId === selection.fallbackRestaurantId,
+                )?.addedByName,
+              }
+            : null,
         },
       })
       .returning()
@@ -437,6 +525,13 @@ export const runSessionDraw = async (sessionId: string) => {
       })),
     )
 
-    return { ok: true as const, draw, visit, selection, contenders: state.contenders }
+    return {
+      ok: true as const,
+      draw,
+      visit,
+      selection,
+      contenders: state.contenders,
+      bannedRestaurantName: state.bannedRestaurantName,
+    }
   })
 }

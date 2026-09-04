@@ -20,14 +20,44 @@ type SnapshotParticipant = {
   rankedCount?: number
 }
 
-const readSnapshot = (weightSnapshot: unknown) => {
-  const snapshot = weightSnapshot as
-    | { participants?: SnapshotParticipant[]; contenders?: SnapshotContender[] }
-    | SnapshotParticipant[]
-    | null
+type SnapshotBallot = {
+  memberId: string
+  displayName: string
+  ranking: Array<{ position: number; restaurantId: string; restaurantName: string }>
+  banVote: { restaurantId: string | null; restaurantName: string | null } | null
+}
 
-  if (Array.isArray(snapshot)) return { participants: snapshot, contenders: [] }
-  return { participants: snapshot?.participants ?? [], contenders: snapshot?.contenders ?? [] }
+type FullSnapshot = {
+  participants?: SnapshotParticipant[]
+  contenders?: SnapshotContender[]
+  ballots?: SnapshotBallot[]
+  bannedRestaurantName?: string | null
+  banRound?: number
+  fallback?: { restaurantId: string | null; name?: string; addedByName?: string } | null
+}
+
+const readSnapshot = (weightSnapshot: unknown) => {
+  const snapshot = weightSnapshot as FullSnapshot | SnapshotParticipant[] | null
+
+  if (Array.isArray(snapshot)) {
+    return {
+      participants: snapshot,
+      contenders: [],
+      ballots: [],
+      bannedRestaurantName: null,
+      banRound: 1,
+      fallback: null,
+    }
+  }
+
+  return {
+    participants: snapshot?.participants ?? [],
+    contenders: snapshot?.contenders ?? [],
+    ballots: snapshot?.ballots ?? [],
+    bannedRestaurantName: snapshot?.bannedRestaurantName ?? null,
+    banRound: snapshot?.banRound ?? 1,
+    fallback: snapshot?.fallback ?? null,
+  }
 }
 
 export const loadHistory = async () => {
@@ -54,6 +84,7 @@ export const loadHistory = async () => {
       drawId: schema.visits.drawId,
       revealedAt: schema.visits.revealedAt,
       recommendedByMemberId: schema.visits.recommendedByMemberId,
+      usedFallback: schema.visits.usedFallback,
     })
     .from(schema.visits)
 
@@ -125,6 +156,11 @@ export const loadHistory = async () => {
         displayName: participant.displayName ?? '',
         rankedCount: participant.rankedCount ?? 0,
       })),
+      ballots: snapshot.ballots,
+      bannedRestaurantName: snapshot.bannedRestaurantName,
+      banRound: snapshot.banRound,
+      fallback: snapshot.fallback,
+      usedFallback: visit?.usedFallback ?? false,
       visitId: visit?.visitId ?? null,
       isRevealed,
       finalScore,

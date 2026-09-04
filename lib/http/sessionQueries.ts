@@ -49,6 +49,12 @@ export type SessionState = {
     requiredCount: number
     hasQuorum: boolean
   }
+  needsBanRunoff: boolean
+  banRunoff: {
+    round: number
+    restaurantIds: string[] | null
+    tiedRestaurantIds: string[]
+  }
   banOutcome: {
     bannedRestaurantId: string | null
     isTied: boolean

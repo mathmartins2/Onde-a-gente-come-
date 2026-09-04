@@ -17,6 +17,10 @@ export const PUT = async (request: Request) =>
     if (!session) return validationErrorResponse('Não há sorteio aberto')
 
     const restaurantId = parsed.data.restaurantId
+    const runoffRestaurantIds = (session.banRunoffRestaurantIds as string[] | null) ?? null
+    if (restaurantId !== null && runoffRestaurantIds && !runoffRestaurantIds.includes(restaurantId)) {
+      return validationErrorResponse('No desempate só dá pra votar nos empatados')
+    }
     if (restaurantId !== null) {
       const poolRows = await database
         .select({ restaurantId: schema.sessionPoolEntries.restaurantId })
@@ -34,9 +38,14 @@ export const PUT = async (request: Request) =>
 
     const [decision] = await database
       .insert(schema.vetoes)
-      .values({ memberId: member.id, restaurantId, roundNumber: session.roundNumber })
+      .values({
+        memberId: member.id,
+        restaurantId,
+        roundNumber: session.roundNumber,
+        banRound: session.banRound,
+      })
       .onConflictDoUpdate({
-        target: [schema.vetoes.memberId, schema.vetoes.roundNumber],
+        target: [schema.vetoes.memberId, schema.vetoes.roundNumber, schema.vetoes.banRound],
         set: { restaurantId, createdAt: new Date() },
       })
       .returning()
@@ -55,6 +64,7 @@ export const DELETE = async () =>
         and(
           eq(schema.vetoes.memberId, member.id),
           eq(schema.vetoes.roundNumber, session.roundNumber),
+          eq(schema.vetoes.banRound, session.banRound),
         ),
       )
 
