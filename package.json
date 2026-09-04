@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "database:generate": "drizzle-kit generate",
+    "database:migrate": "drizzle-kit migrate",
+    "database:seed": "tsx scripts/seed.ts",
+    "database:reset": "bash scripts/reset-and-seed.sh",
+    "validate": "bash scripts/validate-end-to-end.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
