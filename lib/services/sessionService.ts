@@ -245,16 +245,15 @@ export const loadSessionState = async (sessionId: string) => {
     .where(eq(schema.vetoes.roundNumber, session.roundNumber))
 
   const decidedMemberIds = new Set(vetoRows.map((veto) => veto.memberId))
-  const everyoneDecidedBan =
-    participantRows.length > 0 &&
-    participantRows.every((participant) => decidedMemberIds.has(participant.memberId))
+  const everyoneIsReady =
+    participantRows.length > 0 && participantRows.every((participant) => participant.isReady)
 
   const banOutcome = resolveBannedRestaurant(
     vetoRows.flatMap((veto) =>
       veto.restaurantId ? [{ memberId: veto.memberId, restaurantId: veto.restaurantId }] : [],
     ),
   )
-  const bannedRestaurantId = everyoneDecidedBan ? banOutcome.bannedRestaurantId : null
+  const bannedRestaurantId = everyoneIsReady ? banOutcome.bannedRestaurantId : null
   const nominatorQuality = await loadNominatorQuality()
   const visitHistory = await loadVisitHistoryByRestaurant()
 
@@ -323,7 +322,7 @@ export const loadSessionState = async (sessionId: string) => {
       addedByMemberId: row.addedByMemberId,
       addedByName: row.addedByName,
       isBanned: row.restaurantId === bannedRestaurantId,
-      banVotes: everyoneDecidedBan ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
+      banVotes: everyoneIsReady ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
     })),
     myPreferences: preferencesByMember,
     contenders: contenders.map((contender) => ({
@@ -334,8 +333,8 @@ export const loadSessionState = async (sessionId: string) => {
     quorum,
     banOutcome: {
       bannedRestaurantId,
-      isTied: everyoneDecidedBan && banOutcome.isTied,
-      everyoneDecided: everyoneDecidedBan,
+      isTied: everyoneIsReady && banOutcome.isTied,
+      isRevealed: everyoneIsReady,
       decidedCount: decidedMemberIds.size,
       participantCount: participantRows.length,
     },

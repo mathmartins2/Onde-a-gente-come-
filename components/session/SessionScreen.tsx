@@ -417,14 +417,14 @@ export const SessionScreen = () => {
         <div className="mb-2 flex items-baseline justify-between">
           <h2 className="text-sm font-semibold">Banir um lugar</h2>
           <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-            {state.banOutcome.decidedCount}/{state.banOutcome.participantCount} decidiram
+            {state.banOutcome.decidedCount}/{state.banOutcome.participantCount} votaram
           </span>
         </div>
 
         <Card className="flex flex-col gap-2">
           <p className="text-xs text-[var(--muted)]">
-            O mais votado fica fora do sorteio, e só 1 é banido por rodada. O resultado só aparece
-            quando todo mundo decidir — votando ou dizendo que não quer banir.
+            O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, e o
+            resultado só aparece quando todo mundo der ready.
           </p>
 
           {state.pool.map((item) => {
@@ -458,7 +458,7 @@ export const SessionScreen = () => {
                   ) : null}
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
-                  {state.banOutcome.everyoneDecided && item.banVotes > 0
+                  {state.banOutcome.isRevealed && item.banVotes > 0
                     ? `${item.banVotes} voto(s)`
                     : ''}
                 </span>
@@ -466,30 +466,18 @@ export const SessionScreen = () => {
             )
           })}
 
-          <Button
-            variant={state.myBanDecided && state.myBanVote === null ? 'primary' : 'secondary'}
-            size="small"
-            onClick={() => banDecisionMutation.mutate(null)}
-            disabled={banDecisionMutation.isPending}
-          >
-            {state.myBanDecided && state.myBanVote === null
-              ? 'Você não vai banir ninguém'
-              : 'Não quero banir ninguém'}
-          </Button>
-
-          {state.myBanDecided ? (
+          {state.myBanVote ? (
             <button
               onClick={() => clearBanDecisionMutation.mutate()}
               className="text-[10px] uppercase tracking-wide text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
             >
-              desfazer minha decisão
+              tirar meu voto
             </button>
           ) : null}
 
-          {state.banOutcome.everyoneDecided ? null : (
+          {state.banOutcome.isRevealed ? null : (
             <p className="text-xs text-[var(--muted)]">
-              Faltam {state.banOutcome.participantCount - state.banOutcome.decidedCount} pessoa(s)
-              decidirem. Ninguém vê os votos até lá.
+              Os votos ficam escondidos até todo mundo dar ready.
             </p>
           )}
 
@@ -499,7 +487,9 @@ export const SessionScreen = () => {
             </p>
           ) : null}
 
-          {state.banOutcome.everyoneDecided && !state.banOutcome.isTied && !state.banOutcome.bannedRestaurantId ? (
+          {state.banOutcome.isRevealed &&
+          !state.banOutcome.isTied &&
+          !state.banOutcome.bannedRestaurantId ? (
             <p className="text-xs text-[var(--muted)]">Ninguém quis banir nada nesta rodada.</p>
           ) : null}
         </Card>
