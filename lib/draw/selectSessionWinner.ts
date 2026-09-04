@@ -5,6 +5,7 @@ import { selectWeightedIndex } from './selectWeightedIndex'
 export type SessionPoolRestaurant = {
   restaurantId: string
   addedByMemberId: string
+  putInRoundByMemberId: string
   revisitWeight: number
   isVetoed: boolean
 }
@@ -54,7 +55,9 @@ export const buildSessionContenders = (
       const borda = bordaByRestaurant.get(entry.restaurantId)
       if (!borda || borda.points <= 0) return []
 
-      const owner = participantById.get(entry.addedByMemberId)
+      const owner =
+        participantById.get(entry.addedByMemberId) ??
+        participantById.get(entry.putInRoundByMemberId)
       if (!owner) return []
 
       const ownerWeight =
@@ -65,7 +68,7 @@ export const buildSessionContenders = (
       return [
         {
           restaurantId: entry.restaurantId,
-          addedByMemberId: entry.addedByMemberId,
+          addedByMemberId: owner.memberId,
           bordaPoints: borda.points,
           ownerWeight,
           revisitWeight: entry.revisitWeight,

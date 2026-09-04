@@ -227,9 +227,11 @@ export const SessionScreen = () => {
   const alreadyInPool = new Set(state.pool.map((item) => item.restaurantId))
   const isRunoff = state.banRunoff.round > 1
   const runoffRestaurantIds = state.banRunoff.restaurantIds
-  const votableForBan = runoffRestaurantIds
-    ? state.pool.filter((item) => runoffRestaurantIds.includes(item.restaurantId))
-    : state.pool
+  const votableForBan = (
+    runoffRestaurantIds
+      ? state.pool.filter((item) => runoffRestaurantIds.includes(item.restaurantId))
+      : state.pool
+  ).filter((item) => !item.isMine)
 
   return (
     <div className="flex flex-col gap-5">
@@ -316,10 +318,7 @@ export const SessionScreen = () => {
                   {[
                     item.cuisines.join(', ') || null,
                     item.neighborhood,
-                    `indicação de ${item.addedByName}`,
-                    item.putInRoundByName === item.addedByName
-                      ? null
-                      : `trazido por ${item.putInRoundByName}`,
+                    item.addedByName ? `indicação de ${item.addedByName}` : null,
                   ]
                     .filter(Boolean)
                     .join(' · ')}
@@ -441,8 +440,8 @@ export const SessionScreen = () => {
             </p>
           ) : (
             <p className="text-xs text-[var(--muted)]">
-              O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, e o
-              resultado só aparece depois do sorteio.
+              O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, o
+              resultado só aparece depois do sorteio, e você não pode banir um lugar que indicou.
             </p>
           )}
 
@@ -518,9 +517,9 @@ export const SessionScreen = () => {
         <section>
           <div className="mb-2 flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">Chances agora</h2>
-            <Link href="/rules" className="text-[10px] uppercase tracking-wide text-[var(--accent)]">
-              como é calculado
-            </Link>
+            <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+              sem contar o banimento
+            </span>
           </div>
           <Card className="flex flex-col gap-2.5">
             {state.contenders.map((contender) => (
@@ -538,8 +537,8 @@ export const SessionScreen = () => {
                   />
                 </div>
                 <p className="text-[10px] text-[var(--muted)]">
-                  {contender.supporters} quiseram · {contender.topChoiceCount} em 1º · indicação
-                  de {contender.addedByName}
+                  {contender.supporters} quiseram · {contender.topChoiceCount} em 1º
+                  {contender.addedByName ? ` · indicação de ${contender.addedByName}` : ''}
                 </p>
                 <p className="font-mono text-[10px] text-[var(--muted)]">
                   {contender.bordaPoints.toFixed(3)} pontos

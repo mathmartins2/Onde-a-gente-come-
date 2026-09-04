@@ -18,7 +18,13 @@ const poolEntry = (
   addedByMemberId: string,
   revisitWeight = 1,
   isVetoed = false,
-): SessionPoolRestaurant => ({ restaurantId, addedByMemberId, revisitWeight, isVetoed })
+): SessionPoolRestaurant => ({
+  restaurantId,
+  addedByMemberId,
+  putInRoundByMemberId: addedByMemberId,
+  revisitWeight,
+  isVetoed,
+})
 
 const chanceOf = (contenders: ReturnType<typeof buildSessionContenders>, restaurantId: string) =>
   contenders.find((contender) => contender.restaurantId === restaurantId)?.chance ?? 0
@@ -118,11 +124,45 @@ describe('session draw combines every rule', () => {
     expect(contenders.map((contender) => contender.restaurantId)).toEqual(['querido'])
   })
 
-  it('ignores a restaurant added by someone who is not in the session', () => {
+  it('keeps a restaurant whose owner is absent, using the weight of whoever brought it', () => {
     const contenders = buildSessionContenders(
-      [poolEntry('de-quem-saiu', 'ausente'), poolEntry('valido', 'math')],
+      [
+        {
+          restaurantId: 'do-ausente',
+          addedByMemberId: 'ausente',
+          putInRoundByMemberId: 'math',
+          revisitWeight: 1,
+          isVetoed: false,
+        },
+        poolEntry('valido', 'math'),
+      ],
       [participant('math')],
-      [{ memberId: 'math', rankedRestaurantIds: ['de-quem-saiu', 'valido'] }],
+      [{ memberId: 'math', rankedRestaurantIds: ['do-ausente', 'valido'] }],
+    )
+
+    expect(contenders.map((contender) => contender.restaurantId).sort()).toEqual([
+      'do-ausente',
+      'valido',
+    ])
+    expect(
+      contenders.find((contender) => contender.restaurantId === 'do-ausente')?.addedByMemberId,
+    ).toBe('math')
+  })
+
+  it('ignores a restaurant when neither the owner nor who brought it is in the session', () => {
+    const contenders = buildSessionContenders(
+      [
+        {
+          restaurantId: 'orfao',
+          addedByMemberId: 'ausente',
+          putInRoundByMemberId: 'tambem-ausente',
+          revisitWeight: 1,
+          isVetoed: false,
+        },
+        poolEntry('valido', 'math'),
+      ],
+      [participant('math')],
+      [{ memberId: 'math', rankedRestaurantIds: ['orfao', 'valido'] }],
     )
 
     expect(contenders.map((contender) => contender.restaurantId)).toEqual(['valido'])

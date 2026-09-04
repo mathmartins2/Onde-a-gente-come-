@@ -22,7 +22,10 @@ export const GET = async () =>
         openedByMemberId: state.session.openedByMemberId,
       },
       participants: state.participants,
-      pool: state.pool,
+      pool: state.pool.map((item) => {
+        const { effectiveOwnerMemberId, ...visible } = item
+        return { ...visible, isMine: effectiveOwnerMemberId === member.id }
+      }),
       contenders: state.contenders,
       quorum: state.quorum,
       needsBanRunoff: state.needsBanRunoff,

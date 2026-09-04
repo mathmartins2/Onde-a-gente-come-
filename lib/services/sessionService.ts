@@ -285,6 +285,7 @@ export const loadSessionState = async (sessionId: string) => {
     return {
       restaurantId: row.restaurantId,
       addedByMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
+      putInRoundByMemberId: row.putInRoundByMemberId,
       revisitWeight: calculateNominationWeight({
         visitCount: history?.visitCount ?? 0,
         lastVisitedAt: history?.lastVisitedAt ? new Date(history.lastVisitedAt) : null,
@@ -313,6 +314,10 @@ export const loadSessionState = async (sessionId: string) => {
   const quorum = checkQuorum(participantRows.length, totalMemberRows.length)
 
   const contenders = buildSessionContenders(pool, participants, preferences)
+  const previewPool = pool.map((entry) => ({ ...entry, isVetoed: false }))
+  const previewContenders = isAlreadyDrawn
+    ? contenders
+    : buildSessionContenders(previewPool, participants, preferences)
   const restaurantById = new Map(poolRows.map((row) => [row.restaurantId, row]))
   const banVotesByRestaurant = new Map(
     banOutcome.tally.map((entry) => [entry.restaurantId, entry.votes]),
@@ -333,20 +338,32 @@ export const loadSessionState = async (sessionId: string) => {
       name: row.name,
       neighborhood: row.neighborhood,
       cuisines: row.cuisines,
-      addedByMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
-      addedByName: row.ownerName ?? row.putInRoundByName,
-      putInRoundByName: row.putInRoundByName,
+      addedByMemberId: isAlreadyDrawn ? (row.ownerMemberId ?? row.putInRoundByMemberId) : '',
+      addedByName: isAlreadyDrawn ? (row.ownerName ?? row.putInRoundByName) : '',
+      putInRoundByName: isAlreadyDrawn ? row.putInRoundByName : '',
+      effectiveOwnerMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
       isBanned: row.restaurantId === visibleBannedRestaurantId,
       banVotes: isAlreadyDrawn ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
     })),
     myPreferences: preferencesByMember,
-    contenders: contenders.map((contender) => ({
+    revealedContenders: contenders.map((contender) => ({
       ...contender,
       name: restaurantById.get(contender.restaurantId)?.name ?? 'Restaurante',
       addedByName:
         restaurantById.get(contender.restaurantId)?.ownerName ??
         restaurantById.get(contender.restaurantId)?.putInRoundByName ??
         '',
+    })),
+    contenders: previewContenders.map((contender) => ({
+      ...contender,
+      addedByMemberId: isAlreadyDrawn ? contender.addedByMemberId : '',
+      ownerWeight: isAlreadyDrawn ? contender.ownerWeight : 1,
+      name: restaurantById.get(contender.restaurantId)?.name ?? 'Restaurante',
+      addedByName: isAlreadyDrawn
+        ? (restaurantById.get(contender.restaurantId)?.ownerName ??
+          restaurantById.get(contender.restaurantId)?.putInRoundByName ??
+          '')
+        : '',
     })),
     quorum,
     needsBanRunoff: !isAlreadyDrawn && everyoneReadyNow && banOutcome.isTied,
@@ -469,7 +486,7 @@ export const runSessionDraw = async (sessionId: string) => {
         fallbackMemberId: selection.fallbackMemberId,
         weightSnapshot: {
           participants: state.participants,
-          contenders: state.contenders,
+          contenders: state.revealedContenders,
           ballots: state.detailedBallots,
           bannedRestaurantName: state.bannedRestaurantName,
           banRound: state.session.banRound,
@@ -530,7 +547,7 @@ export const runSessionDraw = async (sessionId: string) => {
       draw,
       visit,
       selection,
-      contenders: state.contenders,
+      contenders: state.revealedContenders,
       bannedRestaurantName: state.bannedRestaurantName,
     }
   })

@@ -23,8 +23,16 @@ export const PUT = async (request: Request) =>
     }
     if (restaurantId !== null) {
       const poolRows = await database
-        .select({ restaurantId: schema.sessionPoolEntries.restaurantId })
+        .select({
+          restaurantId: schema.sessionPoolEntries.restaurantId,
+          putInRoundByMemberId: schema.sessionPoolEntries.addedByMemberId,
+          ownerMemberId: schema.restaurants.createdBy,
+        })
         .from(schema.sessionPoolEntries)
+        .innerJoin(
+          schema.restaurants,
+          eq(schema.restaurants.id, schema.sessionPoolEntries.restaurantId),
+        )
         .where(
           and(
             eq(schema.sessionPoolEntries.sessionId, session.id),
@@ -33,7 +41,13 @@ export const PUT = async (request: Request) =>
         )
         .limit(1)
 
-      if (poolRows.length === 0) return validationErrorResponse('Esse lugar não está na rodada')
+      const poolEntry = poolRows.at(0)
+      if (!poolEntry) return validationErrorResponse('Esse lugar não está na rodada')
+
+      const effectiveOwnerMemberId = poolEntry.ownerMemberId ?? poolEntry.putInRoundByMemberId
+      if (effectiveOwnerMemberId === member.id) {
+        return validationErrorResponse('Você não pode banir um lugar que você indicou')
+      }
     }
 
     const [decision] = await database
