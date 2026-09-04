@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react'
+import type { ComponentPropsWithRef, ReactNode } from 'react'
 import { classNames } from '@/lib/utilities/classNames'
 
 type FieldProps = {
@@ -22,7 +22,7 @@ export const Field = ({ label, error, hint, children }: FieldProps) => (
   </label>
 )
 
-export const TextInput = ({ className, ...properties }: InputHTMLAttributes<HTMLInputElement>) => (
+export const TextInput = ({ className, ...properties }: ComponentPropsWithRef<'input'>) => (
   <input
     className={classNames(
       'h-12 w-full rounded-[var(--radius-medium)] border border-[var(--border-strong)] bg-[var(--surface-sunken)] px-4 text-sm text-[var(--foreground)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.45)] transition-[border-color,box-shadow] duration-200 placeholder:text-[color-mix(in_srgb,var(--muted)_70%,transparent)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)] focus:outline-none',

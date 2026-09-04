@@ -15,6 +15,7 @@ export type RatingSessionState = {
   restaurantName: string
   recommendedByMemberId: string | null
   isRevealed: boolean
+  visitedAt: Date
   pendingMembers: Array<{ id: string; displayName: string; hasRatingPin: boolean }>
   ratedMemberIds: string[]
 }
@@ -26,6 +27,7 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
       restaurantName: schema.restaurants.name,
       recommendedByMemberId: schema.visits.recommendedByMemberId,
       revealedAt: schema.visits.revealedAt,
+      visitedAt: schema.visits.visitedAt,
     })
     .from(schema.visits)
     .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
@@ -53,6 +55,7 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
   return {
     visitId: visit.id,
     restaurantName: visit.restaurantName,
+    visitedAt: visit.visitedAt,
     recommendedByMemberId: visit.recommendedByMemberId,
     isRevealed: Boolean(visit.revealedAt),
     pendingMembers: allMembers
@@ -70,7 +73,7 @@ export type SubmitRatingInput = {
   visitId: string
   memberId: string
   pin: string
-  score: number
+  scores: CriterionScores
   comment: string | null
 }
 
@@ -125,12 +128,22 @@ export const submitRating = async (input: SubmitRatingInput) => {
   await database.insert(schema.ratings).values({
     visitId: input.visitId,
     memberId: input.memberId,
-    score: String(input.score),
+    score: String(calculateOverallScore(input.scores)),
+    flavorScore: String(input.scores.flavor),
+    priceScore: String(input.scores.price),
+    serviceScore: String(input.scores.service),
+    ambienceScore: String(input.scores.ambience),
     comment: input.comment,
     appliedWeight: String(appliedWeight),
   })
 
   return { ok: true as const }
+}
+
+const averageOf = (values: ReadonlyArray<string | null>) => {
+  const present = values.flatMap((value) => (value === null ? [] : [Number(value)]))
+  if (present.length === 0) return null
+  return present.reduce((sum, value) => sum + value, 0) / present.length
 }
 
 export const revealVisit = async (visitId: string) => {
@@ -153,6 +166,10 @@ export const revealVisit = async (visitId: string) => {
       memberId: schema.ratings.memberId,
       displayName: schema.members.displayName,
       score: schema.ratings.score,
+      flavorScore: schema.ratings.flavorScore,
+      priceScore: schema.ratings.priceScore,
+      serviceScore: schema.ratings.serviceScore,
+      ambienceScore: schema.ratings.ambienceScore,
       comment: schema.ratings.comment,
     })
     .from(schema.ratings)
@@ -178,20 +195,42 @@ export const revealVisit = async (visitId: string) => {
   return {
     revealed: true as const,
     finalScore,
+    criteriaAverages: {
+      flavor: averageOf(ratingRows.map((rating) => rating.flavorScore)),
+      price: averageOf(ratingRows.map((rating) => rating.priceScore)),
+      service: averageOf(ratingRows.map((rating) => rating.serviceScore)),
+      ambience: averageOf(ratingRows.map((rating) => rating.ambienceScore)),
+    },
     ratings: ratingRows.map((rating) => ({
       memberId: rating.memberId,
       displayName: rating.displayName,
       score: Number(rating.score),
+      flavor: rating.flavorScore === null ? null : Number(rating.flavorScore),
+      price: rating.priceScore === null ? null : Number(rating.priceScore),
+      service: rating.serviceScore === null ? null : Number(rating.serviceScore),
+      ambience: rating.ambienceScore === null ? null : Number(rating.ambienceScore),
       comment: rating.comment,
       isRecommender: rating.memberId === visit.recommendedByMemberId,
     })),
   }
 }
 
+export type CriterionScores = {
+  flavor: number
+  price: number
+  service: number
+  ambience: number
+}
+
+export const calculateOverallScore = (scores: CriterionScores) => {
+  const values = [scores.flavor, scores.price, scores.service, scores.ambience]
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
 export const submitOwnRating = async (input: {
   visitId: string
   memberId: string
-  score: number
+  scores: CriterionScores
   comment: string | null
 }) => {
   const visitRows = await database
@@ -210,19 +249,29 @@ export const submitOwnRating = async (input: {
 
   const appliedWeight = resolveRatingWeight(input.memberId, visit.recommendedByMemberId)
 
+  const overallScore = String(calculateOverallScore(input.scores))
+  const criterionColumns = {
+    flavorScore: String(input.scores.flavor),
+    priceScore: String(input.scores.price),
+    serviceScore: String(input.scores.service),
+    ambienceScore: String(input.scores.ambience),
+  }
+
   await database
     .insert(schema.ratings)
     .values({
       visitId: input.visitId,
       memberId: input.memberId,
-      score: String(input.score),
+      score: overallScore,
+      ...criterionColumns,
       comment: input.comment,
       appliedWeight: String(appliedWeight),
     })
     .onConflictDoUpdate({
       target: [schema.ratings.visitId, schema.ratings.memberId],
       set: {
-        score: String(input.score),
+        score: overallScore,
+        ...criterionColumns,
         comment: input.comment,
         appliedWeight: String(appliedWeight),
       },

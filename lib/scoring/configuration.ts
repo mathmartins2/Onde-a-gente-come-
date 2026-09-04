@@ -6,6 +6,7 @@ export const drawConfiguration = {
   recentlyVisitedPenalty: 0.2,
   monthsToFullyRecoverFromVisit: 12,
   vetoesAllowedPerMemberPerRound: 1,
+  minimumQuorumRatio: 0.5,
   qualityInfluencePerScorePoint: 0.1,
   minimumQualityMultiplier: 0.85,
   maximumQualityMultiplier: 1.15,
@@ -17,6 +18,16 @@ export const ratingConfiguration = {
   recommenderWeight: 1,
   nonRecommenderWeight: 1.25,
 } as const
+
+
+export const ratingCriteria = [
+  { key: 'flavor', label: 'Sabor', column: 'flavorScore' },
+  { key: 'price', label: 'Preço', column: 'priceScore' },
+  { key: 'service', label: 'Atendimento', column: 'serviceScore' },
+  { key: 'ambience', label: 'Ambiente', column: 'ambienceScore' },
+] as const
+
+export type RatingCriterionKey = (typeof ratingCriteria)[number]['key']
 
 export const rankingConfiguration = {
   bayesianConfidenceConstant: 5,

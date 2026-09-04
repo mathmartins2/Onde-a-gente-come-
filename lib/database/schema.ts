@@ -124,7 +124,11 @@ export const ratings = pgTable(
     memberId: uuid('member_id')
       .notNull()
       .references(() => members.id, { onDelete: 'cascade' }),
-    score: numeric('score', { precision: 3, scale: 1 }).notNull(),
+    score: numeric('score', { precision: 3, scale: 2 }).notNull(),
+    flavorScore: numeric('flavor_score', { precision: 3, scale: 1 }),
+    priceScore: numeric('price_score', { precision: 3, scale: 1 }),
+    serviceScore: numeric('service_score', { precision: 3, scale: 1 }),
+    ambienceScore: numeric('ambience_score', { precision: 3, scale: 1 }),
     comment: text('comment'),
     appliedWeight: numeric('applied_weight', { precision: 4, scale: 2 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -152,6 +156,23 @@ export const authenticationAttempts = pgTable(
   (table) => [unique('authentication_attempts_unique').on(table.scope, table.identifier)],
 )
 
+
+
+export const visitPriceEntries = pgTable(
+  'visit_price_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    visitId: uuid('visit_id')
+      .notNull()
+      .references(() => visits.id, { onDelete: 'cascade' }),
+    addedByMemberId: uuid('added_by_member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('visit_price_entries_visit_unique').on(table.visitId)],
+)
 
 export const drawSessions = pgTable('draw_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   BarChart3,
   Dices,
+  BookOpen,
   History,
   LogOut,
   MapPin,
@@ -22,6 +23,7 @@ const navigationItems = [
   { href: '/ranking', label: 'Ranking', icon: Trophy },
   { href: '/statistics', label: 'Números', icon: BarChart3 },
   { href: '/map', label: 'Mapa', icon: MapPin },
+  { href: '/rules', label: 'Regras', icon: BookOpen },
   { href: '/profile', label: 'Perfil', icon: User },
 ]
 

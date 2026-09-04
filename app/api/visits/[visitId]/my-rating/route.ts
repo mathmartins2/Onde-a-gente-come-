@@ -20,7 +20,12 @@ export const POST = async (request: Request, context: { params: Promise<{ visitI
     const result = await submitOwnRating({
       visitId,
       memberId: member.id,
-      score: parsed.data.score,
+      scores: {
+        flavor: parsed.data.flavor,
+        price: parsed.data.price,
+        service: parsed.data.service,
+        ambience: parsed.data.ambience,
+      },
       comment: parsed.data.comment ? parsed.data.comment : null,
     })
 

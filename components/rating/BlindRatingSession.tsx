@@ -9,6 +9,12 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { classNames } from '@/lib/utilities/classNames'
+import {
+  CriteriaForm,
+  calculateAverage,
+  emptyCriteriaScores,
+  type CriteriaScores,
+} from './CriteriaForm'
 
 type SessionState = {
   visitId: string
@@ -36,10 +42,9 @@ type Stage = 'picking' | 'pin' | 'scoring' | 'handoff' | 'revealed'
 type ActiveRating = {
   memberId: string
   pin: string
-  score: number | null
+  scores: CriteriaScores
 }
 
-const scoreOptions = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 
 const pinLength = 4
 
@@ -72,9 +77,15 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
     mutationFn: async (submission: {
       memberId: string
       pin: string
-      score: number
+      scores: CriteriaScores
       comment: string
-    }) => apiClient.post(`/visits/${visitId}/ratings`, submission),
+    }) =>
+      apiClient.post(`/visits/${visitId}/ratings`, {
+        memberId: submission.memberId,
+        pin: submission.pin,
+        comment: submission.comment,
+        ...submission.scores,
+      }),
     onSuccess: () => {
       const commentField = commentRef.current
       if (commentField) commentField.value = ''
@@ -82,7 +93,9 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
       queryClient.invalidateQueries({ queryKey: ['rating-session', visitId] })
     },
     onError: (error) => {
-      setActiveRating((current) => (current ? { ...current, pin: '', score: null } : current))
+      setActiveRating((current) =>
+        current ? { ...current, pin: '', scores: emptyCriteriaScores() } : current,
+      )
       toast.error(extractErrorMessage(error, 'Não foi possível salvar a nota'))
     },
   })
@@ -109,7 +122,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
 
   const startRating = (memberId: string) => {
     submitMutation.reset()
-    setActiveRating({ memberId, pin: '', score: null })
+    setActiveRating({ memberId, pin: '', scores: emptyCriteriaScores() })
   }
 
   const leaveRating = () => {
@@ -127,16 +140,12 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
     setActiveRating((current) => (current ? { ...current, pin: current.pin.slice(0, -1) } : current))
   }
 
-  const selectScore = (option: number) => {
-    setActiveRating((current) => (current ? { ...current, score: option } : current))
-  }
-
   const submitRating = () => {
-    if (!activeRating || activeRating.score === null) return
+    if (!activeRating) return
     submitMutation.mutate({
       memberId: activeRating.memberId,
       pin: activeRating.pin,
-      score: activeRating.score,
+      scores: activeRating.scores,
       comment: commentRef.current?.value ?? '',
     })
   }
@@ -225,26 +234,16 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
 
               <div className="text-center">
                 <span className="text-5xl font-semibold tabular-nums">
-                  {activeRating.score === null ? '—' : activeRating.score.toFixed(1)}
+                  {calculateAverage(activeRating.scores).toFixed(2)}
                 </span>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {scoreOptions.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => selectScore(option)}
-                    className={classNames(
-                      'h-10 w-12 rounded-lg border text-sm tabular-nums transition-colors',
-                      activeRating.score === option
-                        ? 'border-[var(--accent)] bg-[var(--accent)] text-black'
-                        : 'border-[var(--border)] bg-[var(--surface-raised)]',
-                    )}
-                  >
-                    {option.toFixed(1)}
-                  </button>
-                ))}
-              </div>
+              <CriteriaForm
+                scores={activeRating.scores}
+                onChange={(nextScores) =>
+                  setActiveRating((current) => (current ? { ...current, scores: nextScores } : current))
+                }
+              />
 
               <textarea
                 ref={commentRef}
@@ -256,7 +255,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
 
               <Button
                 size="large"
-                disabled={activeRating.score === null || submitMutation.isPending}
+                disabled={submitMutation.isPending}
                 onClick={submitRating}
               >
                 Confirmar e passar
@@ -335,7 +334,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
                     ) : null}
                   </div>
                   <span className="text-xl font-semibold tabular-nums">
-                    {rating.score.toFixed(1)}
+                    {rating.score.toFixed(2)}
                   </span>
                 </Card>
               </motion.div>

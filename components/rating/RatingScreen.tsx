@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/Button'
 import { apiClient } from '@/lib/http/apiClient'
 import { BlindRatingSession } from './BlindRatingSession'
 import { OwnRatingPanel } from './OwnRatingPanel'
+import { PriceHistory } from './PriceHistory'
+import { VisitDate } from './VisitDate'
 
 type RatingScreenProps = {
   visitId: string
   currentMemberId: string
 }
 
-type VisitSummary = { restaurantName: string; ratedMemberIds: string[] }
+type VisitSummary = { restaurantName: string; visitedAt: string; ratedMemberIds: string[] }
 
 export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) => {
   const [isPassAroundMode, setIsPassAroundMode] = useState(false)
@@ -43,6 +45,11 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
         <h1 className="mt-1 text-xl font-semibold">
           {visitQuery.data?.restaurantName ?? 'Carregando...'}
         </h1>
+        {visitQuery.data ? (
+          <div className="mt-1.5">
+            <VisitDate visitId={visitId} visitedAt={visitQuery.data.visitedAt} />
+          </div>
+        ) : null}
       </div>
 
       <div className="flex gap-2">
@@ -65,6 +72,8 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
           Passando um só
         </Button>
       </div>
+
+      <PriceHistory visitId={visitId} />
 
       {isPassAroundMode ? (
         <BlindRatingSession visitId={visitId} />

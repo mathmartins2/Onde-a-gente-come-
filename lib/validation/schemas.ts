@@ -1,6 +1,11 @@
 import { z } from 'zod'
 import { ratingConfiguration } from '@/lib/scoring/configuration'
 
+const criterionScore = z.coerce
+  .number()
+  .min(ratingConfiguration.minimumScore, 'Nota mínima é 0')
+  .max(ratingConfiguration.maximumScore, 'Nota máxima é 5')
+
 export const loginSchema = z.object({
   username: z
     .string()
@@ -77,21 +82,29 @@ export const vetoSchema = z.object({
 export const ratingSchema = z.object({
   pin: z.string().regex(/^\d{4}$/, 'O PIN precisa ter exatamente 4 dígitos'),
   memberId: z.uuid('Membro inválido'),
-  score: z.coerce
-    .number()
-    .min(ratingConfiguration.minimumScore, 'Nota mínima é 0')
-    .max(ratingConfiguration.maximumScore, 'Nota máxima é 5'),
+  flavor: criterionScore,
+  price: criterionScore,
+  service: criterionScore,
+  ambience: criterionScore,
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
 })
 
 
 
 export const selfRatingSchema = z.object({
-  score: z.coerce
-    .number()
-    .min(ratingConfiguration.minimumScore, 'Nota mínima é 0')
-    .max(ratingConfiguration.maximumScore, 'Nota máxima é 5'),
+  flavor: criterionScore,
+  price: criterionScore,
+  service: criterionScore,
+  ambience: criterionScore,
   comment: z.string().trim().max(400, 'Comentário muito longo').optional().or(z.literal('')),
+})
+
+
+export const priceEntrySchema = z.object({
+  amount: z.coerce
+    .number()
+    .positive('O valor precisa ser maior que zero')
+    .max(100000, 'Valor muito alto'),
 })
 
 export const sessionPreferencesSchema = z.object({

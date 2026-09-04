@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { getCurrentMember } from '@/lib/auth/currentMember'
 import { LoginForm } from '@/components/auth/LoginForm'
 
 const cravingWords = [
@@ -22,7 +24,12 @@ const MarqueeRow = () => (
   </span>
 )
 
-const LoginPage = () => (
+const LoginPage = async () => {
+  const member = await getCurrentMember()
+  if (member) redirect('/')
+
+  return (
+
   <main className="relative flex min-h-dvh flex-col overflow-hidden px-5 py-10">
     <div
       aria-hidden
@@ -96,6 +103,7 @@ const LoginPage = () => (
       </p>
     </div>
   </main>
-)
+  )
+}
 
 export default LoginPage

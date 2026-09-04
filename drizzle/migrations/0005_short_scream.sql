@@ -1,0 +1,1 @@
+ALTER TABLE "visit_price_entries" ADD CONSTRAINT "visit_price_entries_visit_unique" UNIQUE("visit_id");

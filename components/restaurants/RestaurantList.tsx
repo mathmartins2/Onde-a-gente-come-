@@ -1,26 +1,19 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Pencil, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { RestaurantForm, type EditableRestaurant } from './RestaurantForm'
 
-type Restaurant = {
-  id: string
-  name: string
-  address: string | null
-  neighborhood: string | null
-  city: string | null
-  cuisines: string[]
-  phone: string | null
-}
-
-type Nomination = { id: string; restaurantId: string }
+type Restaurant = EditableRestaurant & { createdBy: string | null }
 
 export const RestaurantList = () => {
   const queryClient = useQueryClient()
+  const [editingRestaurantId, setEditingRestaurantId] = useState<string | null>(null)
 
   const restaurantsQuery = useQuery({
     queryKey: ['restaurants'],
@@ -30,36 +23,52 @@ export const RestaurantList = () => {
     },
   })
 
-  const nominationsQuery = useQuery({
-    queryKey: ['nominations'],
+  const membersQuery = useQuery({
+    queryKey: ['members'],
     queryFn: async () => {
-      const response = await apiClient.get<{ nominations: Nomination[] }>('/nominations')
-      return response.data.nominations
+      const response = await apiClient.get<{
+        members: Array<{ id: string; displayName: string }>
+      }>('/members')
+      return response.data.members
     },
   })
 
-  const nominateMutation = useMutation({
-    mutationFn: (restaurantId: string) => apiClient.post('/nominations', { restaurantId }),
-    onSuccess: () => {
-      toast.success('Indicado! Entra no próximo sorteio.')
-      queryClient.invalidateQueries({ queryKey: ['nominations'] })
-      queryClient.invalidateQueries({ queryKey: ['board'] })
-    },
-    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível indicar')),
-  })
-
-  const nominatedRestaurantIds = new Set(
-    (nominationsQuery.data ?? []).map((nomination) => nomination.restaurantId),
-  )
+  const closeEditor = () => {
+    setEditingRestaurantId(null)
+    queryClient.invalidateQueries({ queryKey: ['restaurants'] })
+  }
 
   if (restaurantsQuery.isLoading) {
     return <p className="text-sm text-[var(--muted)]">Carregando...</p>
   }
 
+  const nameByMemberId = new Map(
+    (membersQuery.data ?? []).map((member) => [member.id, member.displayName]),
+  )
+
   return (
     <div className="flex flex-col gap-2">
       {(restaurantsQuery.data ?? []).map((restaurant) => {
-        const isNominated = nominatedRestaurantIds.has(restaurant.id)
+        const isEditing = editingRestaurantId === restaurant.id
+        const suggestedBy = restaurant.createdBy
+          ? (nameByMemberId.get(restaurant.createdBy) ?? null)
+          : null
+
+        if (isEditing) {
+          return (
+            <div key={restaurant.id} className="flex flex-col gap-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
+                  editando {restaurant.name}
+                </span>
+                <Button variant="ghost" size="small" onClick={() => setEditingRestaurantId(null)}>
+                  <X size={14} />
+                </Button>
+              </div>
+              <RestaurantForm restaurant={restaurant} onCreated={closeEditor} />
+            </div>
+          )
+        }
 
         return (
           <Card key={restaurant.id} className="flex items-center justify-between gap-3 py-3.5">
@@ -74,15 +83,20 @@ export const RestaurantList = () => {
                   .filter(Boolean)
                   .join(' · ') || 'sem detalhes'}
               </p>
+              {suggestedBy ? (
+                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                  indicado por {suggestedBy}
+                </p>
+              ) : null}
             </div>
 
             <Button
-              variant={isNominated ? 'ghost' : 'secondary'}
+              variant="secondary"
               size="small"
-              disabled={isNominated || nominateMutation.isPending}
-              onClick={() => nominateMutation.mutate(restaurant.id)}
+              onClick={() => setEditingRestaurantId(restaurant.id)}
             >
-              {isNominated ? 'indicado' : <><Plus size={14} /> indicar</>}
+              <Pencil size={14} />
+              editar
             </Button>
           </Card>
         )

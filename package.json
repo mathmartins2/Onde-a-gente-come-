@@ -12,7 +12,9 @@
     "database:migrate": "drizzle-kit migrate",
     "database:seed": "tsx scripts/seed.ts",
     "database:reset": "bash scripts/reset-and-seed.sh",
-    "validate": "bash scripts/validate-end-to-end.sh"
+    "validate": "bash scripts/validate-end-to-end.sh",
+    "database:demo": "bash scripts/reset-rounds.sh && tsx scripts/seed-demo.ts",
+    "database:reset-rounds": "bash scripts/reset-rounds.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

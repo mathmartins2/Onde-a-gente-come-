@@ -8,9 +8,13 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
-import { classNames } from '@/lib/utilities/classNames'
-
-const scoreOptions = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+import { ratingCriteria } from '@/lib/scoring/configuration'
+import {
+  CriteriaForm,
+  calculateAverage,
+  emptyCriteriaScores,
+  type CriteriaScores,
+} from './CriteriaForm'
 
 type SessionState = {
   visitId: string
@@ -22,10 +26,15 @@ type SessionState = {
 
 type RevealResult = {
   finalScore: number | null
+  criteriaAverages: Record<string, number | null>
   ratings: Array<{
     memberId: string
     displayName: string
     score: number
+    flavor: number | null
+    price: number | null
+    service: number | null
+    ambience: number | null
     comment: string | null
     isRecommender: boolean
   }>
@@ -40,7 +49,7 @@ type OwnRatingPanelProps = {
 export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRatingPanelProps) => {
   const queryClient = useQueryClient()
   const commentRef = useRef<HTMLTextAreaElement>(null)
-  const [score, setScore] = useState<number | null>(null)
+  const [scores, setScores] = useState<CriteriaScores>(emptyCriteriaScores)
 
   const sessionQuery = useQuery({
     queryKey: ['rating-session', visitId],
@@ -54,7 +63,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
   const submitMutation = useMutation({
     mutationFn: () =>
       apiClient.post(`/visits/${visitId}/my-rating`, {
-        score,
+        ...scores,
         comment: commentRef.current?.value ?? '',
       }),
     onSuccess: () => {
@@ -103,7 +112,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
                   <p className="mt-0.5 text-xs text-[var(--muted)]">{rating.comment}</p>
                 ) : null}
               </div>
-              <span className="text-xl font-semibold tabular-nums">{rating.score.toFixed(1)}</span>
+              <span className="text-xl font-semibold tabular-nums">{rating.score.toFixed(2)}</span>
             </Card>
           </motion.div>
         ))}
@@ -118,7 +127,24 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
             <p className="mt-2 text-6xl font-semibold tabular-nums">
               {reveal.finalScore === null ? '—' : reveal.finalScore.toFixed(2)}
             </p>
-            <p className="mt-2 text-xs text-[var(--muted)]">
+            <div className="mt-4 flex flex-col gap-1.5 text-left">
+              {ratingCriteria.map((criterion) => {
+                const average = reveal.criteriaAverages[criterion.key]
+                if (average === null || average === undefined) return null
+
+                return (
+                  <div
+                    key={criterion.key}
+                    className="flex items-baseline justify-between rounded-lg bg-[var(--surface-raised)] px-2.5 py-1.5 text-sm"
+                  >
+                    <span>{criterion.label}</span>
+                    <span className="tabular-nums">{average.toFixed(1)}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            <p className="mt-3 text-xs text-[var(--muted)]">
               quem não colocou o lugar pesou mais nessa conta
             </p>
           </Card>
@@ -169,30 +195,17 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
         </Card>
       ) : (
         <Card className="flex flex-col gap-4">
-          <p className="text-center text-sm">Que nota você dá?</p>
-
           <div className="text-center">
+            <p className="text-xs uppercase tracking-widest text-[var(--muted)]">sua nota</p>
             <span className="text-5xl font-semibold tabular-nums">
-              {score === null ? '—' : score.toFixed(1)}
+              {calculateAverage(scores).toFixed(2)}
             </span>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+              média dos {ratingCriteria.length} critérios
+            </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {scoreOptions.map((option) => (
-              <button
-                key={option}
-                onClick={() => setScore(option)}
-                className={classNames(
-                  'h-10 w-12 rounded-lg border text-sm tabular-nums transition-colors',
-                  score === option
-                    ? 'border-[var(--accent)] bg-[var(--accent)] text-black'
-                    : 'border-[var(--border)] bg-[var(--surface-raised)]',
-                )}
-              >
-                {option.toFixed(1)}
-              </button>
-            ))}
-          </div>
+          <CriteriaForm scores={scores} onChange={setScores} />
 
           <textarea
             ref={commentRef}
@@ -204,7 +217,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
 
           <Button
             size="large"
-            disabled={score === null || submitMutation.isPending}
+            disabled={submitMutation.isPending}
             onClick={() => submitMutation.mutate()}
           >
             <Check size={18} />

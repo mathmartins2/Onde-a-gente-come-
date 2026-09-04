@@ -1,18 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const publicPaths = ['/login']
+const loginPath = '/login'
 
 export const proxy = (request: NextRequest) => {
   const { pathname } = request.nextUrl
-  const hasSession = Boolean(request.cookies.get('restaurant_draw_session')?.value)
+  if (pathname === loginPath) return NextResponse.next()
 
-  if (publicPaths.includes(pathname)) {
-    if (!hasSession) return NextResponse.next()
-    return NextResponse.redirect(new URL('/', request.url))
-  }
+  const hasSessionCookie = Boolean(request.cookies.get('restaurant_draw_session')?.value)
+  if (hasSessionCookie) return NextResponse.next()
 
-  if (hasSession) return NextResponse.next()
-  return NextResponse.redirect(new URL('/login', request.url))
+  return NextResponse.redirect(new URL(loginPath, request.url))
 }
 
 export const config = {

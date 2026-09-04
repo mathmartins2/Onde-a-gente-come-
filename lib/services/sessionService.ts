@@ -10,6 +10,8 @@ import {
   type SessionParticipant,
   type SessionPoolRestaurant,
 } from '@/lib/draw/selectSessionWinner'
+import { checkQuorum } from '@/lib/draw/checkQuorum'
+import { resolveBannedRestaurant } from '@/lib/draw/resolveBannedRestaurant'
 import { loadNominatorQuality } from './drawService'
 
 const randomFraction = () => randomInt(0, 1_000_000) / 1_000_000
@@ -32,13 +34,23 @@ export const openSession = async (memberId: string) => {
   const existing = await findOpenSession()
   if (existing) return { ok: false as const, reason: 'ALREADY_OPEN' as const }
 
-  const lastRows = await database
+  const lastSessionRows = await database
     .select({ roundNumber: schema.drawSessions.roundNumber })
     .from(schema.drawSessions)
     .orderBy(desc(schema.drawSessions.roundNumber))
     .limit(1)
 
-  const roundNumber = (lastRows.at(0)?.roundNumber ?? 0) + 1
+  const lastDrawRows = await database
+    .select({ roundNumber: schema.draws.roundNumber })
+    .from(schema.draws)
+    .orderBy(desc(schema.draws.roundNumber))
+    .limit(1)
+
+  const highestRoundNumber = Math.max(
+    lastSessionRows.at(0)?.roundNumber ?? 0,
+    lastDrawRows.at(0)?.roundNumber ?? 0,
+  )
+  const roundNumber = highestRoundNumber + 1
 
   const [session] = await database
     .insert(schema.drawSessions)
@@ -224,9 +236,12 @@ export const loadSessionState = async (sessionId: string) => {
     .innerJoin(schema.members, eq(schema.members.id, schema.vetoes.memberId))
     .where(eq(schema.vetoes.roundNumber, session.roundNumber))
 
-  const vetoedRestaurantIds = new Set(
-    vetoRows.flatMap((veto) => (veto.restaurantId ? [veto.restaurantId] : [])),
+  const banOutcome = resolveBannedRestaurant(
+    vetoRows.flatMap((veto) =>
+      veto.restaurantId ? [{ memberId: veto.memberId, restaurantId: veto.restaurantId }] : [],
+    ),
   )
+  const bannedRestaurantId = banOutcome.bannedRestaurantId
   const nominatorQuality = await loadNominatorQuality()
   const visitHistory = await loadVisitHistoryByRestaurant()
 
@@ -248,7 +263,7 @@ export const loadSessionState = async (sessionId: string) => {
         visitCount: history?.visitCount ?? 0,
         lastVisitedAt: history?.lastVisitedAt ? new Date(history.lastVisitedAt) : null,
       }),
-      isVetoed: vetoedRestaurantIds.has(row.restaurantId),
+      isVetoed: row.restaurantId === bannedRestaurantId,
     }
   })
 
@@ -268,11 +283,16 @@ export const loadSessionState = async (sessionId: string) => {
       .map((entry) => entry.restaurantId),
   }))
 
+  const totalMemberRows = await database.select({ id: schema.members.id }).from(schema.members)
+  const quorum = checkQuorum(participantRows.length, totalMemberRows.length)
+
   const contenders = buildSessionContenders(pool, participants, preferences)
   const restaurantById = new Map(poolRows.map((row) => [row.restaurantId, row]))
-  const vetoByRestaurant = new Map(
-    vetoRows.flatMap((veto) => (veto.restaurantId ? [[veto.restaurantId, veto] as const] : [])),
+  const banVotesByRestaurant = new Map(
+    banOutcome.tally.map((entry) => [entry.restaurantId, entry.votes]),
   )
+  const myBanVote =
+    vetoRows.find((veto) => veto.restaurantId !== null)?.restaurantId ?? null
 
   return {
     session,
@@ -289,8 +309,8 @@ export const loadSessionState = async (sessionId: string) => {
       cuisines: row.cuisines,
       addedByMemberId: row.addedByMemberId,
       addedByName: row.addedByName,
-      isVetoed: vetoedRestaurantIds.has(row.restaurantId),
-      vetoedByName: vetoByRestaurant.get(row.restaurantId)?.memberName ?? null,
+      isBanned: row.restaurantId === bannedRestaurantId,
+      banVotes: banVotesByRestaurant.get(row.restaurantId) ?? 0,
     })),
     myPreferences: preferencesByMember,
     contenders: contenders.map((contender) => ({
@@ -298,6 +318,17 @@ export const loadSessionState = async (sessionId: string) => {
       name: restaurantById.get(contender.restaurantId)?.name ?? 'Restaurante',
       addedByName: restaurantById.get(contender.restaurantId)?.addedByName ?? '',
     })),
+    quorum,
+    banOutcome: {
+      bannedRestaurantId,
+      isTied: banOutcome.isTied,
+      totalVotes: vetoRows.filter((veto) => veto.restaurantId !== null).length,
+    },
+    banVotesByMember: new Map(
+      vetoRows.flatMap((veto) =>
+        veto.restaurantId ? [[veto.memberId, veto.restaurantId] as const] : [],
+      ),
+    ),
     everyoneReady:
       participantRows.length > 0 && participantRows.every((participant) => participant.isReady),
     rawPool: pool,
@@ -311,6 +342,9 @@ export const runSessionDraw = async (sessionId: string) => {
   if (!state) return { ok: false as const, reason: 'NOT_FOUND' as const }
   if (state.session.status !== collectingStatus) {
     return { ok: false as const, reason: 'ALREADY_DRAWN' as const }
+  }
+  if (!state.quorum.hasQuorum) {
+    return { ok: false as const, reason: 'NO_QUORUM' as const, quorum: state.quorum }
   }
   if (!state.everyoneReady) {
     const missing = state.participants.filter((participant) => !participant.isReady)
@@ -374,6 +408,6 @@ export const runSessionDraw = async (sessionId: string) => {
       })),
     )
 
-    return { ok: true as const, draw, visit, selection }
+    return { ok: true as const, draw, visit, selection, contenders: state.contenders }
   })
 }

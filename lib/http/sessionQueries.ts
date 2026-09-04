@@ -14,8 +14,8 @@ export type SessionPoolItem = {
   cuisines: string[]
   addedByMemberId: string
   addedByName: string
-  isVetoed: boolean
-  vetoedByName: string | null
+  isBanned: boolean
+  banVotes: number
 }
 
 export type SessionContenderView = {
@@ -42,6 +42,18 @@ export type SessionState = {
   participants: SessionParticipantView[]
   pool: SessionPoolItem[]
   contenders: SessionContenderView[]
+  quorum: {
+    presentCount: number
+    totalMemberCount: number
+    requiredCount: number
+    hasQuorum: boolean
+  }
+  banOutcome: {
+    bannedRestaurantId: string | null
+    isTied: boolean
+    totalVotes: number
+  }
+  myBanVote: string | null
   everyoneReady: boolean
   hasJoined: boolean
   myRankedRestaurantIds: string[]

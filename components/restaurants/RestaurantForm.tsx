@@ -44,7 +44,26 @@ const sourceLabels: Record<string, string> = {
   'google-maps-link': 'Link do Maps',
 }
 
-export const RestaurantForm = ({ onCreated }: { onCreated: () => void }) => {
+export type EditableRestaurant = {
+  id: string
+  name: string
+  address: string | null
+  neighborhood: string | null
+  city: string | null
+  postalCode: string | null
+  cuisines: string[]
+  phone: string | null
+  website: string | null
+  latitude: string | null
+  longitude: string | null
+}
+
+type RestaurantFormProps = {
+  onCreated: () => void
+  restaurant?: EditableRestaurant
+}
+
+export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) => {
   const queryClient = useQueryClient()
 
   const {
@@ -56,7 +75,20 @@ export const RestaurantForm = ({ onCreated }: { onCreated: () => void }) => {
     formState: { errors, isSubmitting },
   } = useForm<RestaurantFormValues, unknown, RestaurantInput>({
     resolver: zodResolver(restaurantSchema),
-    defaultValues: { name: '', cuisines: [] },
+    defaultValues: restaurant
+      ? {
+          name: restaurant.name,
+          address: restaurant.address ?? '',
+          neighborhood: restaurant.neighborhood ?? '',
+          city: restaurant.city ?? '',
+          postalCode: restaurant.postalCode ?? '',
+          cuisines: restaurant.cuisines,
+          phone: restaurant.phone ?? '',
+          website: restaurant.website ?? '',
+          latitude: restaurant.latitude === null ? null : Number(restaurant.latitude),
+          longitude: restaurant.longitude === null ? null : Number(restaurant.longitude),
+        }
+      : { name: '', cuisines: [] },
   })
 
   const cuisines = watch('cuisines') ?? []
@@ -117,13 +149,16 @@ export const RestaurantForm = ({ onCreated }: { onCreated: () => void }) => {
   }
 
   const createMutation = useMutation({
-    mutationFn: (values: RestaurantInput) => apiClient.post('/restaurants', values),
+    mutationFn: (values: RestaurantInput) =>
+      restaurant
+        ? apiClient.put(`/restaurants/${restaurant.id}`, values)
+        : apiClient.post('/restaurants', values),
     onSuccess: (response) => {
       if (response.data.isOutsideRegion) {
         toast.warning('Esse lugar está fora de Recife, Jaboatão e Olinda — salvei mesmo assim.')
       }
-      toast.success('Restaurante cadastrado')
-      reset({ name: '', cuisines: [] })
+      toast.success(restaurant ? 'Restaurante atualizado' : 'Restaurante cadastrado')
+      if (!restaurant) reset({ name: '', cuisines: [] })
       queryClient.invalidateQueries({ queryKey: ['restaurants'] })
       onCreated()
     },
@@ -231,7 +266,7 @@ export const RestaurantForm = ({ onCreated }: { onCreated: () => void }) => {
         ) : null}
 
         <Button type="submit" disabled={isSubmitting || createMutation.isPending} className="mt-1">
-          Cadastrar restaurante
+          {restaurant ? 'Salvar alterações' : 'Cadastrar restaurante'}
         </Button>
       </form>
     </Card>

@@ -38,12 +38,16 @@ export const loadRestaurantRanking = async () => {
     .select({
       restaurantId: schema.visits.restaurantId,
       visitCount: sql<number>`count(*)::int`,
+      lastVisitedAt: sql<Date | null>`max(${schema.visits.visitedAt})`,
     })
     .from(schema.visits)
     .groupBy(schema.visits.restaurantId)
 
   const visitCountByRestaurant = new Map(
     visitRows.map((row) => [row.restaurantId, row.visitCount]),
+  )
+  const lastVisitByRestaurant = new Map(
+    visitRows.map((row) => [row.restaurantId, row.lastVisitedAt]),
   )
 
   const { ratingRows, legacyRows } = await loadVisitScoreRows()
@@ -86,6 +90,7 @@ export const loadRestaurantRanking = async () => {
 
   return ranked.map((entry) => ({
     ...entry,
+    lastVisitedAt: lastVisitByRestaurant.get(entry.restaurantId) ?? null,
     neighborhood: restaurantById.get(entry.restaurantId)?.neighborhood ?? null,
     cuisines: restaurantById.get(entry.restaurantId)?.cuisines ?? [],
     ratingCount: summaries.find((summary) => summary.restaurantId === entry.restaurantId)?.weightTotal ?? 0,
@@ -204,6 +209,42 @@ export const loadStatistics = async () => {
     bestRestaurant: ranking.at(0) ?? null,
     worstRestaurant: ranking.length > 1 ? ranking.at(-1) : null,
   }
+}
+
+
+export const loadVisitFrequency = async () => {
+  const monthRows = await database
+    .select({
+      period: sql<string>`to_char(${schema.visits.visitedAt}, 'YYYY-MM')`,
+      visitCount: sql<number>`count(*)::int`,
+    })
+    .from(schema.visits)
+    .groupBy(sql`to_char(${schema.visits.visitedAt}, 'YYYY-MM')`)
+    .orderBy(sql`to_char(${schema.visits.visitedAt}, 'YYYY-MM')`)
+
+  const yearRows = await database
+    .select({
+      period: sql<string>`to_char(${schema.visits.visitedAt}, 'YYYY')`,
+      visitCount: sql<number>`count(*)::int`,
+    })
+    .from(schema.visits)
+    .groupBy(sql`to_char(${schema.visits.visitedAt}, 'YYYY')`)
+    .orderBy(sql`to_char(${schema.visits.visitedAt}, 'YYYY')`)
+
+  const restaurantRows = await database
+    .select({
+      restaurantId: schema.restaurants.id,
+      name: schema.restaurants.name,
+      visitCount: sql<number>`count(*)::int`,
+      lastVisitedAt: sql<Date | null>`max(${schema.visits.visitedAt})`,
+      firstVisitedAt: sql<Date | null>`min(${schema.visits.visitedAt})`,
+    })
+    .from(schema.visits)
+    .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
+    .groupBy(schema.restaurants.id, schema.restaurants.name)
+    .orderBy(sql`count(*) desc`)
+
+  return { byMonth: monthRows, byYear: yearRows, byRestaurant: restaurantRows }
 }
 
 export const loadVisitedRestaurantsForMap = async () => {

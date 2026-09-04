@@ -39,6 +39,7 @@ const run = async () => {
   const restaurantSeeds = [
     {
       name: 'Outback',
+      suggestedBy: 'vini',
       address: 'Avenida República do Líbano, 256',
       neighborhood: 'Pina',
       city: 'Recife',
@@ -50,6 +51,7 @@ const run = async () => {
     },
     {
       name: 'Rock n Ribs',
+      suggestedBy: 'romario',
       address: 'Avenida Alfredo Lisboa',
       neighborhood: 'Bairro do Recife',
       city: 'Recife',
@@ -58,9 +60,16 @@ const run = async () => {
       longitude: '-34.8714463',
       cuisines: ['Steak'],
     },
-    { name: 'Ruffo Recife', neighborhood: 'Ilha do Leite', city: 'Recife', cuisines: ['Varied'] },
+    {
+      name: 'Ruffo Recife',
+      suggestedBy: 'math',
+      neighborhood: 'Ilha do Leite',
+      city: 'Recife',
+      cuisines: ['Varied'],
+    },
     {
       name: 'Yokocho Izakaya e Sushi Bar',
+      suggestedBy: 'math',
       address: 'Rua Padre Anchieta',
       neighborhood: 'Madalena',
       city: 'Recife',
@@ -69,9 +78,10 @@ const run = async () => {
       longitude: '-34.9060935',
       cuisines: ['Japanese'],
     },
-    { name: 'Forneria1121', city: 'Recife', cuisines: ['Pizza'] },
+    { name: 'Forneria1121', suggestedBy: 'vini', city: 'Recife', cuisines: ['Pizza'] },
     {
       name: 'Entre Amigos',
+      suggestedBy: 'romario',
       address: 'Rua da Hora',
       neighborhood: 'Espinheiro',
       city: 'Recife',
@@ -80,7 +90,7 @@ const run = async () => {
       longitude: '-34.8946941',
       cuisines: ['Steak', 'Japanese'],
     },
-    { name: 'Zen', city: 'Recife', cuisines: ['Japanese'] },
+    { name: 'Zen', suggestedBy: 'math', city: 'Recife', cuisines: ['Japanese'] },
   ]
 
   const insertedRestaurants = await database
@@ -97,7 +107,7 @@ const run = async () => {
         phone: restaurant.phone ?? null,
         placeSource: restaurant.latitude ? 'nominatim' : null,
         cuisines: restaurant.cuisines ?? [],
-        createdBy: memberByUsername.get('math')?.id ?? null,
+        createdBy: memberByUsername.get(restaurant.suggestedBy)?.id ?? null,
       })),
     )
     .onConflictDoNothing()
@@ -108,10 +118,10 @@ const run = async () => {
   const restaurantByName = new Map(allRestaurants.map((restaurant) => [restaurant.name, restaurant]))
 
   const visitSeeds = [
-    { restaurantName: 'Outback', legacyScore: null, legacyComment: null },
-    { restaurantName: 'Rock n Ribs', legacyScore: '4.3', legacyComment: 'Clássico' },
-    { restaurantName: 'Ruffo Recife', legacyScore: '5.0', legacyComment: 'Restaurante completo.' },
-    { restaurantName: 'Yokocho Izakaya e Sushi Bar', legacyScore: '4.3', legacyComment: null },
+    { restaurantName: 'Outback', suggestedBy: 'vini', legacyScore: null, legacyComment: null },
+    { restaurantName: 'Rock n Ribs', suggestedBy: 'romario', legacyScore: '4.3', legacyComment: 'Clássico' },
+    { restaurantName: 'Ruffo Recife', suggestedBy: 'math', legacyScore: '5.0', legacyComment: 'Restaurante completo.' },
+    { restaurantName: 'Yokocho Izakaya e Sushi Bar', suggestedBy: 'math', legacyScore: '4.3', legacyComment: null },
   ]
 
   await database
@@ -123,6 +133,7 @@ const run = async () => {
         return [
           {
             restaurantId: restaurant.id,
+            recommendedByMemberId: memberByUsername.get(visit.suggestedBy)?.id ?? null,
             legacyScore: visit.legacyScore,
             legacyComment: visit.legacyComment,
             revealedAt: new Date(),

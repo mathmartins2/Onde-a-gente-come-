@@ -29,31 +29,16 @@ export const POST = async (request: Request) =>
 
     const poolEntry = poolRows.at(0)
     if (!poolEntry) return validationErrorResponse('Esse lugar não está na rodada')
-    if (poolEntry.addedByMemberId === member.id) {
-      return validationErrorResponse('Você não pode vetar o lugar que você mesmo colocou')
-    }
-
-    const alreadyVetoed = await database
-      .select({ id: schema.vetoes.id })
-      .from(schema.vetoes)
-      .where(
-        and(
-          eq(schema.vetoes.memberId, member.id),
-          eq(schema.vetoes.roundNumber, session.roundNumber),
-        ),
-      )
-      .limit(1)
-
-    if (alreadyVetoed.length > 0) {
-      return validationErrorResponse('Você já usou seu veto nesta rodada')
-    }
-
     const [veto] = await database
       .insert(schema.vetoes)
       .values({
         memberId: member.id,
         restaurantId: parsed.data.restaurantId,
         roundNumber: session.roundNumber,
+      })
+      .onConflictDoUpdate({
+        target: [schema.vetoes.memberId, schema.vetoes.roundNumber],
+        set: { restaurantId: parsed.data.restaurantId, createdAt: new Date() },
       })
       .returning()
 

@@ -17,7 +17,7 @@ const RoundCard = ({ round }: { round: HistoryRound }) => (
         rodada {round.roundNumber}
       </span>
       <span className="text-xs text-[var(--muted)]">
-        {format(new Date(round.drawnAt), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
+        {format(new Date(round.drawnAt), "d 'de' MMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
       </span>
     </div>
 

@@ -1,6 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { Card } from '@/components/ui/Card'
 import { apiClient } from '@/lib/http/apiClient'
 
@@ -14,6 +16,7 @@ type RankingResponse = {
     neighborhood: string | null
     cuisines: string[]
     ratingCount: number
+    lastVisitedAt: string | null
   }>
   nominators: Array<{
     memberId: string
@@ -26,6 +29,7 @@ type RankingResponse = {
     displayName: string
     averageScore: number | null
     ratingCount: number
+    lastVisitedAt: string | null
   }>
 }
 
@@ -74,10 +78,26 @@ export const RankingScreen = () => {
                       : `média ${restaurant.averageScore.toFixed(1)}`}
                     {restaurant.cuisines.length > 0 ? ` · ${restaurant.cuisines.join(', ')}` : ''}
                   </p>
+                  {restaurant.lastVisitedAt ? (
+                    <p className="truncate text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                      última em{' '}
+                      {format(new Date(restaurant.lastVisitedAt), "d 'de' MMM 'de' yyyy", {
+                        locale: ptBR,
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               </div>
-              <span className="text-lg font-semibold tabular-nums">
-                {restaurant.bayesianScore.toFixed(2)}
+              <span
+                className={
+                  restaurant.averageScore === null
+                    ? 'shrink-0 text-xs uppercase tracking-wide text-[var(--muted)]'
+                    : 'shrink-0 text-lg font-semibold tabular-nums'
+                }
+              >
+                {restaurant.averageScore === null
+                  ? 'aguardando'
+                  : restaurant.bayesianScore.toFixed(2)}
               </span>
             </Card>
           ))}

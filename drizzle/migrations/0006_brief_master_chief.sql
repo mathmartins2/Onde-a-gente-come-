@@ -1,0 +1,1 @@
+ALTER TABLE "visit_price_entries" DROP COLUMN "description";

@@ -19,8 +19,17 @@ export const POST = async (_request: Request, context: { params: Promise<{ sessi
         visitId: result.visit.id,
         restaurantId: result.selection.restaurantId,
         addedByMemberId: result.selection.addedByMemberId,
-        contenders: result.selection.contenders,
+        contenders: result.contenders,
       })
+    }
+
+    if (result.reason === 'NO_QUORUM') {
+      return NextResponse.json(
+        {
+          error: `Precisa de pelo menos ${result.quorum.requiredCount} de ${result.quorum.totalMemberCount} membros na sessão. Tem ${result.quorum.presentCount}.`,
+        },
+        { status: 409 },
+      )
     }
 
     if (result.reason === 'NOT_READY') {

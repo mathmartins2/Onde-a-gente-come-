@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { fetchSessionState, type SessionState } from '@/lib/http/sessionQueries'
+import { PendingRatings } from './PendingRatings'
 import { classNames } from '@/lib/utilities/classNames'
 
 type CatalogRestaurant = {
@@ -23,7 +24,12 @@ type DrawOutcome = {
   restaurantId: string
   addedByMemberId: string
   visitId: string
-  contenders: Array<{ restaurantId: string; chance: number }>
+  contenders: Array<{
+    restaurantId: string
+    name: string
+    addedByName: string
+    chance: number
+  }>
 }
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(1)}%`
@@ -34,6 +40,52 @@ const moveItem = (items: string[], fromIndex: number, toIndex: number) => {
   const [moved] = reordered.splice(fromIndex, 1)
   reordered.splice(toIndex, 0, moved)
   return reordered
+}
+
+const DrawOutcomeCard = ({ outcome }: { outcome: DrawOutcome }) => {
+  const winner = outcome.contenders.find(
+    (contender) => contender.restaurantId === outcome.restaurantId,
+  )
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Card className="border-[var(--accent)] bg-gradient-to-b from-[var(--accent)]/12 to-transparent text-center">
+        <Sparkles className="mx-auto text-[var(--accent)]" size={22} />
+        <p className="mt-2 text-xs uppercase tracking-widest text-[var(--muted)]">vai ser em</p>
+        <p className="mt-1 text-2xl font-semibold">{winner?.name ?? 'Restaurante'}</p>
+        <p className="mt-1 text-sm text-[var(--muted)]">colocado por {winner?.addedByName ?? ''}</p>
+
+        <div className="mt-4 flex flex-col gap-1.5 text-left">
+          <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+            como estavam as chances
+          </p>
+          {outcome.contenders.map((contender) => (
+            <div
+              key={contender.restaurantId}
+              className={classNames(
+                'flex items-baseline justify-between rounded-lg px-2.5 py-1.5 text-sm',
+                contender.restaurantId === outcome.restaurantId
+                  ? 'bg-[var(--accent)]/15'
+                  : 'bg-[var(--surface-raised)]',
+              )}
+            >
+              <span className="truncate">
+                {contender.name}
+                <span className="ml-2 text-xs text-[var(--muted)]">{contender.addedByName}</span>
+              </span>
+              <span className="tabular-nums text-xs">{formatPercentage(contender.chance)}</span>
+            </div>
+          ))}
+        </div>
+
+        <Link href={`/visits/${outcome.visitId}/rate`}>
+          <Button variant="secondary" className="mt-4 w-full">
+            Dar as notas depois do rolê
+          </Button>
+        </Link>
+      </Card>
+    </motion.div>
+  )
 }
 
 const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
@@ -124,13 +176,10 @@ export const SessionScreen = () => {
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível marcar')),
   })
 
-  const vetoMutation = useMutation({
+  const banVoteMutation = useMutation({
     mutationFn: (restaurantId: string) => apiClient.post('/vetoes', { restaurantId }),
-    onSuccess: () => {
-      toast.success('Veto registrado')
-      invalidateSession()
-    },
-    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível vetar')),
+    onSuccess: () => invalidateSession(),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível votar')),
   })
 
   const drawMutation = useMutation({
@@ -151,11 +200,15 @@ export const SessionScreen = () => {
 
   if (!state.session) {
     return (
-      <ClosedSession
-        isAdmin={state.isAdmin}
-        onOpen={() => openMutation.mutate()}
-        isOpening={openMutation.isPending}
-      />
+      <div className="flex flex-col gap-5">
+        {outcome ? <DrawOutcomeCard outcome={outcome} /> : null}
+        <PendingRatings />
+        <ClosedSession
+          isAdmin={state.isAdmin}
+          onOpen={() => openMutation.mutate()}
+          isOpening={openMutation.isPending}
+        />
+      </div>
     )
   }
 
@@ -164,13 +217,14 @@ export const SessionScreen = () => {
   )
   const poolById = new Map(state.pool.map((item) => [item.restaurantId, item]))
   const availableToRank = state.pool.filter(
-    (item) => !item.isVetoed && !ranking.includes(item.restaurantId),
+    (item) => !item.isBanned && !ranking.includes(item.restaurantId),
   )
   const alreadyInPool = new Set(state.pool.map((item) => item.restaurantId))
-  const winner = outcome ? poolById.get(outcome.restaurantId) : null
 
   return (
     <div className="flex flex-col gap-5">
+      <PendingRatings />
+
       <div className="flex items-baseline justify-between">
         <h1 className="text-lg font-semibold">Rodada {state.session.roundNumber}</h1>
         <span className="text-xs text-[var(--muted)]">
@@ -178,6 +232,31 @@ export const SessionScreen = () => {
           {state.participants.length} ready
         </span>
       </div>
+
+      <Card
+        className={classNames(
+          'flex items-center justify-between gap-3 py-3',
+          state.quorum.hasQuorum ? '' : 'border-[var(--warning)]',
+        )}
+      >
+        <div>
+          <p className="text-sm font-medium">
+            {state.quorum.hasQuorum ? 'Quórum atingido' : 'Sem quórum'}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--muted)]">
+            {state.quorum.presentCount} de {state.quorum.totalMemberCount} na sessão · precisa de{' '}
+            {state.quorum.requiredCount}
+          </p>
+        </div>
+        <span
+          className={classNames(
+            'shrink-0 text-lg font-semibold tabular-nums',
+            state.quorum.hasQuorum ? 'text-[var(--success)]' : 'text-[var(--warning)]',
+          )}
+        >
+          {state.quorum.presentCount}/{state.quorum.requiredCount}
+        </span>
+      </Card>
 
       <Card className="flex flex-col gap-2.5">
         {state.participants.map((participant) => (
@@ -322,21 +401,62 @@ export const SessionScreen = () => {
       </section>
 
 
-      {state.pool.some((item) => item.isVetoed) ? (
-        <Card className="flex flex-col gap-1.5">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">vetados</p>
-          {state.pool
-            .filter((item) => item.isVetoed)
-            .map((item) => (
-              <p key={item.restaurantId} className="text-sm text-[var(--muted)] line-through">
-                {item.name}
-                <span className="ml-2 text-[10px] uppercase text-red-400">
-                  por {item.vetoedByName}
+      <section>
+        <div className="mb-2 flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold">Banir um lugar</h2>
+          <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+            opcional · 1 voto cada
+          </span>
+        </div>
+
+        <Card className="flex flex-col gap-2">
+          <p className="text-xs text-[var(--muted)]">
+            O mais votado fica fora do sorteio. Só 1 lugar é banido por rodada, e ninguém é
+            obrigado a votar.
+          </p>
+
+          {state.pool.map((item) => {
+            const isMyVote = state.myBanVote === item.restaurantId
+
+            return (
+              <button
+                key={item.restaurantId}
+                onClick={() => banVoteMutation.mutate(item.restaurantId)}
+                disabled={banVoteMutation.isPending}
+                className={classNames(
+                  'flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
+                  item.isBanned
+                    ? 'bg-red-500/15 text-red-300 line-through'
+                    : isMyVote
+                      ? 'bg-[var(--accent)]/15'
+                      : 'bg-[var(--surface-raised)]',
+                )}
+              >
+                <span className="min-w-0 truncate">
+                  {item.name}
+                  {isMyVote ? (
+                    <span className="ml-2 text-[10px] uppercase text-[var(--accent)]">
+                      seu voto
+                    </span>
+                  ) : null}
+                  {item.isBanned ? (
+                    <span className="ml-2 text-[10px] uppercase text-red-400">banido</span>
+                  ) : null}
                 </span>
-              </p>
-            ))}
+                <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
+                  {item.banVotes > 0 ? `${item.banVotes} voto(s)` : '—'}
+                </span>
+              </button>
+            )
+          })}
+
+          {state.banOutcome.isTied ? (
+            <p className="text-xs text-[var(--warning)]">
+              Empate na votação — ninguém foi banido nesta rodada.
+            </p>
+          ) : null}
         </Card>
-      ) : null}
+      </section>
 
       {state.contenders.length > 0 ? (
         <section>
@@ -385,7 +505,12 @@ export const SessionScreen = () => {
       <Button
         size="large"
         onClick={() => drawMutation.mutate()}
-        disabled={!state.everyoneReady || drawMutation.isPending || state.contenders.length === 0}
+        disabled={
+          !state.everyoneReady ||
+          !state.quorum.hasQuorum ||
+          drawMutation.isPending ||
+          state.contenders.length === 0
+        }
       >
         <motion.span
           animate={drawMutation.isPending ? { rotate: 1440 } : { rotate: 0 }}
@@ -397,29 +522,20 @@ export const SessionScreen = () => {
         {drawMutation.isPending ? 'Sorteando...' : 'Sortear'}
       </Button>
 
-      {!state.everyoneReady ? (
+      {state.quorum.hasQuorum ? null : (
+        <p className="text-center text-xs text-[var(--warning)]">
+          Faltam {state.quorum.requiredCount - state.quorum.presentCount} pessoa(s) entrarem na
+          sessão para bater o quórum.
+        </p>
+      )}
+
+      {state.quorum.hasQuorum && !state.everyoneReady ? (
         <p className="text-center text-xs text-[var(--muted)]">
           O sorteio destrava quando todo mundo der ready.
         </p>
       ) : null}
 
-      <AnimatePresence>
-        {outcome && winner ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="border-[var(--accent)] bg-gradient-to-b from-[var(--accent)]/12 to-transparent text-center">
-              <Sparkles className="mx-auto text-[var(--accent)]" size={22} />
-              <p className="mt-2 text-xs uppercase tracking-widest text-[var(--muted)]">vai ser em</p>
-              <p className="mt-1 text-2xl font-semibold">{winner.name}</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">colocado por {winner.addedByName}</p>
-              <Link href={`/visits/${outcome.visitId}/rate`}>
-                <Button variant="secondary" className="mt-4 w-full">
-                  Dar as notas depois do rolê
-                </Button>
-              </Link>
-            </Card>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {outcome ? <DrawOutcomeCard outcome={outcome} /> : null}
     </div>
   )
 }
