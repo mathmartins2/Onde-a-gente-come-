@@ -490,19 +490,17 @@ export const runSessionDraw = async (sessionId: string) => {
           ballots: state.detailedBallots,
           bannedRestaurantName: state.bannedRestaurantName,
           banRound: state.session.banRound,
-          fallback: state.contenders.find(
-            (contender) => contender.restaurantId === selection.fallbackRestaurantId,
-          )
-            ? {
-                restaurantId: selection.fallbackRestaurantId,
-                name: state.contenders.find(
-                  (contender) => contender.restaurantId === selection.fallbackRestaurantId,
-                )?.name,
-                addedByName: state.contenders.find(
-                  (contender) => contender.restaurantId === selection.fallbackRestaurantId,
-                )?.addedByName,
-              }
-            : null,
+          fallback: (() => {
+            const fallbackContender = state.revealedContenders.find(
+              (contender) => contender.restaurantId === selection.fallbackRestaurantId,
+            )
+            if (!fallbackContender) return null
+            return {
+              restaurantId: fallbackContender.restaurantId,
+              name: fallbackContender.name,
+              addedByName: fallbackContender.addedByName,
+            }
+          })(),
         },
       })
       .returning()

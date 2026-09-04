@@ -17,6 +17,7 @@ type RatingScreenProps = {
 }
 
 type VisitSummary = {
+  participants: Array<{ id: string; displayName: string }>
   restaurantName: string
   visitedAt: string
   usedFallback: boolean
@@ -26,16 +27,6 @@ type VisitSummary = {
 
 export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) => {
   const [isPassAroundMode, setIsPassAroundMode] = useState(false)
-
-  const membersQuery = useQuery({
-    queryKey: ['members'],
-    queryFn: async () => {
-      const response = await apiClient.get<{
-        members: Array<{ id: string; displayName: string }>
-      }>('/members')
-      return response.data.members
-    },
-  })
 
   const visitQuery = useQuery({
     queryKey: ['rating-session', visitId],
@@ -97,7 +88,7 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
         <OwnRatingPanel
           visitId={visitId}
           currentMemberId={currentMemberId}
-          allMembers={membersQuery.data ?? []}
+          allMembers={visitQuery.data?.participants ?? []}
         />
       )}
     </div>

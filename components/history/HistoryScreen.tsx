@@ -11,66 +11,115 @@ import { classNames } from '@/lib/utilities/classNames'
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
 
-const BallotLog = ({ round }: { round: HistoryRound }) => (
-  <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-3">
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-        o rank de cada um
-      </p>
-      {round.ballots.length === 0 ? (
-        <p className="text-xs text-[var(--muted)]">Sem registro (rodada antiga).</p>
-      ) : null}
-      {round.ballots.map((ballot) => (
-        <div key={ballot.memberId} className="text-xs">
-          <span className="font-medium text-[var(--foreground)]">{ballot.displayName}</span>
-          <span className="text-[var(--muted)]">
-            {ballot.ranking.length === 0
-              ? ' não ranqueou nada'
-              : ` ${ballot.ranking.map((entry) => `${entry.position}º ${entry.restaurantName}`).join(' · ')}`}
-          </span>
-        </div>
-      ))}
-    </div>
+const positionMedals = ['1º', '2º', '3º', '4º', '5º']
 
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-        votos pra banir{round.banRound > 1 ? ` (${round.banRound}º turno)` : ''}
-      </p>
+const LogSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="flex flex-col gap-2">
+    <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[var(--muted)]">{title}</p>
+    {children}
+  </div>
+)
+
+const BallotLog = ({ round }: { round: HistoryRound }) => (
+  <div
+    className="relative mt-1 flex flex-col gap-5 rounded-[var(--radius-medium)] border border-dashed border-[var(--border-strong)] bg-[var(--surface-sunken)] px-4 py-5"
+    style={{
+      backgroundImage:
+        'repeating-linear-gradient(180deg, transparent 0px, transparent 27px, rgba(255,255,255,0.025) 27px, rgba(255,255,255,0.025) 28px)',
+    }}
+  >
+    <span className="absolute -left-2 top-8 h-4 w-4 rounded-full bg-[var(--surface)]" />
+    <span className="absolute -right-2 top-8 h-4 w-4 rounded-full bg-[var(--surface)]" />
+
+    <LogSection title="o rank de cada um">
+      {round.ballots.length === 0 ? (
+        <p className="text-xs text-[var(--muted)]">Rodada antiga, sem registro dos votos.</p>
+      ) : null}
+
       {round.ballots.map((ballot) => (
-        <div key={`ban-${ballot.memberId}`} className="text-xs">
-          <span className="font-medium text-[var(--foreground)]">{ballot.displayName}</span>
-          <span className="text-[var(--muted)]">
-            {!ballot.banVote
-              ? ' não votou'
-              : ballot.banVote.restaurantName === null
-                ? ' não quis banir ninguém'
-                : ` votou pra banir ${ballot.banVote.restaurantName}`}
+        <div key={ballot.memberId} className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+            {ballot.displayName}
           </span>
+          {ballot.ranking.length === 0 ? (
+            <span className="text-xs text-[var(--muted)]">não ranqueou nada</span>
+          ) : (
+            <ol className="flex flex-col gap-0.5">
+              {ballot.ranking.map((entry, index) => (
+                <li
+                  key={entry.restaurantId}
+                  className="flex items-baseline gap-2 text-xs text-[var(--foreground)]"
+                >
+                  <span className="w-5 shrink-0 font-mono text-[10px] text-[var(--muted)]">
+                    {positionMedals[index] ?? `${entry.position}º`}
+                  </span>
+                  <span className="truncate">{entry.restaurantName}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       ))}
+    </LogSection>
+
+    <LogSection
+      title={round.banRound > 1 ? `votos pra banir · ${round.banRound}º turno` : 'votos pra banir'}
+    >
+      <div className="flex flex-col gap-1">
+        {round.ballots.map((ballot) => (
+          <div
+            key={`ban-${ballot.memberId}`}
+            className="flex items-baseline justify-between gap-3 text-xs"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+              {ballot.displayName}
+            </span>
+            <span
+              className={
+                ballot.banVote?.restaurantName
+                  ? 'truncate text-right text-[var(--danger)]'
+                  : 'truncate text-right text-[var(--muted)]'
+              }
+            >
+              {!ballot.banVote
+                ? '—'
+                : ballot.banVote.restaurantName === null
+                  ? 'não quis banir'
+                  : ballot.banVote.restaurantName}
+            </span>
+          </div>
+        ))}
+      </div>
+
       {round.bannedRestaurantName ? (
-        <p className="inline-flex items-center gap-1.5 text-xs text-red-400">
-          <Ban size={11} />
-          banido: {round.bannedRestaurantName}
-        </p>
+        <div className="mt-1 inline-flex items-center gap-2 self-start rounded-[4px] border-2 border-[var(--danger)] px-2.5 py-1">
+          <Ban size={12} className="text-[var(--danger)]" />
+          <span className="font-display text-sm font-bold uppercase tracking-tight text-[var(--danger)]">
+            {round.bannedRestaurantName}
+          </span>
+        </div>
       ) : (
         <p className="text-xs text-[var(--muted)]">Ninguém foi banido.</p>
       )}
-    </div>
+    </LogSection>
 
     {round.fallback?.name ? (
-      <div>
-        <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">plano B sorteado</p>
-        <p className="text-xs">
-          🥈 {round.fallback.name}
-          <span className="ml-2 text-[var(--muted)]">
-            indicação de {round.fallback.addedByName}
-          </span>
-          {round.usedFallback ? (
-            <span className="ml-2 text-[10px] uppercase text-[var(--warning)]">foi esse</span>
+      <LogSection title="plano b sorteado">
+        <div className="flex items-baseline gap-2 text-xs">
+          <span>🥈</span>
+          <span className="truncate text-[var(--foreground)]">{round.fallback.name}</span>
+          {round.fallback.addedByName ? (
+            <span className="truncate text-[var(--muted)]">
+              indicação de {round.fallback.addedByName}
+            </span>
           ) : null}
-        </p>
-      </div>
+          {round.usedFallback ? (
+            <span className="ml-auto shrink-0 rounded-[var(--radius-pill)] bg-[var(--warning)]/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--warning)]">
+              foi esse
+            </span>
+          ) : null}
+        </div>
+      </LogSection>
     ) : null}
   </div>
 )

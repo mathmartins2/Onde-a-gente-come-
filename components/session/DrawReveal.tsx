@@ -14,14 +14,18 @@ export type DrawRevealData = {
 type Stage = 'spinning' | 'banned' | 'fallback' | 'winner'
 
 const scrambleAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-const boardColumnCount = 14
+const minimumBoardColumns = 6
+const maximumBoardColumns = 16
 const scrambleTickInMilliseconds = 55
 const spinDurationInMilliseconds = 2500
 const bannedDurationInMilliseconds = 2400
 const fallbackDurationInMilliseconds = 2600
 
-const toBoardCells = (value: string) =>
-  value.toUpperCase().slice(0, boardColumnCount).padEnd(boardColumnCount, ' ').split('')
+const toBoardCells = (value: string) => {
+  const normalized = value.toUpperCase().trim().slice(0, maximumBoardColumns)
+  const width = Math.max(normalized.length, minimumBoardColumns)
+  return normalized.padEnd(width, ' ').split('')
+}
 
 const randomCharacter = () =>
   scrambleAlphabet[Math.floor(Math.random() * scrambleAlphabet.length)]
@@ -60,11 +64,12 @@ export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
   )
 
   const [stage, setStage] = useState<Stage>('spinning')
-  const [scrambledCells, setScrambledCells] = useState<string[]>(() =>
-    Array.from({ length: boardColumnCount }, randomCharacter),
-  )
-
   const winnerCells = useMemo(() => toBoardCells(winner?.name ?? 'RESTAURANTE'), [winner?.name])
+  const boardColumnCount = winnerCells.length
+
+  const [scrambledCells, setScrambledCells] = useState<string[]>(() =>
+    Array.from({ length: minimumBoardColumns }, randomCharacter),
+  )
 
   useEffect(() => {
     if (stage !== 'spinning') return

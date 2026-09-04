@@ -41,13 +41,26 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
   const visit = visitRows.at(0)
   if (!visit) return null
 
-  const allMembers = await database
+  const sessionMembers = await database
     .select({
       id: schema.members.id,
       displayName: schema.members.displayName,
       ratingPinHash: schema.members.ratingPinHash,
     })
-    .from(schema.members)
+    .from(schema.ratingSessionParticipants)
+    .innerJoin(schema.members, eq(schema.members.id, schema.ratingSessionParticipants.memberId))
+    .where(eq(schema.ratingSessionParticipants.visitId, visitId))
+
+  const allMembers =
+    sessionMembers.length > 0
+      ? sessionMembers
+      : await database
+          .select({
+            id: schema.members.id,
+            displayName: schema.members.displayName,
+            ratingPinHash: schema.members.ratingPinHash,
+          })
+          .from(schema.members)
 
   const existingRatings = await database
     .select({ memberId: schema.ratings.memberId })
@@ -166,7 +179,15 @@ export const revealVisit = async (visitId: string) => {
   const visit = visitRows.at(0)
   if (!visit) return null
 
-  const memberCountRows = await database.select({ id: schema.members.id }).from(schema.members)
+  const participantRows = await database
+    .select({ memberId: schema.ratingSessionParticipants.memberId })
+    .from(schema.ratingSessionParticipants)
+    .where(eq(schema.ratingSessionParticipants.visitId, visitId))
+
+  const memberCountRows =
+    participantRows.length > 0
+      ? participantRows
+      : await database.select({ memberId: schema.members.id }).from(schema.members)
   const ratingRows = await database
     .select({
       memberId: schema.ratings.memberId,
@@ -231,6 +252,20 @@ export type CriterionScores = {
 export const calculateOverallScore = (scores: CriterionScores) => {
   const values = [scores.flavor, scores.price, scores.service, scores.ambience]
   return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+export const listRatingParticipants = async (visitId: string) => {
+  const rows = await database
+    .select({ id: schema.members.id, displayName: schema.members.displayName })
+    .from(schema.ratingSessionParticipants)
+    .innerJoin(schema.members, eq(schema.members.id, schema.ratingSessionParticipants.memberId))
+    .where(eq(schema.ratingSessionParticipants.visitId, visitId))
+
+  if (rows.length > 0) return rows
+
+  return database
+    .select({ id: schema.members.id, displayName: schema.members.displayName })
+    .from(schema.members)
 }
 
 export const submitOwnRating = async (input: {
