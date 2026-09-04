@@ -64,7 +64,7 @@ const DrawOutcomeCard = ({ outcome }: { outcome: DrawOutcome }) => {
         <Sparkles className="mx-auto text-[var(--accent)]" size={22} />
         <p className="mt-2 text-xs uppercase tracking-widest text-[var(--muted)]">vai ser em</p>
         <p className="mt-1 text-2xl font-semibold">{winner?.name ?? 'Restaurante'}</p>
-        <p className="mt-1 text-sm text-[var(--muted)]">colocado por {winner?.addedByName ?? ''}</p>
+        <p className="mt-1 text-sm text-[var(--muted)]">indicação de {winner?.addedByName ?? ''}</p>
 
         {winner ? (
           <a
@@ -332,7 +332,14 @@ export const SessionScreen = () => {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">{item.name}</p>
                 <p className="truncate text-xs text-[var(--muted)]">
-                  {[item.cuisines.join(', ') || null, item.neighborhood, `por ${item.addedByName}`]
+                  {[
+                    item.cuisines.join(', ') || null,
+                    item.neighborhood,
+                    `indicação de ${item.addedByName}`,
+                    item.putInRoundByName === item.addedByName
+                      ? null
+                      : `trazido por ${item.putInRoundByName}`,
+                  ]
                     .filter(Boolean)
                     .join(' · ')}
                 </p>
@@ -541,8 +548,8 @@ export const SessionScreen = () => {
                   />
                 </div>
                 <p className="text-[10px] text-[var(--muted)]">
-                  {contender.supporters} quiseram · {contender.topChoiceCount} em 1º · colocado na
-                  rodada por {contender.addedByName}
+                  {contender.supporters} quiseram · {contender.topChoiceCount} em 1º · indicação
+                  de {contender.addedByName}
                 </p>
                 <p className="font-mono text-[10px] text-[var(--muted)]">
                   {contender.bordaPoints.toFixed(3)} pontos

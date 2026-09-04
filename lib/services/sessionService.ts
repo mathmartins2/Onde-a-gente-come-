@@ -1,5 +1,6 @@
 import { randomInt } from 'node:crypto'
-import { and, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { database, schema } from '@/lib/database/client'
 import { calculateNominationWeight } from '@/lib/draw/calculateNominationWeight'
 import { calculateQualityMultiplier } from '@/lib/draw/calculateQualityMultiplier'
@@ -208,11 +209,16 @@ export const loadSessionState = async (sessionId: string) => {
     .innerJoin(schema.members, eq(schema.members.id, schema.sessionParticipants.memberId))
     .where(eq(schema.sessionParticipants.sessionId, sessionId))
 
+  const addedByMember = alias(schema.members, 'added_by_member')
+  const ownerMember = alias(schema.members, 'owner_member')
+
   const poolRows = await database
     .select({
       restaurantId: schema.sessionPoolEntries.restaurantId,
-      addedByMemberId: schema.sessionPoolEntries.addedByMemberId,
-      addedByName: schema.members.displayName,
+      putInRoundByMemberId: schema.sessionPoolEntries.addedByMemberId,
+      putInRoundByName: addedByMember.displayName,
+      ownerMemberId: schema.restaurants.createdBy,
+      ownerName: ownerMember.displayName,
       name: schema.restaurants.name,
       neighborhood: schema.restaurants.neighborhood,
       cuisines: schema.restaurants.cuisines,
@@ -222,7 +228,8 @@ export const loadSessionState = async (sessionId: string) => {
       schema.restaurants,
       eq(schema.restaurants.id, schema.sessionPoolEntries.restaurantId),
     )
-    .innerJoin(schema.members, eq(schema.members.id, schema.sessionPoolEntries.addedByMemberId))
+    .innerJoin(addedByMember, eq(addedByMember.id, schema.sessionPoolEntries.addedByMemberId))
+    .leftJoin(ownerMember, eq(ownerMember.id, schema.restaurants.createdBy))
     .where(eq(schema.sessionPoolEntries.sessionId, sessionId))
 
   const preferenceRows = await database
@@ -270,7 +277,7 @@ export const loadSessionState = async (sessionId: string) => {
     const history = visitHistory.get(row.restaurantId)
     return {
       restaurantId: row.restaurantId,
-      addedByMemberId: row.addedByMemberId,
+      addedByMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
       revisitWeight: calculateNominationWeight({
         visitCount: history?.visitCount ?? 0,
         lastVisitedAt: history?.lastVisitedAt ? new Date(history.lastVisitedAt) : null,
@@ -319,8 +326,9 @@ export const loadSessionState = async (sessionId: string) => {
       name: row.name,
       neighborhood: row.neighborhood,
       cuisines: row.cuisines,
-      addedByMemberId: row.addedByMemberId,
-      addedByName: row.addedByName,
+      addedByMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
+      addedByName: row.ownerName ?? row.putInRoundByName,
+      putInRoundByName: row.putInRoundByName,
       isBanned: row.restaurantId === bannedRestaurantId,
       banVotes: everyoneIsReady ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
     })),
@@ -328,7 +336,10 @@ export const loadSessionState = async (sessionId: string) => {
     contenders: contenders.map((contender) => ({
       ...contender,
       name: restaurantById.get(contender.restaurantId)?.name ?? 'Restaurante',
-      addedByName: restaurantById.get(contender.restaurantId)?.addedByName ?? '',
+      addedByName:
+        restaurantById.get(contender.restaurantId)?.ownerName ??
+        restaurantById.get(contender.restaurantId)?.putInRoundByName ??
+        '',
     })),
     quorum,
     banOutcome: {

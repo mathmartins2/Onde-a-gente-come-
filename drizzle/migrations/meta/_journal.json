@@ -50,6 +50,13 @@
       "when": 1788543145234,
       "tag": "0006_brief_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788544702566,
+      "tag": "0007_workable_black_bolt",
+      "breakpoints": true
     }
   ]
 }

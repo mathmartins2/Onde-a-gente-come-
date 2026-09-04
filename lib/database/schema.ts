@@ -80,9 +80,12 @@ export const vetoes = pgTable(
     restaurantId: uuid('restaurant_id').references(() => restaurants.id, {
       onDelete: 'cascade',
     }),
+    banRound: integer('ban_round').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique('vetoes_member_round_unique').on(table.memberId, table.roundNumber)],
+  (table) => [
+    unique('vetoes_member_round_unique').on(table.memberId, table.roundNumber, table.banRound),
+  ],
 )
 
 export const draws = pgTable('draws', {
@@ -181,6 +184,8 @@ export const drawSessions = pgTable('draw_sessions', {
     .notNull()
     .references(() => members.id, { onDelete: 'restrict' }),
   status: text('status').notNull().default('collecting'),
+  banRound: integer('ban_round').notNull().default(1),
+  banRunoffRestaurantIds: jsonb('ban_runoff_restaurant_ids'),
   drawId: uuid('draw_id').references(() => draws.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   drawnAt: timestamp('drawn_at', { withTimezone: true }),

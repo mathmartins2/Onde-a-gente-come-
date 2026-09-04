@@ -14,6 +14,7 @@ export type SessionPoolItem = {
   cuisines: string[]
   addedByMemberId: string
   addedByName: string
+  putInRoundByName: string
   isBanned: boolean
   banVotes: number
 }
