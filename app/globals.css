@@ -225,3 +225,76 @@ body::after {
     animation: none;
   }
 }
+
+@keyframes flap-settle {
+  0% { transform: rotateX(-90deg); opacity: 0; }
+  55% { transform: rotateX(12deg); opacity: 1; }
+  80% { transform: rotateX(-6deg); }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+@keyframes stamp-slam {
+  0% { transform: scale(2.6) rotate(-18deg); opacity: 0; filter: blur(6px); }
+  55% { transform: scale(0.92) rotate(-7deg); opacity: 1; filter: blur(0); }
+  70% { transform: scale(1.04) rotate(-8deg); }
+  100% { transform: scale(1) rotate(-7deg); opacity: 1; }
+}
+
+@keyframes ticket-slide {
+  0% { transform: translateX(-14%) rotate(-2.5deg); opacity: 0; }
+  100% { transform: translateX(0) rotate(-1deg); opacity: 1; }
+}
+
+@keyframes spotlight-bloom {
+  0% { transform: scale(0.2); opacity: 0.85; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+
+@keyframes board-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+}
+
+@keyframes ember-rise {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateY(-120px) scale(0.3); opacity: 0; }
+}
+
+.flap-cell {
+  animation: flap-settle 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+  transform-origin: center top;
+  backface-visibility: hidden;
+}
+
+.stamp-in { animation: stamp-slam 0.62s cubic-bezier(0.2, 1.1, 0.3, 1) both; }
+.ticket-in { animation: ticket-slide 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.spotlight-bloom { animation: spotlight-bloom 1.15s ease-out both; }
+.board-shake { animation: board-shake 0.32s ease-in-out infinite; }
+.ember { animation: ember-rise 2.4s ease-out infinite; }
+
+.board-grain {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.28) 0px,
+      rgba(0, 0, 0, 0.28) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flap-cell,
+  .stamp-in,
+  .ticket-in,
+  .spotlight-bloom,
+  .board-shake,
+  .ember {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

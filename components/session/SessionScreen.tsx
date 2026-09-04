@@ -30,6 +30,7 @@ type CatalogRestaurant = {
   neighborhood: string | null
   cuisines: string[]
   createdByName: string | null
+  isMine: boolean
 }
 
 type DrawOutcome = DrawRevealData & {
@@ -404,9 +405,9 @@ export const SessionScreen = () => {
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
-                  {restaurant.createdByName ? (
-                    <span className="block truncate text-[10px] uppercase tracking-wide text-[var(--muted)]">
-                      indicado por {restaurant.createdByName}
+                  {restaurant.isMine ? (
+                    <span className="block truncate text-[10px] uppercase tracking-wide text-[var(--accent)]">
+                      seu
                     </span>
                   ) : null}
                 </span>
@@ -422,7 +423,7 @@ export const SessionScreen = () => {
       </section>
 
 
-      <section>
+      <section className={votableForBan.length === 0 ? 'hidden' : undefined}>
         <div className="mb-2 flex items-baseline justify-between">
           <h2 className="text-sm font-semibold">
             {isRunoff ? `Desempate · ${state.banRunoff.round}º turno` : 'Banir um lugar'}

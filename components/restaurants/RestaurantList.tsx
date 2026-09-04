@@ -10,7 +10,11 @@ import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { RestaurantForm, type EditableRestaurant } from './RestaurantForm'
 
-type Restaurant = EditableRestaurant & { createdBy: string | null; createdByName: string | null }
+type Restaurant = EditableRestaurant & {
+  createdBy: string | null
+  createdByName: string | null
+  isMine: boolean
+}
 
 export const RestaurantList = () => {
   const queryClient = useQueryClient()
@@ -19,8 +23,11 @@ export const RestaurantList = () => {
   const restaurantsQuery = useQuery({
     queryKey: ['restaurants'],
     queryFn: async () => {
-      const response = await apiClient.get<{ restaurants: Restaurant[] }>('/restaurants')
-      return response.data.restaurants
+      const response = await apiClient.get<{
+        restaurants: Restaurant[]
+        authorshipHidden: boolean
+      }>('/restaurants')
+      return response.data
     },
   })
 
@@ -33,9 +40,17 @@ export const RestaurantList = () => {
     return <p className="text-sm text-[var(--muted)]">Carregando...</p>
   }
 
+  const restaurants = restaurantsQuery.data?.restaurants ?? []
+  const authorshipHidden = restaurantsQuery.data?.authorshipHidden ?? false
+
   return (
     <div className="flex flex-col gap-2">
-      {(restaurantsQuery.data ?? []).map((restaurant) => {
+      {authorshipHidden ? (
+        <p className="px-1 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+          quem indicou está escondido enquanto a rodada estiver aberta
+        </p>
+      ) : null}
+      {restaurants.map((restaurant) => {
         const isEditing = editingRestaurantId === restaurant.id
         const suggestedBy = restaurant.createdByName
 
@@ -71,6 +86,11 @@ export const RestaurantList = () => {
               {suggestedBy ? (
                 <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
                   indicado por {suggestedBy}
+                </p>
+              ) : null}
+              {authorshipHidden && restaurant.isMine ? (
+                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--accent)]">
+                  seu
                 </p>
               ) : null}
             </div>

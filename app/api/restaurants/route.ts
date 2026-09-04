@@ -4,9 +4,12 @@ import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { restaurantSchema } from '@/lib/validation/schemas'
 import { regionConfiguration } from '@/lib/scoring/configuration'
+import { findOpenSession } from '@/lib/services/sessionService'
 
 export const GET = async () =>
-  withMember(async () => {
+  withMember(async (member) => {
+    const openSession = await findOpenSession()
+    const shouldHideAuthorship = openSession !== null
     const rows = await database
       .select({
         id: schema.restaurants.id,
@@ -27,7 +30,15 @@ export const GET = async () =>
       .leftJoin(schema.members, eq(schema.members.id, schema.restaurants.createdBy))
       .orderBy(asc(schema.restaurants.name))
 
-    return NextResponse.json({ restaurants: rows })
+    return NextResponse.json({
+      restaurants: rows.map((restaurant) => ({
+        ...restaurant,
+        isMine: restaurant.createdBy === member.id,
+        createdBy: shouldHideAuthorship ? null : restaurant.createdBy,
+        createdByName: shouldHideAuthorship ? null : restaurant.createdByName,
+      })),
+      authorshipHidden: shouldHideAuthorship,
+    })
   })
 
 const emptyToNull = (value: string | undefined) => {
