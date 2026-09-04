@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Pencil, X } from 'lucide-react'
+import { ExternalLink, Pencil, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { RestaurantForm, type EditableRestaurant } from './RestaurantForm'
 
 type Restaurant = EditableRestaurant & { createdBy: string | null; createdByName: string | null }
@@ -74,14 +75,25 @@ export const RestaurantList = () => {
               ) : null}
             </div>
 
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => setEditingRestaurantId(restaurant.id)}
-            >
-              <Pencil size={14} />
-              editar
-            </Button>
+            <div className="flex shrink-0 items-center gap-1">
+              <a
+                href={buildGoogleMapsUrl(restaurant)}
+                target="_blank"
+                rel="noreferrer noopener"
+                title="Abrir no Google Maps"
+                className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:text-[var(--accent)]"
+              >
+                <ExternalLink size={16} />
+              </a>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setEditingRestaurantId(restaurant.id)}
+              >
+                <Pencil size={14} />
+                editar
+              </Button>
+            </div>
           </Card>
         )
       })}

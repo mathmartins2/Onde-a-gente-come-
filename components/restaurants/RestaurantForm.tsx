@@ -4,12 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { FormEvent } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link2, Search } from 'lucide-react'
+import { ExternalLink, Link2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, TextInput } from '@/components/ui/Field'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import {
   restaurantSchema,
   type RestaurantFormValues,
@@ -201,22 +202,36 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
           <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--border)] p-2">
             <p className="px-1 text-xs text-[var(--muted)]">É algum destes?</p>
             {candidates.map((candidate, index) => (
-              <button
+              <div
                 key={`${candidate.source}-${index}`}
-                onClick={() => applyCandidate(candidate)}
-                className="rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-[var(--surface-raised)]"
+                className="flex items-center gap-2 rounded-lg transition-colors hover:bg-[var(--surface-raised)]"
               >
-                <p className="text-sm">{candidate.name}</p>
-                <p className="text-xs text-[var(--muted)]">
-                  {[candidate.address, candidate.neighborhood, candidate.city]
-                    .filter(Boolean)
-                    .join(' · ') || 'sem endereço'}
-                </p>
-                <p className="mt-0.5 text-[10px] uppercase text-[var(--muted)]">
-                  {sourceLabels[candidate.source] ?? candidate.source}
-                  {candidate.cuisines.length > 0 ? ` · ${candidate.cuisines.join(', ')}` : ''}
-                </p>
-              </button>
+                <button
+                  onClick={() => applyCandidate(candidate)}
+                  className="min-w-0 flex-1 px-2.5 py-2 text-left"
+                >
+                  <p className="truncate text-sm">{candidate.name}</p>
+                  <p className="truncate text-xs text-[var(--muted)]">
+                    {[candidate.address, candidate.neighborhood, candidate.city]
+                      .filter(Boolean)
+                      .join(' · ') || 'sem endereço'}
+                  </p>
+                  <p className="mt-0.5 text-[10px] uppercase text-[var(--muted)]">
+                    {sourceLabels[candidate.source] ?? candidate.source}
+                    {candidate.cuisines.length > 0 ? ` · ${candidate.cuisines.join(', ')}` : ''}
+                  </p>
+                </button>
+
+                <a
+                  href={buildGoogleMapsUrl(candidate)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  title="Abrir no Google Maps"
+                  className="mr-1.5 shrink-0 rounded-lg p-2 text-[var(--muted)] transition-colors hover:text-[var(--accent)]"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </div>
             ))}
           </div>
         ) : null}

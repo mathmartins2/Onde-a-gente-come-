@@ -4,13 +4,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowDown, ArrowUp, Ban, Check, Dices, Plus, Sparkles, X } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Dices,
+  ExternalLink,
+  Plus,
+  Sparkles,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { fetchSessionState, type SessionState } from '@/lib/http/sessionQueries'
 import { PendingRatings } from './PendingRatings'
+import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { classNames } from '@/lib/utilities/classNames'
 
 type CatalogRestaurant = {
@@ -55,6 +65,18 @@ const DrawOutcomeCard = ({ outcome }: { outcome: DrawOutcome }) => {
         <p className="mt-2 text-xs uppercase tracking-widest text-[var(--muted)]">vai ser em</p>
         <p className="mt-1 text-2xl font-semibold">{winner?.name ?? 'Restaurante'}</p>
         <p className="mt-1 text-sm text-[var(--muted)]">colocado por {winner?.addedByName ?? ''}</p>
+
+        {winner ? (
+          <a
+            href={buildGoogleMapsUrl({ name: winner.name })}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--accent)] underline"
+          >
+            <ExternalLink size={12} />
+            abrir no Google Maps
+          </a>
+        ) : null}
 
         <div className="mt-4 flex flex-col gap-1.5 text-left">
           <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
