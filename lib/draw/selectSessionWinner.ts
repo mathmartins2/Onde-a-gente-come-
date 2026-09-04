@@ -30,6 +30,8 @@ export type SessionContender = {
 export type SessionDrawSelection = {
   restaurantId: string
   addedByMemberId: string
+  fallbackRestaurantId: string | null
+  fallbackMemberId: string | null
   contenders: SessionContender[]
 }
 
@@ -88,6 +90,7 @@ export const selectSessionWinner = (
   participants: ReadonlyArray<SessionParticipant>,
   preferences: ReadonlyArray<MemberPreference>,
   randomValueBetweenZeroAndOne: number,
+  fallbackRandomValueBetweenZeroAndOne: number = randomValueBetweenZeroAndOne,
 ): SessionDrawSelection | null => {
   const contenders = buildSessionContenders(pool, participants, preferences)
   if (contenders.length === 0) return null
@@ -99,10 +102,22 @@ export const selectSessionWinner = (
   if (winnerIndex < 0) return null
 
   const winner = contenders[winnerIndex]
+  const remaining = contenders.filter((contender) => contender.restaurantId !== winner.restaurantId)
+
+  const fallbackIndex =
+    remaining.length === 0
+      ? -1
+      : selectWeightedIndex(
+          remaining.map((contender) => contender.weight),
+          fallbackRandomValueBetweenZeroAndOne,
+        )
+  const fallback = fallbackIndex >= 0 ? remaining[fallbackIndex] : null
 
   return {
     restaurantId: winner.restaurantId,
     addedByMemberId: winner.addedByMemberId,
+    fallbackRestaurantId: fallback?.restaurantId ?? null,
+    fallbackMemberId: fallback?.addedByMemberId ?? null,
     contenders,
   }
 }

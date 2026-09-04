@@ -98,6 +98,12 @@ export const draws = pgTable('draws', {
     .notNull()
     .references(() => restaurants.id, { onDelete: 'restrict' }),
   nominationId: uuid('nomination_id').references(() => nominations.id, { onDelete: 'set null' }),
+  fallbackRestaurantId: uuid('fallback_restaurant_id').references(() => restaurants.id, {
+    onDelete: 'set null',
+  }),
+  fallbackMemberId: uuid('fallback_member_id').references(() => members.id, {
+    onDelete: 'set null',
+  }),
   weightSnapshot: jsonb('weight_snapshot').notNull(),
   drawnAt: timestamp('drawn_at', { withTimezone: true }).notNull().defaultNow(),
 })
@@ -115,6 +121,7 @@ export const visits = pgTable('visits', {
   revealedAt: timestamp('revealed_at', { withTimezone: true }),
   legacyScore: numeric('legacy_score', { precision: 3, scale: 1 }),
   legacyComment: text('legacy_comment'),
+  usedFallback: boolean('used_fallback').notNull().default(false),
 })
 
 export const ratings = pgTable(

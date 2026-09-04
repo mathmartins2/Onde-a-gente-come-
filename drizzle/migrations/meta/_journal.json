@@ -57,6 +57,13 @@
       "when": 1788544702566,
       "tag": "0007_workable_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788544814606,
+      "tag": "0008_faulty_trish_tilby",
+      "breakpoints": true
     }
   ]
 }
