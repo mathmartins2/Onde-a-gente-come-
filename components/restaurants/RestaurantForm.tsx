@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { Field, TextInput } from '@/components/ui/Field'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
+import { canonicalCuisines } from '@/lib/places/normalizeCuisines'
 import {
   restaurantSchema,
   type RestaurantFormValues,
@@ -267,18 +268,42 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
           </Field>
         </div>
 
-        {cuisines.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+            Tipo de comida
+          </span>
+          <p className="text-xs text-[var(--muted)]">
+            Toque pra marcar. Dá pra escolher mais de um.
+          </p>
           <div className="flex flex-wrap gap-1.5">
-            {cuisines.map((cuisine) => (
-              <span
-                key={cuisine}
-                className="rounded-full bg-[var(--surface-raised)] px-2.5 py-1 text-xs"
-              >
-                {cuisine}
-              </span>
-            ))}
+            {canonicalCuisines.map((cuisine) => {
+              const isSelected = cuisines.includes(cuisine)
+
+              return (
+                <button
+                  key={cuisine}
+                  type="button"
+                  onClick={() =>
+                    setValue(
+                      'cuisines',
+                      isSelected
+                        ? cuisines.filter((entry) => entry !== cuisine)
+                        : [...cuisines, cuisine],
+                      { shouldDirty: true },
+                    )
+                  }
+                  className={
+                    isSelected
+                      ? 'rounded-[var(--radius-pill)] border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-black'
+                      : 'rounded-[var(--radius-pill)] border border-[var(--border-strong)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs text-[var(--muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)]'
+                  }
+                >
+                  {cuisine}
+                </button>
+              )
+            })}
           </div>
-        ) : null}
+        </div>
 
         <Button type="submit" disabled={isSubmitting || createMutation.isPending} className="mt-1">
           {restaurant ? 'Salvar alterações' : 'Cadastrar restaurante'}

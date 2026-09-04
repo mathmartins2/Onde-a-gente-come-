@@ -39,6 +39,32 @@ const cuisineTranslations: Record<string, string> = {
   international: 'Varied',
 }
 
+
+export const canonicalCuisines = [
+  'Steak',
+  'Japanese',
+  'Pizza',
+  'Italian',
+  'Burger',
+  'Brazilian',
+  'Seafood',
+  'Asian',
+  'Chinese',
+  'Thai',
+  'Korean',
+  'Mexican',
+  'Arab',
+  'Indian',
+  'Portuguese',
+  'French',
+  'Spanish',
+  'Vegetarian',
+  'Bakery',
+  'Coffee',
+  'Dessert',
+  'Varied',
+] as const
+
 export const fallbackCuisine = 'Varied'
 
 export const normalizeCuisines = (rawValue: string | null | undefined) => {
