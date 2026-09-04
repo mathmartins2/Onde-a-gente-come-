@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { apiClient } from '@/lib/http/apiClient'
 import { BlindRatingSession } from './BlindRatingSession'
 import { OwnRatingPanel } from './OwnRatingPanel'
+import { FallbackToggle } from './FallbackToggle'
 import { PriceHistory } from './PriceHistory'
 import { VisitDate } from './VisitDate'
 
@@ -15,7 +16,13 @@ type RatingScreenProps = {
   currentMemberId: string
 }
 
-type VisitSummary = { restaurantName: string; visitedAt: string; ratedMemberIds: string[] }
+type VisitSummary = {
+  restaurantName: string
+  visitedAt: string
+  usedFallback: boolean
+  hasFallbackOption: boolean
+  ratedMemberIds: string[]
+}
 
 export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) => {
   const [isPassAroundMode, setIsPassAroundMode] = useState(false)
@@ -45,6 +52,11 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
         <h1 className="mt-1 text-xl font-semibold">
           {visitQuery.data?.restaurantName ?? 'Carregando...'}
         </h1>
+        {visitQuery.data?.usedFallback ? (
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-[var(--warning)]">
+            foi o segundo lugar
+          </p>
+        ) : null}
         {visitQuery.data ? (
           <div className="mt-1.5">
             <VisitDate visitId={visitId} visitedAt={visitQuery.data.visitedAt} />
@@ -72,6 +84,10 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
           Passando um só
         </Button>
       </div>
+
+      {visitQuery.data?.hasFallbackOption ? (
+        <FallbackToggle visitId={visitId} usedFallback={visitQuery.data.usedFallback} />
+      ) : null}
 
       <PriceHistory visitId={visitId} />
 

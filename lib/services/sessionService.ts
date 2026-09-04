@@ -382,6 +382,7 @@ export const runSessionDraw = async (sessionId: string) => {
     state.rawParticipants,
     state.rawPreferences,
     randomFraction(),
+    randomFraction(),
   )
   if (!selection) return { ok: false as const, reason: 'NO_CANDIDATES' as const }
 
@@ -392,6 +393,8 @@ export const runSessionDraw = async (sessionId: string) => {
         roundNumber: state.session.roundNumber,
         winnerMemberId: selection.addedByMemberId,
         restaurantId: selection.restaurantId,
+        fallbackRestaurantId: selection.fallbackRestaurantId,
+        fallbackMemberId: selection.fallbackMemberId,
         weightSnapshot: {
           participants: state.participants,
           contenders: state.contenders,

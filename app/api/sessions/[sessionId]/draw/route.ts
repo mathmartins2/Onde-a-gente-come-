@@ -19,6 +19,7 @@ export const POST = async (_request: Request, context: { params: Promise<{ sessi
         visitId: result.visit.id,
         restaurantId: result.selection.restaurantId,
         addedByMemberId: result.selection.addedByMemberId,
+        fallbackRestaurantId: result.selection.fallbackRestaurantId,
         contenders: result.contenders,
       })
     }

@@ -16,6 +16,8 @@ export type RatingSessionState = {
   recommendedByMemberId: string | null
   isRevealed: boolean
   visitedAt: Date
+  usedFallback: boolean
+  hasFallbackOption: boolean
   pendingMembers: Array<{ id: string; displayName: string; hasRatingPin: boolean }>
   ratedMemberIds: string[]
 }
@@ -28,6 +30,8 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
       recommendedByMemberId: schema.visits.recommendedByMemberId,
       revealedAt: schema.visits.revealedAt,
       visitedAt: schema.visits.visitedAt,
+      usedFallback: schema.visits.usedFallback,
+      drawId: schema.visits.drawId,
     })
     .from(schema.visits)
     .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
@@ -56,6 +60,8 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
     visitId: visit.id,
     restaurantName: visit.restaurantName,
     visitedAt: visit.visitedAt,
+    usedFallback: visit.usedFallback,
+    hasFallbackOption: Boolean(visit.drawId),
     recommendedByMemberId: visit.recommendedByMemberId,
     isRevealed: Boolean(visit.revealedAt),
     pendingMembers: allMembers
