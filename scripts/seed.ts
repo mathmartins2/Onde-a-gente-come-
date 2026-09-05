@@ -39,7 +39,7 @@ const run = async () => {
   const restaurantSeeds = [
     {
       name: 'Outback',
-      suggestedBy: 'vini',
+      suggestedBy: 'math',
       address: 'Avenida República do Líbano, 256',
       neighborhood: 'Pina',
       city: 'Recife',
@@ -118,7 +118,7 @@ const run = async () => {
   const restaurantByName = new Map(allRestaurants.map((restaurant) => [restaurant.name, restaurant]))
 
   const visitSeeds = [
-    { restaurantName: 'Outback', suggestedBy: 'vini', legacyScore: null, legacyComment: null },
+    { restaurantName: 'Outback', suggestedBy: 'math', legacyScore: '4.8', legacyComment: null },
     { restaurantName: 'Rock n Ribs', suggestedBy: 'romario', legacyScore: '4.3', legacyComment: 'Clássico' },
     { restaurantName: 'Ruffo Recife', suggestedBy: 'math', legacyScore: '5.0', legacyComment: 'Restaurante completo.' },
     { restaurantName: 'Yokocho Izakaya e Sushi Bar', suggestedBy: 'math', legacyScore: '4.3', legacyComment: null },
