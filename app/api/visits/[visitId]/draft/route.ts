@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { ratingDraftSchema } from '@/lib/validation/schemas'
-import { loadRatingDraft, saveRatingDraft } from '@/lib/services/ratingService'
+import { loadOwnRating, loadRatingDraft, saveRatingDraft } from '@/lib/services/ratingService'
 
 export const GET = async (_request: Request, context: { params: Promise<{ visitId: string }> }) =>
   withMember(async (member) => {
     const { visitId } = await context.params
     const draft = await loadRatingDraft(visitId, member.id)
-    return NextResponse.json({ draft })
+    if (draft) return NextResponse.json({ draft })
+
+    const submitted = await loadOwnRating(visitId, member.id)
+    return NextResponse.json({ draft: submitted })
   })
 
 export const PUT = async (request: Request, context: { params: Promise<{ visitId: string }> }) =>

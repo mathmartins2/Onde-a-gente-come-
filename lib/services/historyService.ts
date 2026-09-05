@@ -94,6 +94,17 @@ export const loadHistory = async () => {
     visitRows.flatMap((visit) => (visit.drawId ? [[visit.drawId, visit] as const] : [])),
   )
 
+  const priceRows = await database
+    .select({
+      visitId: schema.visitPriceEntries.visitId,
+      amount: schema.visitPriceEntries.amount,
+      addedByName: schema.members.displayName,
+    })
+    .from(schema.visitPriceEntries)
+    .innerJoin(schema.members, eq(schema.members.id, schema.visitPriceEntries.addedByMemberId))
+
+  const priceByVisit = new Map(priceRows.map((row) => [row.visitId, row]))
+
   const ratingRows = await database
     .select({
       visitId: schema.ratings.visitId,
@@ -178,6 +189,11 @@ export const loadHistory = async () => {
       fallback: snapshot.fallback,
       usedFallback: visit?.usedFallback ?? false,
       visitId: visit?.visitId ?? null,
+      totalPaid: visit ? (priceByVisit.get(visit.visitId)?.amount ?? null) : null,
+      paidPerPerson:
+        visit && priceByVisit.get(visit.visitId) && snapshot.participants.length > 0
+          ? Number(priceByVisit.get(visit.visitId)?.amount) / snapshot.participants.length
+          : null,
       isRevealed,
       finalScore,
       ratings,

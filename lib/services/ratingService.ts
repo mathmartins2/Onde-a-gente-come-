@@ -273,6 +273,36 @@ export const calculateOverallScore = (scores: CriterionScores) => {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+
+export const loadOwnRating = async (visitId: string, memberId: string) => {
+  const rows = await database
+    .select({
+      flavorScore: schema.ratings.flavorScore,
+      priceScore: schema.ratings.priceScore,
+      serviceScore: schema.ratings.serviceScore,
+      ambienceScore: schema.ratings.ambienceScore,
+      menuScore: schema.ratings.menuScore,
+      waitTimeScore: schema.ratings.waitTimeScore,
+      comment: schema.ratings.comment,
+    })
+    .from(schema.ratings)
+    .where(and(eq(schema.ratings.visitId, visitId), eq(schema.ratings.memberId, memberId)))
+    .limit(1)
+
+  const rating = rows.at(0)
+  if (!rating) return null
+
+  return {
+    flavor: rating.flavorScore === null ? null : Number(rating.flavorScore),
+    price: rating.priceScore === null ? null : Number(rating.priceScore),
+    service: rating.serviceScore === null ? null : Number(rating.serviceScore),
+    ambience: rating.ambienceScore === null ? null : Number(rating.ambienceScore),
+    menu: rating.menuScore === null ? null : Number(rating.menuScore),
+    waitTime: rating.waitTimeScore === null ? null : Number(rating.waitTimeScore),
+    comment: rating.comment,
+  }
+}
+
 export const listRatingParticipants = async (visitId: string) => {
   const rows = await database
     .select({ id: schema.members.id, displayName: schema.members.displayName })

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
-import { Check, Eye, Lock } from 'lucide-react'
+import { Check, Eye, Lock, Pencil, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -53,6 +53,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
   const commentRef = useRef<HTMLTextAreaElement>(null)
   const [scores, setScores] = useState<CriteriaScores>(emptyCriteriaScores)
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
 
   const draftQuery = useQuery({
     queryKey: ['rating-draft', visitId],
@@ -111,6 +112,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
         comment: commentRef.current?.value ?? '',
       }),
     onSuccess: () => {
+      setIsEditing(false)
       toast.success('Nota guardada. Ninguém vê até todo mundo dar.')
       queryClient.invalidateQueries({ queryKey: ['rating-session', visitId] })
       queryClient.invalidateQueries({ queryKey: ['rating-draft', visitId] })
@@ -217,7 +219,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
         })}
       </Card>
 
-      {hasRated ? (
+      {hasRated && !isEditing ? (
         <Card className="flex flex-col items-center gap-3 py-8 text-center">
           <Lock size={20} className="text-[var(--muted)]" />
           <p className="text-sm">Sua nota está guardada</p>
@@ -226,6 +228,19 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
               ? 'Todo mundo já deu. Pode revelar.'
               : `Faltam ${session.pendingMembers.length} pessoa(s).`}
           </p>
+
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              setHasLoadedDraft(false)
+              setIsEditing(true)
+            }}
+          >
+            <Pencil size={14} />
+            Mudar minha nota
+          </Button>
+
           {everyoneRated ? (
             <Button
               size="large"
@@ -240,6 +255,17 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
         </Card>
       ) : (
         <Card className="flex flex-col gap-4">
+          {isEditing ? (
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">
+                mudando sua nota
+              </span>
+              <Button variant="ghost" size="small" onClick={() => setIsEditing(false)}>
+                <X size={14} />
+              </Button>
+            </div>
+          ) : null}
+
           <div className="text-center">
             <p className="text-xs uppercase tracking-widest text-[var(--muted)]">sua nota</p>
             <span className="text-5xl font-semibold tabular-nums">
@@ -277,7 +303,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
             onClick={() => submitMutation.mutate()}
           >
             <Check size={18} />
-            Guardar minha nota
+            {isEditing ? 'Salvar a mudança' : 'Guardar minha nota'}
           </Button>
         </Card>
       )}

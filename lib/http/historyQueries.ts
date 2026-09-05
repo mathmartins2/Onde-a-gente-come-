@@ -42,6 +42,8 @@ export type HistoryRound = {
   contenders: HistoryContender[]
   participants: HistoryParticipant[]
   visitId: string | null
+  totalPaid: string | null
+  paidPerPerson: number | null
   ballots: HistoryBallot[]
   bannedRestaurantName: string | null
   banRound: number

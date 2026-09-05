@@ -17,8 +17,23 @@ type RestaurantFrequency = {
   firstVisitedAt: string | null
 }
 
+type SpendingData = {
+  currentMonth: { period: string; total: number; visitCount: number }
+  byRestaurant: Array<{
+    restaurantId: string
+    name: string
+    total: number
+    visits: number
+    averagePerVisit: number
+  }>
+  byMonth: Array<{ period: string; total: number }>
+  totalSpent: number
+  averagePerVisit: number
+}
+
 type StatisticsResponse = {
   totalVisits: number
+  spending: SpendingData
   frequency: {
     byMonth: FrequencyBucket[]
     byYear: FrequencyBucket[]
@@ -85,6 +100,59 @@ const CuisineChart = dynamic<CuisineChartProps>(
   { ssr: false },
 )
 
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  maximumFractionDigits: 0,
+})
+
+type SpendingChartProps = {
+  buckets: Array<{ period: string; total: number }>
+}
+
+const SpendingChart = dynamic<SpendingChartProps>(
+  async () => {
+    const { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } = await import('recharts')
+
+    const SpendingBarChart = ({ buckets }: SpendingChartProps) => {
+      const highestTotal = Math.max(...buckets.map((bucket) => bucket.total))
+
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={buckets} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            <XAxis
+              dataKey="period"
+              tickFormatter={formatMonthLabel}
+              tick={{ fill: '#9a9aae', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: '#ffffff08' }}
+              labelFormatter={(label) => formatMonthLabel(String(label))}
+              formatter={(value) => [currencyFormatter.format(Number(value)), '']}
+              contentStyle={tooltipStyle}
+              labelStyle={{ color: '#f2f2f5', fontWeight: 600 }}
+              itemStyle={{ color: '#a8dd52' }}
+            />
+            <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={48}>
+              {buckets.map((bucket) => (
+                <Cell
+                  key={bucket.period}
+                  fill={bucket.total === highestTotal ? '#ff6b35' : '#a8dd52'}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    }
+
+    return SpendingBarChart
+  },
+  { ssr: false },
+)
+
 type MonthlyChartProps = {
   buckets: Array<{ period: string; visitCount: number }>
 }
@@ -133,9 +201,50 @@ export const StatisticsScreen = () => {
   const data = statisticsQuery.data
   if (!data) return <p className="text-sm text-[var(--muted)]">Sem dados.</p>
 
+  const highestSpendingMonth = data.spending.byMonth.reduce<
+    { period: string; total: number } | null
+  >((highest, bucket) => (highest === null || bucket.total > highest.total ? bucket : highest), null)
+
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-lg font-semibold">Números do grupo</h1>
+
+      {data.spending.totalSpent > 0 ? (
+        <Card className="flex flex-col gap-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+                {formatMonthLabel(data.spending.currentMonth.period)} · este mês
+              </p>
+              <p className="font-display mt-1 text-3xl font-semibold tabular-nums text-[var(--herb)]">
+                {currencyFormatter.format(data.spending.currentMonth.total)}
+              </p>
+              <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                {data.spending.currentMonth.visitCount} rolê(s)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between gap-3 border-t border-[var(--border)] pt-3">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+                desde o começo
+              </p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">
+                {currencyFormatter.format(data.spending.totalSpent)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+                média por rolê
+              </p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-[var(--accent)]">
+                {currencyFormatter.format(data.spending.averagePerVisit)}
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3.5 text-center">
@@ -151,6 +260,68 @@ export const StatisticsScreen = () => {
           <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">bairros</p>
         </Card>
       </div>
+
+      {data.spending.byMonth.length > 0 ? (
+        <Card>
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="text-sm font-semibold">Gasto por mês</h2>
+            {highestSpendingMonth ? (
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--accent)]">
+                recorde: {formatMonthLabel(highestSpendingMonth.period)}{' '}
+                {currencyFormatter.format(highestSpendingMonth.total)}
+              </span>
+            ) : null}
+          </div>
+          <div className="h-40">
+            <SpendingChart buckets={data.spending.byMonth} />
+          </div>
+          <div className="mt-3 flex flex-col gap-1.5 border-t border-[var(--border)] pt-3">
+            {[...data.spending.byMonth]
+              .sort((first, second) => second.total - first.total)
+              .map((bucket) => (
+                <div
+                  key={bucket.period}
+                  className="flex items-baseline justify-between gap-3 text-xs"
+                >
+                  <span className={bucket === highestSpendingMonth ? 'text-[var(--accent)]' : ''}>
+                    {formatMonthLabel(bucket.period)}
+                  </span>
+                  <span
+                    className={
+                      bucket === highestSpendingMonth
+                        ? 'tabular-nums text-[var(--accent)]'
+                        : 'tabular-nums text-[var(--muted)]'
+                    }
+                  >
+                    {currencyFormatter.format(bucket.total)}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {data.spending.byRestaurant.length > 0 ? (
+        <Card className="flex flex-col gap-2.5">
+          <h2 className="text-sm font-semibold">Quanto cada lugar custou</h2>
+          {data.spending.byRestaurant.map((entry) => (
+            <div key={entry.restaurantId} className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 truncate text-sm">
+                {entry.name}
+                <span className="ml-2 text-xs text-[var(--muted)]">{entry.visits}x</span>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block text-sm tabular-nums">
+                  {currencyFormatter.format(entry.total)}
+                </span>
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--muted)]">
+                  {currencyFormatter.format(entry.averagePerVisit)} por rolê
+                </span>
+              </span>
+            </div>
+          ))}
+        </Card>
+      ) : null}
 
       {data.frequency.byMonth.length > 0 ? (
         <Card>

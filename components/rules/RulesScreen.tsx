@@ -57,6 +57,13 @@ export const RulesScreen = () => (
             O lugar que você adiciona entra no fim do seu rank automaticamente. Os que outros
             colocaram você precisa posicionar — se não posicionar, ele não recebe ponto seu.
           </p>
+          <p>
+            Enquanto a rodada está aberta,{' '}
+            <strong className="text-[var(--foreground)]">
+              ninguém vê quem indicou o quê
+            </strong>{' '}
+            — nem aqui, nem na tela de Lugares. É pra votar no lugar, não na pessoa.
+          </p>
         </Step>
 
         <Step number={3} title="Os pontos são somados (Borda)">
@@ -125,8 +132,8 @@ export const RulesScreen = () => (
             nota vai para o lugar certo.
           </p>
           <p>
-            A revelação mostra em sequência o banido, o plano B e o vencedor — com a chance que ele
-            tinha.
+            Só no sorteio o painel revela, em sequência: o banido, o plano B e o vencedor — com a
+            chance que ele tinha e quem indicou cada um.
           </p>
         </Step>
       </Card>
@@ -213,9 +220,29 @@ export const RulesScreen = () => (
             {ratingCriteria.length} critérios, de {ratingConfiguration.minimumScore} a{' '}
             {ratingConfiguration.maximumScore}
           </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {ratingCriteria.map((criterion) => (
+              <span
+                key={criterion.key}
+                className="rounded-[var(--radius-pill)] border border-[var(--border-strong)] bg-[var(--surface-raised)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--foreground)]"
+              >
+                {criterion.label}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2">
+            Sua nota é a média simples dos {ratingCriteria.length}, com meio ponto de precisão.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold text-[var(--foreground)]">
+            O rascunho salva sozinho
+          </p>
           <p className="mt-1">
-            {ratingCriteria.map((criterion) => criterion.label).join(' · ')}. Sua nota é a média
-            simples dos {ratingCriteria.length}.
+            Cada slider que você move é guardado no servidor. Dá pra fechar o app, trocar de
+            aparelho e continuar de onde parou. O rascunho é só seu — ninguém mais vê, nem depois
+            da revelação.
           </p>
         </div>
 
@@ -257,19 +284,33 @@ export const RulesScreen = () => (
 
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold">O ranking dos lugares</h2>
-      <Card className="flex flex-col gap-2 text-xs leading-relaxed text-[var(--muted)]">
+      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-[var(--muted)]">
         <p>
-          Um lugar com uma visita só não sobe ao topo por sorte. A nota é puxada para{' '}
           <strong className="text-[var(--foreground)]">
-            {rankingConfiguration.bayesianPriorScore},0
+            O número grande do ranking não é a nota do lugar.
           </strong>{' '}
-          até acumular avaliações — quanto mais vezes vocês vão, mais a nota real dele prevalece.
+          É um score que mistura a nota real com uma âncora neutra de{' '}
+          {rankingConfiguration.bayesianPriorScore},0, para um lugar com uma visita só não subir ao
+          topo por sorte. Quanto mais vezes vocês vão, mais a nota real prevalece e mais o score se
+          aproxima dela.
         </p>
         <Formula>
           score = ({rankingConfiguration.bayesianConfidenceConstant} ×{' '}
           {rankingConfiguration.bayesianPriorScore} + Σ notas) ÷ (
           {rankingConfiguration.bayesianConfidenceConstant} + nº de notas)
         </Formula>
+
+        <div className="flex flex-col gap-1 rounded-lg bg-[var(--surface-raised)] px-3 py-2.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+            exemplo com 3 votos
+          </p>
+          <p className="font-mono text-[11px] text-[var(--foreground)]">
+            nota real 3,39 → score 3,16
+          </p>
+          <p className="text-[11px]">
+            A âncora ainda pesa mais que 3 votos. Com mais visitas, o score sobe rumo à nota.
+          </p>
+        </div>
       </Card>
     </section>
 

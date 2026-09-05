@@ -212,6 +212,88 @@ export const loadStatistics = async () => {
 }
 
 
+
+export const loadSpending = async () => {
+  const rows = await database
+    .select({
+      visitId: schema.visits.id,
+      restaurantId: schema.restaurants.id,
+      restaurantName: schema.restaurants.name,
+      visitedAt: schema.visits.visitedAt,
+      amount: schema.visitPriceEntries.amount,
+    })
+    .from(schema.visitPriceEntries)
+    .innerJoin(schema.visits, eq(schema.visits.id, schema.visitPriceEntries.visitId))
+    .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
+    .orderBy(schema.visits.visitedAt)
+
+  if (rows.length === 0) {
+    return {
+      currentMonth: { period: new Date().toISOString().slice(0, 7), total: 0, visitCount: 0 },
+      byVisit: [],
+      byRestaurant: [],
+      byMonth: [],
+      totalSpent: 0,
+      averagePerVisit: 0,
+    }
+  }
+
+  const totalSpent = rows.reduce((sum, row) => sum + Number(row.amount), 0)
+
+  const restaurantTotals = new Map<string, { name: string; total: number; visits: number }>()
+  const monthTotals = new Map<string, number>()
+
+  rows.forEach((row) => {
+    const existing = restaurantTotals.get(row.restaurantId) ?? {
+      name: row.restaurantName,
+      total: 0,
+      visits: 0,
+    }
+    restaurantTotals.set(row.restaurantId, {
+      name: row.restaurantName,
+      total: existing.total + Number(row.amount),
+      visits: existing.visits + 1,
+    })
+
+    const period = new Date(row.visitedAt).toISOString().slice(0, 7)
+    monthTotals.set(period, (monthTotals.get(period) ?? 0) + Number(row.amount))
+  })
+
+  const currentPeriod = new Date().toISOString().slice(0, 7)
+  const currentMonthRows = rows.filter(
+    (row) => new Date(row.visitedAt).toISOString().slice(0, 7) === currentPeriod,
+  )
+  const currentMonthTotal = currentMonthRows.reduce((sum, row) => sum + Number(row.amount), 0)
+
+  return {
+    currentMonth: {
+      period: currentPeriod,
+      total: currentMonthTotal,
+      visitCount: currentMonthRows.length,
+    },
+    byVisit: rows.map((row) => ({
+      visitId: row.visitId,
+      restaurantName: row.restaurantName,
+      visitedAt: row.visitedAt,
+      amount: Number(row.amount),
+    })),
+    byRestaurant: [...restaurantTotals.entries()]
+      .map(([restaurantId, value]) => ({
+        restaurantId,
+        name: value.name,
+        total: value.total,
+        visits: value.visits,
+        averagePerVisit: value.total / value.visits,
+      }))
+      .sort((first, second) => second.total - first.total),
+    byMonth: [...monthTotals.entries()]
+      .map(([period, total]) => ({ period, total }))
+      .sort((first, second) => first.period.localeCompare(second.period)),
+    totalSpent,
+    averagePerVisit: totalSpent / rows.length,
+  }
+}
+
 export const loadVisitFrequency = async () => {
   const monthRows = await database
     .select({

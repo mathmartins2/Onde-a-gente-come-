@@ -81,6 +81,12 @@ const RatingRow = ({ rating }: { rating: HistoryRating }) => {
   )
 }
 
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  maximumFractionDigits: 0,
+})
+
 const positionMedals = ['1º', '2º', '3º', '4º', '5º']
 
 const LogSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -216,11 +222,19 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
           indicação de {round.winnerNominatedByName}
         </p>
       </div>
-      {round.finalScore === null ? null : (
-        <span className="ml-auto text-xl font-semibold tabular-nums">
-          {round.finalScore.toFixed(2)}
-        </span>
-      )}
+      <span className="ml-auto flex shrink-0 flex-col items-end gap-0.5">
+        {round.finalScore === null ? null : (
+          <span className="text-xl font-semibold tabular-nums">{round.finalScore.toFixed(2)}</span>
+        )}
+        {round.totalPaid ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
+            {currencyFormatter.format(Number(round.totalPaid))}
+            {round.paidPerPerson
+              ? ` · ${currencyFormatter.format(round.paidPerPerson)} cada`
+              : ''}
+          </span>
+        ) : null}
+      </span>
     </div>
 
     <div className="flex flex-col gap-1.5">
