@@ -24,6 +24,7 @@ const poolEntry = (
   putInRoundByMemberId: addedByMemberId,
   revisitWeight,
   isVetoed,
+  isPreviousWinner: false,
 })
 
 const chanceOf = (contenders: ReturnType<typeof buildSessionContenders>, restaurantId: string) =>
@@ -133,6 +134,7 @@ describe('session draw combines every rule', () => {
           putInRoundByMemberId: 'math',
           revisitWeight: 1,
           isVetoed: false,
+          isPreviousWinner: false,
         },
         poolEntry('valido', 'math'),
       ],
@@ -158,6 +160,7 @@ describe('session draw combines every rule', () => {
           putInRoundByMemberId: 'tambem-ausente',
           revisitWeight: 1,
           isVetoed: false,
+          isPreviousWinner: false,
         },
         poolEntry('valido', 'math'),
       ],
@@ -192,6 +195,66 @@ describe('session draw combines every rule', () => {
 
     const total = contenders.reduce((sum, contender) => sum + contender.chance, 0)
     expect(total).toBeCloseTo(1, 6)
+  })
+
+  it('never draws the place the group went to last time', () => {
+    const contenders = buildSessionContenders(
+      [
+        { ...poolEntry('foi-na-ultima', 'math'), isPreviousWinner: true },
+        poolEntry('outro', 'romario'),
+      ],
+      [participant('math'), participant('romario')],
+      [
+        { memberId: 'math', rankedRestaurantIds: ['foi-na-ultima', 'outro'] },
+        { memberId: 'romario', rankedRestaurantIds: ['foi-na-ultima', 'outro'] },
+      ],
+    )
+
+    expect(contenders.map((contender) => contender.restaurantId)).toEqual(['outro'])
+  })
+
+  it('gives zero chance to the last place even when everyone ranked it first', () => {
+    const selection = selectSessionWinner(
+      [
+        { ...poolEntry('foi-na-ultima', 'math'), isPreviousWinner: true },
+        poolEntry('impopular', 'romario'),
+      ],
+      [participant('math'), participant('romario')],
+      [
+        { memberId: 'math', rankedRestaurantIds: ['foi-na-ultima', 'impopular'] },
+        { memberId: 'romario', rankedRestaurantIds: ['foi-na-ultima', 'impopular'] },
+      ],
+      0.99,
+    )
+
+    expect(selection?.restaurantId).toBe('impopular')
+  })
+
+  it('allows the last place again when it is the only option left', () => {
+    const selection = selectSessionWinner(
+      [{ ...poolEntry('unico', 'math'), isPreviousWinner: true }],
+      [participant('math')],
+      [{ memberId: 'math', rankedRestaurantIds: ['unico'] }],
+      0.5,
+    )
+
+    expect(selection?.restaurantId).toBe('unico')
+  })
+
+  it('still excludes the banned place even when the last winner is the only alternative', () => {
+    const contenders = buildSessionContenders(
+      [
+        { ...poolEntry('foi-na-ultima', 'math'), isPreviousWinner: true },
+        poolEntry('vetado', 'romario', 1, true),
+      ],
+      [participant('math'), participant('romario')],
+      [
+        { memberId: 'math', rankedRestaurantIds: ['foi-na-ultima', 'vetado'] },
+        { memberId: 'romario', rankedRestaurantIds: ['vetado', 'foi-na-ultima'] },
+      ],
+    )
+
+    expect(contenders.map((contender) => contender.restaurantId)).toEqual(['foi-na-ultima'])
   })
 
   it('resets the winner and advances everyone else who took part', () => {

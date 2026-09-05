@@ -16,6 +16,7 @@ export type SessionPoolItem = {
   addedByName: string
   putInRoundByName: string
   isMine: boolean
+  isPreviousWinner: boolean
   isBanned: boolean
   banVotes: number
 }

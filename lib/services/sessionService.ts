@@ -268,6 +268,13 @@ export const loadSessionState = async (sessionId: string) => {
   )
   const bannedRestaurantId = banOutcome.bannedRestaurantId
   const visibleBannedRestaurantId = isAlreadyDrawn ? bannedRestaurantId : null
+  const previousDrawRows = await database
+    .select({ restaurantId: schema.draws.restaurantId })
+    .from(schema.draws)
+    .orderBy(desc(schema.draws.roundNumber))
+    .limit(1)
+  const previousWinnerRestaurantId = previousDrawRows.at(0)?.restaurantId ?? null
+
   const nominatorQuality = await loadNominatorQuality()
   const visitHistory = await loadVisitHistoryByRestaurant()
 
@@ -291,6 +298,7 @@ export const loadSessionState = async (sessionId: string) => {
         lastVisitedAt: history?.lastVisitedAt ? new Date(history.lastVisitedAt) : null,
       }),
       isVetoed: row.restaurantId === bannedRestaurantId,
+      isPreviousWinner: row.restaurantId === previousWinnerRestaurantId,
     }
   })
 
@@ -342,6 +350,7 @@ export const loadSessionState = async (sessionId: string) => {
       addedByName: isAlreadyDrawn ? (row.ownerName ?? row.putInRoundByName) : '',
       putInRoundByName: isAlreadyDrawn ? row.putInRoundByName : '',
       effectiveOwnerMemberId: row.ownerMemberId ?? row.putInRoundByMemberId,
+      isPreviousWinner: row.restaurantId === previousWinnerRestaurantId,
       isBanned: row.restaurantId === visibleBannedRestaurantId,
       banVotes: isAlreadyDrawn ? (banVotesByRestaurant.get(row.restaurantId) ?? 0) : 0,
     })),

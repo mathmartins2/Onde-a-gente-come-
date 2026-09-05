@@ -186,8 +186,12 @@ export const RulesScreen = () => (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold">Lugar onde já fomos</h2>
       <Card className="flex flex-col gap-2 text-xs leading-relaxed text-[var(--muted)]">
+        <p className="text-[var(--foreground)]">
+          <strong>O lugar da última rodada não pode sair de novo.</strong> Ele fica de fora do
+          sorteio seguinte, sem exceção — só volta se for a única opção da roda.
+        </p>
         <p>
-          Logo depois de uma visita o lugar cai para{' '}
+          Depois disso, o lugar cai para{' '}
           <strong className="text-[var(--foreground)]">
             {percentage(drawConfiguration.recentlyVisitedPenalty)}
           </strong>{' '}

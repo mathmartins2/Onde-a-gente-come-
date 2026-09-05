@@ -183,7 +183,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
                     className="flex items-baseline justify-between rounded-lg bg-[var(--surface-raised)] px-2.5 py-1.5 text-sm"
                   >
                     <span>{criterion.label}</span>
-                    <span className="tabular-nums">{average.toFixed(1)}</span>
+                    <span className="tabular-nums">{average.toFixed(2)}</span>
                   </div>
                 )
               })}

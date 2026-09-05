@@ -20,6 +20,7 @@ export type HistoryRating = {
   memberId: string
   displayName: string
   score: number
+  criteria: Record<string, number | null>
   comment: string | null
   isRecommender: boolean
 }

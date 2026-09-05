@@ -15,7 +15,8 @@
     "validate": "bash scripts/validate-end-to-end.sh",
     "database:demo": "bash scripts/reset-rounds.sh && tsx scripts/seed-demo.ts",
     "database:reset-rounds": "bash scripts/reset-rounds.sh",
-    "database:reset-password": "tsx scripts/reset-password.ts"
+    "database:reset-password": "tsx scripts/reset-password.ts",
+    "database:check": "tsx scripts/check-migrations.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

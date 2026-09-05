@@ -6,10 +6,80 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Ban, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { fetchHistory, type HistoryRound } from '@/lib/http/historyQueries'
+import { fetchHistory, type HistoryRating, type HistoryRound } from '@/lib/http/historyQueries'
+import { ratingCriteria } from '@/lib/scoring/configuration'
 import { classNames } from '@/lib/utilities/classNames'
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
+
+const scoreTone = (value: number) => {
+  if (value >= 4) return 'text-[var(--success)]'
+  if (value >= 2.5) return 'text-[var(--warning)]'
+  return 'text-[var(--danger)]'
+}
+
+const RatingRow = ({ rating }: { rating: HistoryRating }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const hasCriteria = ratingCriteria.some(
+    (criterion) => rating.criteria[criterion.key] !== null && rating.criteria[criterion.key] !== undefined,
+  )
+
+  return (
+    <div className="flex flex-col">
+      <button
+        onClick={() => setIsOpen((open) => !open)}
+        disabled={!hasCriteria}
+        className="flex items-baseline justify-between gap-3 py-1 text-left text-sm disabled:cursor-default"
+      >
+        <span className="min-w-0 truncate">
+          {hasCriteria ? (
+            <ChevronDown
+              size={11}
+              className={`mr-1 inline-block text-[var(--muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            />
+          ) : null}
+          {rating.displayName}
+          {rating.isRecommender ? (
+            <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">indicou</span>
+          ) : null}
+        </span>
+        <span className={`shrink-0 tabular-nums ${scoreTone(rating.score)}`}>
+          {rating.score.toFixed(2)}
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div className="mb-1 ml-4 flex flex-col gap-1 border-l border-[var(--border-strong)] pl-3">
+          {ratingCriteria.map((criterion) => {
+            const value = rating.criteria[criterion.key]
+            if (value === null || value === undefined) return null
+
+            return (
+              <div key={criterion.key} className="flex items-center gap-2">
+                <span className="w-28 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {criterion.label}
+                </span>
+                <span className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--surface-raised)]">
+                  <span
+                    className="block h-full rounded-full bg-[var(--accent)]"
+                    style={{ width: `${(value / 5) * 100}%` }}
+                  />
+                </span>
+                <span className={`w-7 shrink-0 text-right text-xs tabular-nums ${scoreTone(value)}`}>
+                  {value.toFixed(1)}
+                </span>
+              </div>
+            )
+          })}
+
+          {rating.comment ? (
+            <p className="mt-1 text-xs italic text-[var(--muted)]">&ldquo;{rating.comment}&rdquo;</p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 const positionMedals = ['1º', '2º', '3º', '4º', '5º']
 
@@ -197,21 +267,7 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
       <div className="flex flex-col gap-1.5">
         <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">notas que deram</p>
         {round.ratings.map((rating) => (
-          <div
-            key={`${round.drawId}-${rating.memberId}`}
-            className="flex items-baseline justify-between text-sm"
-          >
-            <span>
-              {rating.displayName}
-              {rating.isRecommender ? (
-                <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">indicou</span>
-              ) : null}
-              {rating.comment ? (
-                <span className="ml-2 text-xs text-[var(--muted)]">{rating.comment}</span>
-              ) : null}
-            </span>
-            <span className="tabular-nums">{rating.score.toFixed(1)}</span>
-          </div>
+          <RatingRow key={`${round.drawId}-${rating.memberId}`} rating={rating} />
         ))}
       </div>
     )}

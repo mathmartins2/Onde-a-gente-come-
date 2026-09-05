@@ -323,6 +323,11 @@ export const SessionScreen = () => {
                   ]
                     .filter(Boolean)
                     .join(' · ')}
+                  {item.isPreviousWinner ? (
+                    <span className="ml-2 text-[10px] uppercase tracking-wide text-[var(--warning)]">
+                      foi o último · fora desta rodada
+                    </span>
+                  ) : null}
                 </p>
               </div>
               <div className="flex shrink-0 gap-1">

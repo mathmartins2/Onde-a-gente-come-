@@ -60,6 +60,8 @@ const readSnapshot = (weightSnapshot: unknown) => {
   }
 }
 
+const toOptionalNumber = (value: string | null) => (value === null ? null : Number(value))
+
 export const loadHistory = async () => {
   const drawRows = await database
     .select({
@@ -98,6 +100,12 @@ export const loadHistory = async () => {
       memberId: schema.ratings.memberId,
       displayName: schema.members.displayName,
       score: schema.ratings.score,
+      flavorScore: schema.ratings.flavorScore,
+      priceScore: schema.ratings.priceScore,
+      serviceScore: schema.ratings.serviceScore,
+      ambienceScore: schema.ratings.ambienceScore,
+      menuScore: schema.ratings.menuScore,
+      waitTimeScore: schema.ratings.waitTimeScore,
       comment: schema.ratings.comment,
     })
     .from(schema.ratings)
@@ -120,6 +128,14 @@ export const loadHistory = async () => {
           memberId: rating.memberId,
           displayName: rating.displayName,
           score: Number(rating.score),
+          criteria: {
+            flavor: toOptionalNumber(rating.flavorScore),
+            price: toOptionalNumber(rating.priceScore),
+            service: toOptionalNumber(rating.serviceScore),
+            ambience: toOptionalNumber(rating.ambienceScore),
+            menu: toOptionalNumber(rating.menuScore),
+            waitTime: toOptionalNumber(rating.waitTimeScore),
+          },
           comment: rating.comment,
           isRecommender: rating.memberId === visit?.recommendedByMemberId,
         }))

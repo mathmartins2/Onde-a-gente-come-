@@ -8,6 +8,7 @@ export type SessionPoolRestaurant = {
   putInRoundByMemberId: string
   revisitWeight: number
   isVetoed: boolean
+  isPreviousWinner: boolean
 }
 
 export type SessionParticipant = {
@@ -49,9 +50,12 @@ export const buildSessionContenders = (
     participants.map((participant) => [participant.memberId, participant]),
   )
 
-  const scored = pool
-    .filter((entry) => !entry.isVetoed)
-    .flatMap((entry) => {
+  const withoutBanned = pool.filter((entry) => !entry.isVetoed)
+  const withoutPreviousWinner = withoutBanned.filter((entry) => !entry.isPreviousWinner)
+  const eligiblePool =
+    withoutPreviousWinner.length > 0 ? withoutPreviousWinner : withoutBanned
+
+  const scored = eligiblePool.flatMap((entry) => {
       const borda = bordaByRestaurant.get(entry.restaurantId)
       if (!borda || borda.points <= 0) return []
 
@@ -77,8 +81,8 @@ export const buildSessionContenders = (
           supporters: borda.supporters,
           topChoiceCount: borda.topChoiceCount,
         },
-      ]
-    })
+    ]
+  })
 
   const totalWeight = scored.reduce((sum, contender) => sum + contender.weight, 0)
   if (totalWeight <= 0) return scored

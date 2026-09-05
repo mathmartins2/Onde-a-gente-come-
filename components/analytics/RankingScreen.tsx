@@ -53,7 +53,8 @@ export const RankingScreen = () => {
       <section>
         <h1 className="mb-1 text-lg font-semibold">Ranking dos lugares</h1>
         <p className="mb-3 text-xs text-[var(--muted)]">
-          Quanto mais vezes vocês vão e mantêm a nota, mais o lugar sobe.
+          O número grande é o score do ranking, não a nota. Ele começa perto de 3,0 e vai chegando
+          na nota real conforme o lugar acumula avaliações.
         </p>
 
         <div className="flex flex-col gap-2">
@@ -75,7 +76,7 @@ export const RankingScreen = () => {
                     {restaurant.visitCount}x ·{' '}
                     {restaurant.averageScore === null
                       ? 'sem nota'
-                      : `média ${restaurant.averageScore.toFixed(1)}`}
+                      : `média ${restaurant.averageScore.toFixed(2)}`}
                     {restaurant.cuisines.length > 0 ? ` · ${restaurant.cuisines.join(', ')}` : ''}
                   </p>
                   {restaurant.lastVisitedAt ? (
@@ -89,6 +90,7 @@ export const RankingScreen = () => {
                 </div>
               </div>
               <span
+                title="Score do ranking: mistura a nota real com uma âncora neutra de 3,0 até o lugar acumular avaliações"
                 className={
                   restaurant.averageScore === null
                     ? 'shrink-0 text-xs uppercase tracking-wide text-[var(--muted)]'
