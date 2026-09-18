@@ -2,37 +2,36 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import {
-  BarChart3,
-  Dices,
-  BookOpen,
-  History,
-  LogOut,
-  MapPin,
-  Trophy,
-  User,
-  UtensilsCrossed,
-} from 'lucide-react'
+import { Dices, History, LogOut, User, UtensilsCrossed } from 'lucide-react'
 import { apiClient } from '@/lib/http/apiClient'
 import { classNames } from '@/lib/utilities/classNames'
 
-const navigationItems = [
-  { href: '/', label: 'Sorteio', icon: Dices },
-  { href: '/restaurants', label: 'Lugares', icon: UtensilsCrossed },
-  { href: '/history', label: 'Rodadas', icon: History },
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
-  { href: '/statistics', label: 'Números', icon: BarChart3 },
-  { href: '/map', label: 'Mapa', icon: MapPin },
-  { href: '/rules', label: 'Regras', icon: BookOpen },
-  { href: '/profile', label: 'Perfil', icon: User },
-]
-
 const homeHref = '/'
 
-const isRouteActive = (pathname: string, href: string) =>
-  href === homeHref
-    ? pathname === homeHref
-    : pathname === href || pathname.startsWith(`${href}/`)
+const destinations = [
+  { href: homeHref, label: 'Sorteio', icon: Dices, routes: [homeHref] },
+  {
+    href: '/restaurants',
+    label: 'Lugares',
+    icon: UtensilsCrossed,
+    routes: ['/restaurants'],
+  },
+  {
+    href: '/history',
+    label: 'Histórico',
+    icon: History,
+    routes: ['/history', '/ranking', '/statistics', '/map'],
+  },
+  { href: '/profile', label: 'Perfil', icon: User, routes: ['/profile', '/rules'] },
+]
+
+const matchesRoute = (pathname: string, route: string) => {
+  if (route === homeHref) return pathname === homeHref
+  return pathname === route || pathname.startsWith(`${route}/`)
+}
+
+const isDestinationActive = (pathname: string, routes: readonly string[]) =>
+  routes.some((route) => matchesRoute(pathname, route))
 
 const initialLetterOf = (displayName: string) => displayName.trim().charAt(0).toUpperCase() || '?'
 
@@ -52,78 +51,129 @@ export const AppShell = ({ displayName, children }: AppShellProps) => {
   }
 
   return (
-    <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_82%,transparent)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
-          <Link href={homeHref} className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 -rotate-6 items-center justify-center rounded-[0.9rem] bg-[linear-gradient(140deg,var(--accent-soft),var(--accent-deep))] text-[#20100a] shadow-[var(--shadow-accent)]">
-              <UtensilsCrossed size={17} strokeWidth={2.4} />
+    <div className="min-h-dvh lg:flex">
+      <nav
+        aria-label="Navegação principal"
+        className="hidden shrink-0 border-r border-hairline lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:flex-col lg:gap-1 lg:p-4"
+      >
+        <Link href={homeHref} className="mb-6 flex flex-col gap-2 px-2">
+          <span className="flex h-10 w-10 shrink-0 -rotate-6 items-center justify-center rounded-xl bg-[linear-gradient(140deg,var(--accent-hover),var(--accent-press))] text-on-accent shadow-[var(--elevation-accent)]">
+            <UtensilsCrossed size={19} strokeWidth={2.4} />
+          </span>
+          <span>
+            <span className="font-display block text-heading-lg leading-tight">
+              Onde a gente
+              <br />
+              <span className="text-accent">come</span>
             </span>
-            <span className="min-w-0">
-              <span className="font-display block truncate text-[17px] font-semibold leading-tight">
-                Onde a gente <span className="text-[var(--accent)]">come</span>
-              </span>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                Recife · mesa pra seis
-              </span>
-            </span>
-          </Link>
+            <span className="mt-1 block text-micro-cap text-ink-faint">Recife · mesa pra seis</span>
+          </span>
+        </Link>
 
-          <button
-            onClick={signOut}
-            aria-label={`Sair da conta de ${displayName}`}
-            className="group flex shrink-0 items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-3 transition-colors hover:border-[var(--accent)]"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--surface-raised)] text-[11px] font-bold text-[var(--accent-soft)]">
-              {initialLetterOf(displayName)}
-            </span>
-            <LogOut
-              size={13}
-              strokeWidth={2.2}
-              className="text-[var(--muted)] transition-colors group-hover:text-[var(--accent)]"
-            />
-          </button>
-        </div>
-      </header>
+        {destinations.map((destination) => {
+          const Icon = destination.icon
+          const isActive = isDestinationActive(pathname, destination.routes)
 
-      <main className="mx-auto max-w-3xl px-4 pb-[calc(var(--navigation-height)+var(--navigation-inset)*2+env(safe-area-inset-bottom)+1.5rem)] pt-6">
-        {children}
-      </main>
+          return (
+            <Link
+              key={destination.href}
+              href={destination.href}
+              aria-current={isActive ? 'page' : undefined}
+              className={classNames(
+                'flex min-h-11 items-center gap-3 rounded-lg px-3 text-body-md transition-colors',
+                isActive
+                  ? 'bg-accent-tint font-semibold text-accent'
+                  : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
+              )}
+            >
+              <Icon size={18} strokeWidth={isActive ? 2.4 : 1.9} />
+              {destination.label}
+            </Link>
+          )
+        })}
+
+        <button
+          onClick={signOut}
+          className="mt-auto flex min-h-11 items-center gap-3 rounded-lg px-3 text-body-md text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-[11px] font-bold text-accent-hover">
+            {initialLetterOf(displayName)}
+          </span>
+          Sair
+        </button>
+      </nav>
+
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-30 border-b border-hairline bg-[color-mix(in_srgb,var(--canvas)_82%,transparent)] backdrop-blur-xl lg:hidden">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+            <Link href={homeHref} className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 -rotate-6 items-center justify-center rounded-lg bg-[linear-gradient(140deg,var(--accent-hover),var(--accent-press))] text-on-accent">
+                <UtensilsCrossed size={17} strokeWidth={2.4} />
+              </span>
+              <span className="min-w-0">
+                <span className="font-display block truncate text-heading-md">
+                  Onde a gente <span className="text-accent">come</span>
+                </span>
+                <span className="block text-micro-cap text-ink-faint">Recife · mesa pra seis</span>
+              </span>
+            </Link>
+
+            <button
+              onClick={signOut}
+              aria-label={`Sair da conta de ${displayName}`}
+              className="group flex h-11 shrink-0 items-center gap-2 rounded-pill border border-hairline bg-surface-1 py-1 pl-1 pr-3 transition-colors hover:border-accent"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-[11px] font-bold text-accent-hover">
+                {initialLetterOf(displayName)}
+              </span>
+              <LogOut
+                size={14}
+                strokeWidth={2.2}
+                className="text-ink-muted transition-colors group-hover:text-accent"
+              />
+            </button>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-3xl px-4 pb-[calc(var(--navigation-height)+var(--navigation-inset)*2+env(safe-area-inset-bottom)+1.5rem)] pt-6 lg:max-w-5xl lg:px-8 lg:pb-12">
+          {children}
+        </main>
+      </div>
 
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-20 h-28 bg-[linear-gradient(to_top,var(--background),transparent)]"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-20 h-28 bg-[linear-gradient(to_top,var(--canvas),transparent)] lg:hidden"
       />
 
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(var(--navigation-inset)+env(safe-area-inset-bottom))] pt-1"
+        className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(var(--navigation-inset)+env(safe-area-inset-bottom))] pt-1 lg:hidden"
       >
-        <div className="mx-auto flex max-w-md items-stretch gap-0.5 rounded-[var(--radius-large)] border border-[var(--border-strong)] bg-[color-mix(in_srgb,var(--surface)_88%,transparent)] p-1.5 shadow-[var(--shadow-lifted)] backdrop-blur-xl">
-          {navigationItems.map((item) => {
-            const Icon = item.icon
-            const isActive = isRouteActive(pathname, item.href)
+        <div className="mx-auto flex max-w-md items-stretch gap-1 rounded-2xl border border-hairline-strong bg-[color-mix(in_srgb,var(--surface-1)_92%,transparent)] p-1.5 shadow-[var(--elevation-3)] backdrop-blur-xl">
+          {destinations.map((destination) => {
+            const Icon = destination.icon
+            const isActive = isDestinationActive(pathname, destination.routes)
 
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={destination.href}
+                href={destination.href}
                 aria-current={isActive ? 'page' : undefined}
                 className={classNames(
-                  'flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-[var(--radius-medium)] px-0 transition-colors duration-200',
+                  'flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-lg transition-colors duration-200',
                   isActive
-                    ? 'bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] text-[var(--accent)]'
-                    : 'text-[var(--muted)] active:bg-[var(--surface-raised)]',
+                    ? 'bg-accent-tint text-accent'
+                    : 'text-ink-muted active:bg-surface-2',
                 )}
               >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.9} />
+                <Icon size={19} strokeWidth={isActive ? 2.5 : 1.9} />
                 <span
                   className={classNames(
-                    'text-[9px] leading-none tracking-[0.01em]',
+                    'text-[11px] leading-none',
                     isActive ? 'font-bold' : 'font-medium',
                   )}
                 >
-                  {item.label}
+                  {destination.label}
                 </span>
               </Link>
             )

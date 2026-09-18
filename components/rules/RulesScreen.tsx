@@ -22,8 +22,8 @@ const Step = ({
       {number}
     </span>
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold">{title}</p>
-      <div className="mt-1 flex flex-col gap-1 text-xs leading-relaxed text-[var(--muted)]">
+      <p className="text-heading-sm">{title}</p>
+      <div className="mt-1 flex flex-col gap-1 text-xs leading-relaxed text-ink-muted">
         {children}
       </div>
     </div>
@@ -31,7 +31,7 @@ const Step = ({
 )
 
 const Formula = ({ children }: { children: React.ReactNode }) => (
-  <p className="overflow-x-auto rounded-lg bg-[var(--surface-raised)] px-3 py-2 font-mono text-[11px] text-[var(--foreground)]">
+  <p className="overflow-x-auto rounded-lg bg-surface-2 px-3 py-2 font-mono text-[11px] text-ink">
     {children}
   </p>
 )
@@ -39,14 +39,14 @@ const Formula = ({ children }: { children: React.ReactNode }) => (
 export const RulesScreen = () => (
   <div className="flex flex-col gap-5">
     <div>
-      <h1 className="text-lg font-semibold">Como funciona</h1>
-      <p className="mt-1 text-xs text-[var(--muted)]">
+      <h1 className="text-heading-xl">Como funciona</h1>
+      <p className="mt-1 text-caption">
         Todos os números aqui vêm direto da configuração do app. Se mudarem, esta tela muda junto.
       </p>
     </div>
 
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold">O sorteio</h2>
+      <h2 className="text-heading-sm">O sorteio</h2>
       <Card className="flex flex-col gap-4">
         <Step number={1} title="O admin abre a rodada">
           <p>Só o admin abre. Quem não entrar na sessão fica de fora do sorteio.</p>
@@ -59,7 +59,7 @@ export const RulesScreen = () => (
           </p>
           <p>
             Enquanto a rodada está aberta,{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               ninguém vê quem indicou o quê
             </strong>{' '}
             — nem aqui, nem na tela de Lugares. É pra votar no lugar, não na pessoa.
@@ -77,7 +77,7 @@ export const RulesScreen = () => (
             Por isso um 1º lugar não vale sempre o mesmo: quem ranqueia poucos lugares concentra
             mais ponto em cada um.
           </p>
-          <div className="flex flex-col gap-0.5 rounded-lg bg-[var(--surface-raised)] px-3 py-2 font-mono text-[11px]">
+          <div className="flex flex-col gap-0.5 rounded-lg bg-surface-2 px-3 py-2 font-mono text-[11px]">
             <span>lista de 1 lugar → 1º vale 1,000</span>
             <span>lista de 2 lugares → 1º vale 0,667</span>
             <span>lista de 3 lugares → 1º vale 0,500</span>
@@ -96,20 +96,25 @@ export const RulesScreen = () => (
             mais votado fica fora, e só 1 lugar é banido por rodada.
           </p>
           <p>
-            <strong className="text-[var(--foreground)]">Ninguém vê os votos antes do sorteio</strong>
+            <strong className="text-ink">Ninguém vê os votos antes do sorteio</strong>
             {' '}— nem a contagem — pra ninguém votar reagindo ao placar.
           </p>
           <p>
-            Se der empate em primeiro, a rodada entra em{' '}
-            <strong className="text-[var(--foreground)]">segundo turno</strong>: todo mundo perde o
-            ready e vota de novo, só entre os empatados. Empatou de novo, ninguém é banido.
+            Quem não quiser banir ninguém pode marcar{' '}
+            <strong className="text-ink">&ldquo;não banir ninguém&rdquo;</strong> — essa escolha não
+            entra na contagem, só registra que você decidiu.
+          </p>
+          <p>
+            Deu empate em primeiro? <strong className="text-ink">A gente sorteia quem cai</strong>,
+            na hora, entre os empatados. Não existe segundo turno: o sorteio nunca trava por causa
+            de empate.
           </p>
         </Step>
 
         <Step number={6} title="Quórum de metade do grupo">
           <p>
             O sorteio só acontece com pelo menos{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               {percentage(drawConfiguration.minimumQuorumRatio)}
             </strong>{' '}
             dos membros na sessão, arredondando para cima. Com 4 pessoas, precisa de 2.
@@ -127,7 +132,7 @@ export const RulesScreen = () => (
         <Step number={8} title="Sai o vencedor e o plano B">
           <p>
             O sorteio escolhe também um{' '}
-            <strong className="text-[var(--foreground)]">segundo lugar</strong>, pelo mesmo peso,
+            <strong className="text-ink">segundo lugar</strong>, pelo mesmo peso,
             para o caso do primeiro não rolar. Na hora de dar a nota vocês dizem em qual foram, e a
             nota vai para o lugar certo.
           </p>
@@ -140,17 +145,17 @@ export const RulesScreen = () => (
     </section>
 
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold">O peso de cada pessoa</h2>
-      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-[var(--muted)]">
+      <h2 className="text-heading-sm">O peso de cada pessoa</h2>
+      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-ink-muted">
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">Quem está sem ganhar sobe</p>
+          <p className="text-heading-sm text-ink">Quem está sem ganhar sobe</p>
           <p className="mt-1">
             Cada rodada sem ganhar soma{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               +{percentage(drawConfiguration.weightIncreasePerRoundWithoutWinning)}
             </strong>
             , até o teto de{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               {drawConfiguration.maximumMemberWeight}x
             </strong>
             . Quem ganha volta para {drawConfiguration.baseMemberWeight}x.
@@ -163,17 +168,17 @@ export const RulesScreen = () => (
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">
+          <p className="text-heading-sm text-ink">
             Quem indica bem ganha um empurrão
           </p>
           <p className="mt-1">
             Se a média dos lugares que você indicou está acima da média do grupo, seu peso sobe;
             abaixo, desce. Limitado entre{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               {drawConfiguration.minimumQualityMultiplier}x
             </strong>{' '}
             e{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               {drawConfiguration.maximumQualityMultiplier}x
             </strong>
             .
@@ -181,7 +186,7 @@ export const RulesScreen = () => (
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">Quem não entrou não conta</p>
+          <p className="text-heading-sm text-ink">Quem não entrou não conta</p>
           <p className="mt-1">
             Sem rank, você não participa do sorteio — e também não acumula rodadas sem ganhar.
             Ficar de fora não vira vantagem depois.
@@ -191,19 +196,19 @@ export const RulesScreen = () => (
     </section>
 
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold">Lugar onde já fomos</h2>
-      <Card className="flex flex-col gap-2 text-xs leading-relaxed text-[var(--muted)]">
-        <p className="text-[var(--foreground)]">
+      <h2 className="text-heading-sm">Lugar onde já fomos</h2>
+      <Card className="flex flex-col gap-2 text-xs leading-relaxed text-ink-muted">
+        <p className="text-ink">
           <strong>O lugar da última rodada não pode sair de novo.</strong> Ele fica de fora do
           sorteio seguinte, sem exceção — só volta se for a única opção da roda.
         </p>
         <p>
           Depois disso, o lugar cai para{' '}
-          <strong className="text-[var(--foreground)]">
+          <strong className="text-ink">
             {percentage(drawConfiguration.recentlyVisitedPenalty)}
           </strong>{' '}
           do peso, e vai voltando ao normal ao longo de{' '}
-          <strong className="text-[var(--foreground)]">
+          <strong className="text-ink">
             {drawConfiguration.monthsToFullyRecoverFromVisit} meses
           </strong>
           . Quanto mais vezes vocês foram, menor a chance de repetir.
@@ -213,10 +218,10 @@ export const RulesScreen = () => (
     </section>
 
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold">A nota</h2>
-      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-[var(--muted)]">
+      <h2 className="text-heading-sm">A nota</h2>
+      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-ink-muted">
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">
+          <p className="text-heading-sm text-ink">
             {ratingCriteria.length} critérios, de {ratingConfiguration.minimumScore} a{' '}
             {ratingConfiguration.maximumScore}
           </p>
@@ -224,7 +229,7 @@ export const RulesScreen = () => (
             {ratingCriteria.map((criterion) => (
               <span
                 key={criterion.key}
-                className="rounded-[var(--radius-pill)] border border-[var(--border-strong)] bg-[var(--surface-raised)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--foreground)]"
+                className="rounded-pill border border-hairline-strong bg-surface-2 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink"
               >
                 {criterion.label}
               </span>
@@ -236,7 +241,7 @@ export const RulesScreen = () => (
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">
+          <p className="text-heading-sm text-ink">
             O rascunho salva sozinho
           </p>
           <p className="mt-1">
@@ -247,7 +252,7 @@ export const RulesScreen = () => (
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">Ninguém vê antes da hora</p>
+          <p className="text-heading-sm text-ink">Ninguém vê antes da hora</p>
           <p className="mt-1">
             As notas ficam escondidas até todo mundo dar a sua. Só então a nota final aparece. Nem o
             ranking nem as estatísticas enxergam nota de rolê ainda não revelado.
@@ -255,7 +260,7 @@ export const RulesScreen = () => (
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">O lugar é de quem cadastrou</p>
+          <p className="text-heading-sm text-ink">O lugar é de quem cadastrou</p>
           <p className="mt-1">
             Quem registrou o restaurante é o indicador dele, mesmo que outra pessoa tenha trazido
             para a rodada. É esse crédito que conta para o peso e para a nota.
@@ -263,16 +268,16 @@ export const RulesScreen = () => (
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-[var(--foreground)]">
+          <p className="text-heading-sm text-ink">
             Quem indicou pesa menos na nota
           </p>
           <p className="mt-1">
             Quem colocou o lugar pesa{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               {ratingConfiguration.recommenderWeight}x
             </strong>{' '}
             e todo mundo pesa{' '}
-            <strong className="text-[var(--foreground)]">
+            <strong className="text-ink">
               {ratingConfiguration.nonRecommenderWeight}x
             </strong>
             , para o entusiasmo de quem escolheu não inflar a nota.
@@ -283,10 +288,10 @@ export const RulesScreen = () => (
     </section>
 
     <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold">O ranking dos lugares</h2>
-      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-[var(--muted)]">
+      <h2 className="text-heading-sm">O ranking dos lugares</h2>
+      <Card className="flex flex-col gap-3 text-xs leading-relaxed text-ink-muted">
         <p>
-          <strong className="text-[var(--foreground)]">
+          <strong className="text-ink">
             O número grande do ranking não é a nota do lugar.
           </strong>{' '}
           É um score que mistura a nota real com uma âncora neutra de{' '}
@@ -300,11 +305,11 @@ export const RulesScreen = () => (
           {rankingConfiguration.bayesianConfidenceConstant} + nº de notas)
         </Formula>
 
-        <div className="flex flex-col gap-1 rounded-lg bg-[var(--surface-raised)] px-3 py-2.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+        <div className="flex flex-col gap-1 rounded-lg bg-surface-2 px-3 py-2.5">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-muted">
             exemplo com 3 votos
           </p>
-          <p className="font-mono text-[11px] text-[var(--foreground)]">
+          <p className="font-mono text-[11px] text-ink">
             nota real 3,39 → score 3,16
           </p>
           <p className="text-[11px]">

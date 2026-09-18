@@ -57,11 +57,11 @@ export const PriceHistory = ({ visitId }: { visitId: string }) => {
     return (
       <Card className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">total da conta</p>
+          <p className="text-micro-cap text-ink-faint">total da conta</p>
           <p className="text-xl font-semibold tabular-nums">
             {currencyFormatter.format(Number(entry.amount))}
           </p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+          <p className="mt-0.5 text-micro-cap text-ink-faint">
             lançado por {entry.addedByName}
           </p>
         </div>
@@ -74,7 +74,7 @@ export const PriceHistory = ({ visitId }: { visitId: string }) => {
 
   return (
     <Card className="flex flex-col gap-2">
-      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">total da conta</p>
+      <p className="text-micro-cap text-ink-faint">total da conta</p>
       <div className="flex gap-2">
         <TextInput
           ref={amountRef}
@@ -90,7 +90,7 @@ export const PriceHistory = ({ visitId }: { visitId: string }) => {
           <Check size={16} />
         </Button>
       </div>
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-caption">
         Um valor por rolê. Qualquer um pode lançar ou corrigir.
       </p>
     </Card>

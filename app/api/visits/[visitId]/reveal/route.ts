@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withMember } from '@/lib/http/routeHelpers'
 import { revealVisit } from '@/lib/services/ratingService'
+import { publishVisitChanged } from '@/lib/realtime/sessionChannel'
 
 export const POST = async (_request: Request, context: { params: Promise<{ visitId: string }> }) =>
   withMember(async () => {
@@ -14,6 +15,8 @@ export const POST = async (_request: Request, context: { params: Promise<{ visit
         { status: 409 },
       )
     }
+
+    await publishVisitChanged(visitId)
 
     return NextResponse.json(result)
   })

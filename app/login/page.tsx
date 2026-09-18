@@ -18,7 +18,7 @@ const cravingWords = [
 const marqueeSeparator = ' • '
 
 const MarqueeRow = () => (
-  <span className="font-display shrink-0 whitespace-nowrap px-4 text-3xl font-semibold lowercase text-[var(--accent)]">
+  <span className="font-display shrink-0 whitespace-nowrap px-4 text-3xl font-semibold lowercase text-accent">
     {cravingWords.join(marqueeSeparator)}
     {marqueeSeparator}
   </span>
@@ -51,28 +51,28 @@ const LoginPage = async () => {
 
     <div className="relative mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
       <div className="animate-rise-in mb-9 text-center">
-        <span className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--muted)]">
+        <span className="inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-surface-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-ink-muted">
           <span className="animate-tilt-wobble text-sm">🍽️</span>
           Recife · desde sempre
         </span>
 
         <h1 className="font-display mt-5 text-[2.9rem] font-semibold leading-[0.92] tracking-[-0.03em]">
           Onde a<br />
-          gente <span className="text-[var(--accent)]">come</span>
+          gente <span className="text-accent">come</span>
           <span className="text-[var(--herb)]">?</span>
         </h1>
 
-        <p className="mx-auto mt-4 max-w-[19rem] text-sm leading-relaxed text-[var(--muted)]">
+        <p className="mx-auto mt-4 max-w-[19rem] text-sm leading-relaxed text-ink-muted">
           Chega de decidir no grupo. O sorteio escolhe, todo mundo aceita e a mesa tá marcada.
         </p>
       </div>
 
       <div
-        className="animate-rise-in relative rounded-[var(--radius-large)] border border-[var(--border-strong)] bg-[linear-gradient(165deg,var(--surface-raised),var(--surface)_52%,var(--surface-sunken))] shadow-[var(--shadow-lifted)]"
+        className="animate-rise-in relative rounded-2xl border border-hairline-strong bg-[linear-gradient(165deg,var(--surface-2),var(--surface-1)_52%,var(--surface-sunken))] shadow-[var(--elevation-3)]"
         style={{ animationDelay: '140ms' }}
       >
         <div className="flex items-center justify-between px-6 pt-6">
-          <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--muted)]">
+          <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-ink-muted">
             Comanda do rolê
           </span>
           <span className="flex gap-1" aria-hidden>
@@ -86,10 +86,10 @@ const LoginPage = async () => {
           <LoginForm />
         </div>
 
-        <div className="relative border-t border-dashed border-[var(--border-strong)] px-6 py-4">
+        <div className="relative border-t border-dashed border-hairline-strong px-6 py-4">
           <span aria-hidden className="ticket-notch -left-3 top-1/2 -translate-y-1/2" />
           <span aria-hidden className="ticket-notch -right-3 top-1/2 -translate-y-1/2" />
-          <p className="text-center text-[11px] leading-relaxed text-[var(--muted)]">
+          <p className="text-center text-[11px] leading-relaxed text-ink-muted">
             Sem conta nova. Use o usuário que o grupo te deu.
           </p>
         </div>

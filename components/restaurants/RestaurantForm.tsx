@@ -170,7 +170,7 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
   return (
     <Card className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
           Buscar no mapa
         </p>
         <form className="flex gap-2" onSubmit={searchPlaces}>
@@ -200,24 +200,24 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
         </form>
 
         {candidates.length > 0 ? (
-          <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--border)] p-2">
-            <p className="px-1 text-xs text-[var(--muted)]">É algum destes?</p>
+          <div className="flex flex-col gap-1.5 rounded-xl border border-hairline p-2">
+            <p className="px-1 text-caption">É algum destes?</p>
             {candidates.map((candidate, index) => (
               <div
                 key={`${candidate.source}-${index}`}
-                className="flex items-center gap-2 rounded-lg transition-colors hover:bg-[var(--surface-raised)]"
+                className="flex items-center gap-2 rounded-lg transition-colors hover:bg-surface-2"
               >
                 <button
                   onClick={() => applyCandidate(candidate)}
                   className="min-w-0 flex-1 px-2.5 py-2 text-left"
                 >
                   <p className="truncate text-sm">{candidate.name}</p>
-                  <p className="truncate text-xs text-[var(--muted)]">
+                  <p className="truncate text-caption">
                     {[candidate.address, candidate.neighborhood, candidate.city]
                       .filter(Boolean)
                       .join(' · ') || 'sem endereço'}
                   </p>
-                  <p className="mt-0.5 text-[10px] uppercase text-[var(--muted)]">
+                  <p className="mt-0.5 text-micro-cap text-ink-faint">
                     {sourceLabels[candidate.source] ?? candidate.source}
                     {candidate.cuisines.length > 0 ? ` · ${candidate.cuisines.join(', ')}` : ''}
                   </p>
@@ -228,7 +228,7 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
                   target="_blank"
                   rel="noreferrer noopener"
                   title="Abrir no Google Maps"
-                  className="mr-1.5 shrink-0 rounded-lg p-2 text-[var(--muted)] transition-colors hover:text-[var(--accent)]"
+                  className="mr-1.5 shrink-0 rounded-lg p-2 text-ink-muted transition-colors hover:text-accent"
                 >
                   <ExternalLink size={16} />
                 </a>
@@ -269,10 +269,10 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">
             Tipo de comida
           </span>
-          <p className="text-xs text-[var(--muted)]">
+          <p className="text-caption">
             Toque pra marcar. Dá pra escolher mais de um.
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -294,8 +294,8 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
                   }
                   className={
                     isSelected
-                      ? 'rounded-[var(--radius-pill)] border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-black'
-                      : 'rounded-[var(--radius-pill)] border border-[var(--border-strong)] bg-[var(--surface-raised)] px-3 py-1.5 text-xs text-[var(--muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)]'
+                      ? 'rounded-pill border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-black'
+                      : 'rounded-pill border border-hairline-strong bg-surface-2 px-3 py-1.5 text-caption transition-colors hover:border-[var(--accent)] hover:text-ink'
                   }
                 >
                   {cuisine}

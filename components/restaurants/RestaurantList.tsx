@@ -1,12 +1,12 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ExternalLink, Pencil, X } from 'lucide-react'
-import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { apiClient } from '@/lib/http/apiClient'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { RestaurantForm, type EditableRestaurant } from './RestaurantForm'
 
@@ -37,19 +37,21 @@ export const RestaurantList = () => {
   }
 
   if (restaurantsQuery.isLoading) {
-    return <p className="text-sm text-[var(--muted)]">Carregando...</p>
+    return <p className="text-body-sm text-ink-muted">Carregando...</p>
   }
 
   const restaurants = restaurantsQuery.data?.restaurants ?? []
   const authorshipHidden = restaurantsQuery.data?.authorshipHidden ?? false
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {authorshipHidden ? (
-        <p className="px-1 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+        <p className="px-1 text-micro-cap text-ink-faint">
           quem indicou está escondido enquanto a rodada estiver aberta
         </p>
       ) : null}
+
+      <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3">
       {restaurants.map((restaurant) => {
         const isEditing = editingRestaurantId === restaurant.id
         const suggestedBy = restaurant.createdByName
@@ -58,7 +60,7 @@ export const RestaurantList = () => {
           return (
             <div key={restaurant.id} className="flex flex-col gap-2">
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
+                <span className="text-xs font-semibold uppercase tracking-wide text-accent">
                   editando {restaurant.name}
                 </span>
                 <Button variant="ghost" size="small" onClick={() => setEditingRestaurantId(null)}>
@@ -74,7 +76,7 @@ export const RestaurantList = () => {
           <Card key={restaurant.id} className="flex items-center justify-between gap-3 py-3.5">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{restaurant.name}</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--muted)]">
+              <p className="mt-0.5 truncate text-caption">
                 {[
                   restaurant.cuisines.join(', ') || null,
                   restaurant.neighborhood,
@@ -84,12 +86,12 @@ export const RestaurantList = () => {
                   .join(' · ') || 'sem detalhes'}
               </p>
               {suggestedBy ? (
-                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                <p className="mt-0.5 text-micro-cap text-ink-faint">
                   indicado por {suggestedBy}
                 </p>
               ) : null}
               {authorshipHidden && restaurant.isMine ? (
-                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--accent)]">
+                <p className="mt-0.5 text-micro-cap text-accent">
                   seu
                 </p>
               ) : null}
@@ -101,7 +103,7 @@ export const RestaurantList = () => {
                 target="_blank"
                 rel="noreferrer noopener"
                 title="Abrir no Google Maps"
-                className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:text-[var(--accent)]"
+                className="rounded-lg p-2 text-ink-muted transition-colors hover:text-accent"
               >
                 <ExternalLink size={16} />
               </a>
@@ -117,6 +119,7 @@ export const RestaurantList = () => {
           </Card>
         )
       })}
+      </div>
     </div>
   )
 }

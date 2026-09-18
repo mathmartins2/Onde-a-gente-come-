@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { ScoreReveal } from './ScoreReveal'
+import { useVisitStream, visitQueryKey } from '@/lib/http/useVisitStream'
 import { classNames } from '@/lib/utilities/classNames'
 import {
   CriteriaForm,
@@ -23,6 +25,7 @@ type SessionState = {
   isRevealed: boolean
   pendingMembers: Array<{ id: string; displayName: string; hasRatingPin: boolean }>
   ratedMemberIds: string[]
+  reveal: RevealResult | null
 }
 
 type RevealResult = {
@@ -65,12 +68,15 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
   const commentRef = useRef<HTMLTextAreaElement>(null)
   const [activeRating, setActiveRating] = useState<ActiveRating | null>(null)
 
+  const { isStreaming } = useVisitStream(visitId)
+
   const sessionQuery = useQuery({
-    queryKey: ['rating-session', visitId],
+    queryKey: visitQueryKey(visitId),
     queryFn: async () => {
       const response = await apiClient.get<SessionState>(`/visits/${visitId}`)
       return response.data
     },
+    refetchInterval: isStreaming ? false : 5000,
   })
 
   const submitMutation = useMutation({
@@ -109,11 +115,11 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
   })
 
   const session = sessionQuery.data
-  const reveal = revealMutation.data
+  const reveal = sessionQuery.data?.reveal?.revealed ? sessionQuery.data.reveal : null
   const stage = resolveStage(activeRating, Boolean(reveal), submitMutation.isSuccess)
 
-  if (sessionQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
-  if (!session) return <p className="text-sm text-[var(--muted)]">Visita não encontrada.</p>
+  if (sessionQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (!session) return <p className="text-body-sm text-ink-muted">Visita não encontrada.</p>
 
   const activeMember = session.pendingMembers.find(
     (member) => member.id === activeRating?.memberId,
@@ -153,9 +159,9 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)]">avaliando</p>
+        <p className="text-xs uppercase tracking-widest text-ink-muted">avaliando</p>
         <h1 className="mt-1 text-xl font-semibold">{session.restaurantName}</h1>
-        <p className="mt-1 text-xs text-[var(--muted)]">
+        <p className="mt-1 text-caption">
           {session.ratedMemberIds.length} de{' '}
           {session.ratedMemberIds.length + session.pendingMembers.length} já deram nota
         </p>
@@ -165,7 +171,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
         {stage === 'picking' && !everyoneRated ? (
           <motion.div key="picking" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <Card className="flex flex-col gap-3">
-              <p className="text-center text-sm text-[var(--muted)]">Quem está com o celular?</p>
+              <p className="text-center text-body-sm text-ink-muted">Quem está com o celular?</p>
               {session.pendingMembers.map((member) => (
                 <Button
                   key={member.id}
@@ -186,9 +192,9 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
           <motion.div key="pin" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
             <Card className="flex flex-col items-center gap-5">
               <div className="text-center">
-                <Lock size={18} className="mx-auto text-[var(--muted)]" />
+                <Lock size={18} className="mx-auto text-ink-muted" />
                 <p className="mt-2 text-sm">Sua vez, {activeMember?.displayName}</p>
-                <p className="text-xs text-[var(--muted)]">digite seu PIN</p>
+                <p className="text-caption">digite seu PIN</p>
               </div>
 
               <div className="flex gap-3">
@@ -199,7 +205,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
                       'h-3.5 w-3.5 rounded-full border transition-colors',
                       index < activeRating.pin.length
                         ? 'border-[var(--accent)] bg-[var(--accent)]'
-                        : 'border-[var(--border)]',
+                        : 'border-hairline',
                     )}
                   />
                 ))}
@@ -250,7 +256,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
                 placeholder="comentário (opcional)"
                 maxLength={400}
                 rows={2}
-                className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none"
+                className="rounded-xl border border-hairline bg-surface-1 p-3 text-sm placeholder:text-ink-muted focus:border-[var(--accent)] focus:outline-none"
               />
 
               <Button
@@ -281,7 +287,7 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
                 📱
               </motion.p>
               <p className="text-lg font-medium">Passe pro próximo</p>
-              <p className="text-xs text-[var(--muted)]">a nota ficou guardada, ninguém viu</p>
+              <p className="text-caption">a nota ficou guardada, ninguém viu</p>
 
               {everyoneRated ? (
                 <Button size="large" onClick={() => revealMutation.mutate()} className="mt-2 w-full">
@@ -311,50 +317,8 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
         ) : null}
 
         {stage === 'revealed' && reveal ? (
-          <motion.div key="revealed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-3">
-            {reveal.ratings.map((rating, index) => (
-              <motion.div
-                key={rating.memberId}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.35 }}
-              >
-                <Card className="flex items-center justify-between py-3.5">
-                  <div>
-                    <p className="text-sm">
-                      {rating.displayName}
-                      {rating.isRecommender ? (
-                        <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">
-                          indicou
-                        </span>
-                      ) : null}
-                    </p>
-                    {rating.comment ? (
-                      <p className="mt-0.5 text-xs text-[var(--muted)]">{rating.comment}</p>
-                    ) : null}
-                  </div>
-                  <span className="text-xl font-semibold tabular-nums">
-                    {rating.score.toFixed(2)}
-                  </span>
-                </Card>
-              </motion.div>
-            ))}
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: reveal.ratings.length * 0.35 + 0.3, type: 'spring' }}
-            >
-              <Card className="border-[var(--accent)] bg-gradient-to-b from-[var(--accent)]/15 to-transparent py-8 text-center">
-                <p className="text-xs uppercase tracking-widest text-[var(--muted)]">nota final</p>
-                <p className="mt-2 text-6xl font-semibold tabular-nums">
-                  {reveal.finalScore === null ? '—' : reveal.finalScore.toFixed(2)}
-                </p>
-                <p className="mt-2 text-xs text-[var(--muted)]">
-                  quem não indicou pesou mais nessa conta
-                </p>
-              </Card>
-            </motion.div>
+          <motion.div key="revealed" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <ScoreReveal data={reveal} footnote="quem não indicou pesou mais nessa conta" />
           </motion.div>
         ) : null}
       </AnimatePresence>

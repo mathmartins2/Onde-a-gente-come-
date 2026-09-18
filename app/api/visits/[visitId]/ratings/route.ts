@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { ratingSchema } from '@/lib/validation/schemas'
 import { submitRating } from '@/lib/services/ratingService'
+import { publishVisitChanged } from '@/lib/realtime/sessionChannel'
 
 const failureMessages: Record<string, string> = {
   NO_PIN: 'Esse membro ainda não cadastrou o PIN',
@@ -35,7 +36,10 @@ export const POST = async (request: Request, context: { params: Promise<{ visitI
       comment: parsed.data.comment ? parsed.data.comment : null,
     })
 
-    if (result.ok) return NextResponse.json({ ok: true })
+    if (result.ok) {
+      await publishVisitChanged(visitId)
+      return NextResponse.json({ ok: true })
+    }
 
     if (result.reason === 'LOCKED') {
       return NextResponse.json(

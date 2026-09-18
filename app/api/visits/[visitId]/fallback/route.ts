@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
+import { publishVisitChanged } from '@/lib/realtime/sessionChannel'
 
 const fallbackSchema = z.object({ usedFallback: z.boolean() })
 
@@ -58,6 +59,8 @@ export const PUT = async (request: Request, context: { params: Promise<{ visitId
       })
       .where(eq(schema.visits.id, visitId))
       .returning()
+
+    await publishVisitChanged(visitId)
 
     return NextResponse.json({ visit: updated })
   })

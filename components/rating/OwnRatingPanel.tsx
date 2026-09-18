@@ -1,14 +1,15 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Check, Eye, Lock, Pencil, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { ratingCriteria } from '@/lib/scoring/configuration'
+import { ScoreReveal } from './ScoreReveal'
+import { useVisitStream, visitQueryKey } from '@/lib/http/useVisitStream'
 import {
   CriteriaForm,
   calculateAverage,
@@ -22,6 +23,7 @@ type SessionState = {
   isRevealed: boolean
   pendingMembers: Array<{ id: string; displayName: string }>
   ratedMemberIds: string[]
+  reveal: (RevealResult & { revealed: true }) | null
 }
 
 type RevealResult = {
@@ -50,9 +52,9 @@ type OwnRatingPanelProps = {
 
 export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRatingPanelProps) => {
   const queryClient = useQueryClient()
-  const commentRef = useRef<HTMLTextAreaElement>(null)
+  const [comment, setComment] = useState('')
   const [scores, setScores] = useState<CriteriaScores>(emptyCriteriaScores)
-  const [hasLoadedDraft, setHasLoadedDraft] = useState(false)
+  const [loadedDraftState, setLoadedDraftState] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
 
   const draftQuery = useQuery({
@@ -70,13 +72,13 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
     mutationFn: (nextScores: CriteriaScores) =>
       apiClient.put(`/visits/${visitId}/draft`, {
         ...nextScores,
-        comment: commentRef.current?.value ?? '',
+        comment,
       }),
   })
 
-  useEffect(() => {
-    if (hasLoadedDraft || draftQuery.isLoading) return
+  const draftState = draftQuery.isLoading ? null : draftQuery.data ? 'restored' : 'empty'
 
+  if (draftState && draftState !== loadedDraftState) {
     const draft = draftQuery.data
     if (draft) {
       const restored = emptyCriteriaScores()
@@ -85,31 +87,32 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
         if (value !== null && value !== undefined) restored[criterion.key] = value
       })
       setScores(restored)
-      if (commentRef.current && draft.comment) commentRef.current.value = draft.comment
+      setComment(draft.comment ?? '')
     }
-
-    setHasLoadedDraft(true)
-  }, [hasLoadedDraft, draftQuery.isLoading, draftQuery.data])
+    setLoadedDraftState(draftState)
+  }
 
   const updateScores = (nextScores: CriteriaScores) => {
     setScores(nextScores)
     saveDraftMutation.mutate(nextScores)
   }
 
+  const { isStreaming } = useVisitStream(visitId)
+
   const sessionQuery = useQuery({
-    queryKey: ['rating-session', visitId],
+    queryKey: visitQueryKey(visitId),
     queryFn: async () => {
       const response = await apiClient.get<SessionState>(`/visits/${visitId}`)
       return response.data
     },
-    refetchInterval: 5000,
+    refetchInterval: isStreaming ? false : 5000,
   })
 
   const submitMutation = useMutation({
     mutationFn: () =>
       apiClient.post(`/visits/${visitId}/my-rating`, {
         ...scores,
-        comment: commentRef.current?.value ?? '',
+        comment,
       }),
     onSuccess: () => {
       setIsEditing(false)
@@ -129,89 +132,29 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
   })
 
   const session = sessionQuery.data
-  if (sessionQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
-  if (!session) return <p className="text-sm text-[var(--muted)]">Visita não encontrada.</p>
+  if (sessionQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (!session) return <p className="text-body-sm text-ink-muted">Visita não encontrada.</p>
 
-  const memberById = new Map(allMembers.map((member) => [member.id, member]))
   const hasRated = session.ratedMemberIds.includes(currentMemberId)
   const everyoneRated = session.pendingMembers.length === 0
-  const reveal = revealMutation.data
+  const reveal = session?.reveal?.revealed ? session.reveal : null
 
   if (reveal) {
-    return (
-      <div className="flex flex-col gap-3">
-        {reveal.ratings.map((rating, index) => (
-          <motion.div
-            key={rating.memberId}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.35 }}
-          >
-            <Card className="flex items-center justify-between py-3.5">
-              <div>
-                <p className="text-sm">
-                  {rating.displayName}
-                  {rating.isRecommender ? (
-                    <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">colocou</span>
-                  ) : null}
-                </p>
-                {rating.comment ? (
-                  <p className="mt-0.5 text-xs text-[var(--muted)]">{rating.comment}</p>
-                ) : null}
-              </div>
-              <span className="text-xl font-semibold tabular-nums">{rating.score.toFixed(2)}</span>
-            </Card>
-          </motion.div>
-        ))}
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: reveal.ratings.length * 0.35 + 0.3, type: 'spring' }}
-        >
-          <Card className="border-[var(--accent)] bg-gradient-to-b from-[var(--accent)]/15 to-transparent py-8 text-center">
-            <p className="text-xs uppercase tracking-widest text-[var(--muted)]">nota final</p>
-            <p className="mt-2 text-6xl font-semibold tabular-nums">
-              {reveal.finalScore === null ? '—' : reveal.finalScore.toFixed(2)}
-            </p>
-            <div className="mt-4 flex flex-col gap-1.5 text-left">
-              {ratingCriteria.map((criterion) => {
-                const average = reveal.criteriaAverages[criterion.key]
-                if (average === null || average === undefined) return null
-
-                return (
-                  <div
-                    key={criterion.key}
-                    className="flex items-baseline justify-between rounded-lg bg-[var(--surface-raised)] px-2.5 py-1.5 text-sm"
-                  >
-                    <span>{criterion.label}</span>
-                    <span className="tabular-nums">{average.toFixed(2)}</span>
-                  </div>
-                )
-              })}
-            </div>
-
-            <p className="mt-3 text-xs text-[var(--muted)]">
-              quem não colocou o lugar pesou mais nessa conta
-            </p>
-          </Card>
-        </motion.div>
-      </div>
-    )
+    return <ScoreReveal data={reveal} />
   }
 
   return (
     <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-2.5">
-        <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">quem já deu nota</p>
+        <p className="text-micro-cap text-ink-faint">quem já deu nota</p>
         {allMembers.map((member) => {
           const done = session.ratedMemberIds.includes(member.id)
           return (
             <div key={member.id} className="flex items-center justify-between text-sm">
-              <span className={done ? '' : 'text-[var(--muted)]'}>
+              <span className={done ? '' : 'text-ink-muted'}>
                 {done ? '✓' : '○'} {member.displayName}
               </span>
-              <span className="text-xs text-[var(--muted)]">
+              <span className="text-caption">
                 {done ? 'guardada' : 'faltando'}
               </span>
             </div>
@@ -221,9 +164,9 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
 
       {hasRated && !isEditing ? (
         <Card className="flex flex-col items-center gap-3 py-8 text-center">
-          <Lock size={20} className="text-[var(--muted)]" />
+          <Lock size={20} className="text-ink-muted" />
           <p className="text-sm">Sua nota está guardada</p>
-          <p className="text-xs text-[var(--muted)]">
+          <p className="text-caption">
             {everyoneRated
               ? 'Todo mundo já deu. Pode revelar.'
               : `Faltam ${session.pendingMembers.length} pessoa(s).`}
@@ -233,7 +176,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
             variant="secondary"
             size="small"
             onClick={() => {
-              setHasLoadedDraft(false)
+              setLoadedDraftState(null)
               setIsEditing(true)
             }}
           >
@@ -257,7 +200,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
         <Card className="flex flex-col gap-4">
           {isEditing ? (
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">
                 mudando sua nota
               </span>
               <Button variant="ghost" size="small" onClick={() => setIsEditing(false)}>
@@ -267,11 +210,11 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
           ) : null}
 
           <div className="text-center">
-            <p className="text-xs uppercase tracking-widest text-[var(--muted)]">sua nota</p>
+            <p className="text-xs uppercase tracking-widest text-ink-muted">sua nota</p>
             <span className="text-5xl font-semibold tabular-nums">
               {calculateAverage(scores).toFixed(2)}
             </span>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+            <p className="mt-1 text-micro-cap text-ink-faint">
               média dos {ratingCriteria.length} critérios
             </p>
           </div>
@@ -279,21 +222,22 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
           <CriteriaForm scores={scores} onChange={updateScores} />
 
           {saveDraftMutation.isPending ? (
-            <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-ink-muted">
               salvando rascunho...
             </p>
           ) : draftQuery.data ? (
-            <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-center font-mono text-[9px] uppercase tracking-[0.2em] text-ink-muted">
               rascunho salvo · só você vê
             </p>
           ) : null}
 
           <textarea
-            ref={commentRef}
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
             placeholder="comentário (opcional)"
             maxLength={400}
             rows={2}
-            className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-sm placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none"
+            className="rounded-xl border border-hairline bg-surface-1 p-3 text-sm placeholder:text-ink-muted focus:border-[var(--accent)] focus:outline-none"
             onBlur={() => saveDraftMutation.mutate(scores)}
           />
 

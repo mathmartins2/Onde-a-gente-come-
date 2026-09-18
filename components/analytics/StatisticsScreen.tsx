@@ -197,9 +197,9 @@ export const StatisticsScreen = () => {
     },
   })
 
-  if (statisticsQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
+  if (statisticsQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
   const data = statisticsQuery.data
-  if (!data) return <p className="text-sm text-[var(--muted)]">Sem dados.</p>
+  if (!data) return <p className="text-body-sm text-ink-muted">Sem dados.</p>
 
   const highestSpendingMonth = data.spending.byMonth.reduce<
     { period: string; total: number } | null
@@ -207,27 +207,27 @@ export const StatisticsScreen = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-lg font-semibold">Números do grupo</h1>
+      <h1 className="text-heading-xl">Números do grupo</h1>
 
       {data.spending.totalSpent > 0 ? (
         <Card className="flex flex-col gap-4">
           <div className="flex items-baseline justify-between gap-3">
             <div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-muted">
                 {formatMonthLabel(data.spending.currentMonth.period)} · este mês
               </p>
               <p className="font-display mt-1 text-3xl font-semibold tabular-nums text-[var(--herb)]">
                 {currencyFormatter.format(data.spending.currentMonth.total)}
               </p>
-              <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+              <p className="mt-0.5 text-micro-cap text-ink-faint">
                 {data.spending.currentMonth.visitCount} rolê(s)
               </p>
             </div>
           </div>
 
-          <div className="flex items-baseline justify-between gap-3 border-t border-[var(--border)] pt-3">
+          <div className="flex items-baseline justify-between gap-3 border-t border-hairline pt-3">
             <div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-muted">
                 desde o começo
               </p>
               <p className="mt-1 text-xl font-semibold tabular-nums">
@@ -235,10 +235,10 @@ export const StatisticsScreen = () => {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-muted">
                 média por rolê
               </p>
-              <p className="mt-1 text-xl font-semibold tabular-nums text-[var(--accent)]">
+              <p className="mt-1 text-xl font-semibold tabular-nums text-accent">
                 {currencyFormatter.format(data.spending.averagePerVisit)}
               </p>
             </div>
@@ -249,24 +249,24 @@ export const StatisticsScreen = () => {
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3.5 text-center">
           <p className="text-2xl font-semibold tabular-nums">{data.totalVisits}</p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">rolês</p>
+          <p className="mt-0.5 text-micro-cap text-ink-faint">rolês</p>
         </Card>
         <Card className="p-3.5 text-center">
           <p className="text-2xl font-semibold tabular-nums">{data.cuisines.length}</p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">cozinhas</p>
+          <p className="mt-0.5 text-micro-cap text-ink-faint">cozinhas</p>
         </Card>
         <Card className="p-3.5 text-center">
           <p className="text-2xl font-semibold tabular-nums">{data.neighborhoods.length}</p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">bairros</p>
+          <p className="mt-0.5 text-micro-cap text-ink-faint">bairros</p>
         </Card>
       </div>
 
       {data.spending.byMonth.length > 0 ? (
         <Card>
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 className="text-sm font-semibold">Gasto por mês</h2>
+            <h2 className="text-heading-sm">Gasto por mês</h2>
             {highestSpendingMonth ? (
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--accent)]">
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-accent">
                 recorde: {formatMonthLabel(highestSpendingMonth.period)}{' '}
                 {currencyFormatter.format(highestSpendingMonth.total)}
               </span>
@@ -275,7 +275,7 @@ export const StatisticsScreen = () => {
           <div className="h-40">
             <SpendingChart buckets={data.spending.byMonth} />
           </div>
-          <div className="mt-3 flex flex-col gap-1.5 border-t border-[var(--border)] pt-3">
+          <div className="mt-3 flex flex-col gap-1.5 border-t border-hairline pt-3">
             {[...data.spending.byMonth]
               .sort((first, second) => second.total - first.total)
               .map((bucket) => (
@@ -283,14 +283,14 @@ export const StatisticsScreen = () => {
                   key={bucket.period}
                   className="flex items-baseline justify-between gap-3 text-xs"
                 >
-                  <span className={bucket === highestSpendingMonth ? 'text-[var(--accent)]' : ''}>
+                  <span className={bucket === highestSpendingMonth ? 'text-accent' : ''}>
                     {formatMonthLabel(bucket.period)}
                   </span>
                   <span
                     className={
                       bucket === highestSpendingMonth
-                        ? 'tabular-nums text-[var(--accent)]'
-                        : 'tabular-nums text-[var(--muted)]'
+                        ? 'tabular-nums text-accent'
+                        : 'tabular-nums text-ink-muted'
                     }
                   >
                     {currencyFormatter.format(bucket.total)}
@@ -303,18 +303,18 @@ export const StatisticsScreen = () => {
 
       {data.spending.byRestaurant.length > 0 ? (
         <Card className="flex flex-col gap-2.5">
-          <h2 className="text-sm font-semibold">Quanto cada lugar custou</h2>
+          <h2 className="text-heading-sm">Quanto cada lugar custou</h2>
           {data.spending.byRestaurant.map((entry) => (
             <div key={entry.restaurantId} className="flex items-baseline justify-between gap-3">
               <span className="min-w-0 truncate text-sm">
                 {entry.name}
-                <span className="ml-2 text-xs text-[var(--muted)]">{entry.visits}x</span>
+                <span className="ml-2 text-caption">{entry.visits}x</span>
               </span>
               <span className="shrink-0 text-right">
                 <span className="block text-sm tabular-nums">
                   {currencyFormatter.format(entry.total)}
                 </span>
-                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--muted)]">
+                <span className="block font-mono text-[9px] uppercase tracking-[0.12em] text-ink-muted">
                   {currencyFormatter.format(entry.averagePerVisit)} por rolê
                 </span>
               </span>
@@ -325,8 +325,8 @@ export const StatisticsScreen = () => {
 
       {data.frequency.byMonth.length > 0 ? (
         <Card>
-          <h2 className="mb-1 text-sm font-semibold">Rolês por mês</h2>
-          <p className="mb-3 text-xs text-[var(--muted)]">Quantas vezes vocês saíram em cada mês.</p>
+          <h2 className="mb-1 text-heading-sm">Rolês por mês</h2>
+          <p className="mb-3 text-caption">Quantas vezes vocês saíram em cada mês.</p>
           <div className="h-40">
             <MonthlyChart buckets={data.frequency.byMonth} />
           </div>
@@ -335,11 +335,11 @@ export const StatisticsScreen = () => {
 
       {data.frequency.byYear.length > 0 ? (
         <Card className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Rolês por ano</h2>
+          <h2 className="text-heading-sm">Rolês por ano</h2>
           {data.frequency.byYear.map((bucket) => (
             <div key={bucket.period} className="flex items-baseline justify-between text-sm">
               <span>{bucket.period}</span>
-              <span className="tabular-nums text-[var(--muted)]">{bucket.visitCount}x</span>
+              <span className="tabular-nums text-ink-muted">{bucket.visitCount}x</span>
             </div>
           ))}
         </Card>
@@ -347,18 +347,18 @@ export const StatisticsScreen = () => {
 
       {data.frequency.byRestaurant.length > 0 ? (
         <Card className="flex flex-col gap-2.5">
-          <h2 className="text-sm font-semibold">Quantas vezes em cada lugar</h2>
+          <h2 className="text-heading-sm">Quantas vezes em cada lugar</h2>
           {data.frequency.byRestaurant.map((entry) => (
             <div key={entry.restaurantId} className="flex items-baseline justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm">{entry.name}</p>
                 {entry.lastVisitedAt ? (
-                  <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                  <p className="text-micro-cap text-ink-faint">
                     última em {formatFullDate(entry.lastVisitedAt)}
                   </p>
                 ) : null}
               </div>
-              <span className="shrink-0 text-sm font-semibold tabular-nums">
+              <span className="shrink-0 text-heading-sm tabular-nums">
                 {entry.visitCount}x
               </span>
             </div>
@@ -368,7 +368,7 @@ export const StatisticsScreen = () => {
 
       {data.cuisines.length > 0 ? (
         <Card>
-          <h2 className="mb-3 text-sm font-semibold">Cozinha mais comida</h2>
+          <h2 className="mb-3 text-heading-sm">Cozinha mais comida</h2>
           <div className="h-44">
             <CuisineChart cuisines={data.cuisines} />
           </div>
@@ -377,11 +377,11 @@ export const StatisticsScreen = () => {
 
       {data.neighborhoods.length > 0 ? (
         <Card className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Bairro campeão</h2>
+          <h2 className="text-heading-sm">Bairro campeão</h2>
           {data.neighborhoods.map((entry) => (
             <div key={entry.neighborhood} className="flex justify-between text-sm">
               <span>{entry.neighborhood}</span>
-              <span className="tabular-nums text-[var(--muted)]">{entry.visitCount}x</span>
+              <span className="tabular-nums text-ink-muted">{entry.visitCount}x</span>
             </div>
           ))}
         </Card>
@@ -390,9 +390,9 @@ export const StatisticsScreen = () => {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {data.bestRestaurant ? (
           <Card>
-            <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">melhor da história</p>
+            <p className="text-micro-cap text-ink-faint">melhor da história</p>
             <p className="mt-1 text-sm font-medium">{data.bestRestaurant.name}</p>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-caption">
               {data.bestRestaurant.bayesianScore.toFixed(2)} · {data.bestRestaurant.visitCount}x
             </p>
           </Card>
@@ -400,9 +400,9 @@ export const StatisticsScreen = () => {
 
         {data.worstRestaurant ? (
           <Card>
-            <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">pior da história</p>
+            <p className="text-micro-cap text-ink-faint">pior da história</p>
             <p className="mt-1 text-sm font-medium">{data.worstRestaurant.name}</p>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-caption">
               {data.worstRestaurant.bayesianScore.toFixed(2)} · {data.worstRestaurant.visitCount}x
             </p>
           </Card>

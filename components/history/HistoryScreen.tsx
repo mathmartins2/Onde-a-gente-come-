@@ -8,14 +8,15 @@ import { fetchHistory, type HistoryRating, type HistoryRound } from '@/lib/http/
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { classNames } from '@/lib/utilities/classNames'
 import { formatDrawMoment, formatVisitDay } from '@/lib/utilities/formatDate'
+import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
+import { Badge } from '@/components/ui/Badge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Meter } from '@/components/ui/Meter'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
 
-const scoreTone = (value: number) => {
-  if (value >= 4) return 'text-[var(--success)]'
-  if (value >= 2.5) return 'text-[var(--warning)]'
-  return 'text-[var(--danger)]'
-}
+const scoreTone = scoreTextClassFor
 
 const RatingRow = ({ rating }: { rating: HistoryRating }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -34,12 +35,12 @@ const RatingRow = ({ rating }: { rating: HistoryRating }) => {
           {hasCriteria ? (
             <ChevronDown
               size={11}
-              className={`mr-1 inline-block text-[var(--muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              className={`mr-1 inline-block text-ink-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
             />
           ) : null}
           {rating.displayName}
           {rating.isRecommender ? (
-            <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">indicou</span>
+            <span className="ml-2 text-micro-cap text-ink-faint">indicou</span>
           ) : null}
         </span>
         <span className={`shrink-0 tabular-nums ${scoreTone(rating.score)}`}>
@@ -48,22 +49,17 @@ const RatingRow = ({ rating }: { rating: HistoryRating }) => {
       </button>
 
       {isOpen ? (
-        <div className="mb-1 ml-4 flex flex-col gap-1 border-l border-[var(--border-strong)] pl-3">
+        <div className="mb-1 ml-4 flex flex-col gap-1 border-l border-hairline-strong pl-3">
           {ratingCriteria.map((criterion) => {
             const value = rating.criteria[criterion.key]
             if (value === null || value === undefined) return null
 
             return (
               <div key={criterion.key} className="flex items-center gap-2">
-                <span className="w-28 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                <span className="w-28 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-muted">
                   {criterion.label}
                 </span>
-                <span className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--surface-raised)]">
-                  <span
-                    className="block h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${(value / 5) * 100}%` }}
-                  />
-                </span>
+                <Meter value={value / 5} className="flex-1" />
                 <span className={`w-7 shrink-0 text-right text-xs tabular-nums ${scoreTone(value)}`}>
                   {value.toFixed(1)}
                 </span>
@@ -72,7 +68,7 @@ const RatingRow = ({ rating }: { rating: HistoryRating }) => {
           })}
 
           {rating.comment ? (
-            <p className="mt-1 text-xs italic text-[var(--muted)]">&ldquo;{rating.comment}&rdquo;</p>
+            <p className="mt-1 text-xs italic text-ink-muted">&ldquo;{rating.comment}&rdquo;</p>
           ) : null}
         </div>
       ) : null}
@@ -90,42 +86,42 @@ const positionMedals = ['1º', '2º', '3º', '4º', '5º']
 
 const LogSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="flex flex-col gap-2">
-    <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-[var(--muted)]">{title}</p>
+    <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-ink-muted">{title}</p>
     {children}
   </div>
 )
 
 const BallotLog = ({ round }: { round: HistoryRound }) => (
   <div
-    className="relative mt-1 flex flex-col gap-5 rounded-[var(--radius-medium)] border border-dashed border-[var(--border-strong)] bg-[var(--surface-sunken)] px-4 py-5"
+    className="relative mt-1 flex flex-col gap-5 rounded-xl border border-dashed border-hairline-strong bg-surface-sunken px-4 py-5"
     style={{
       backgroundImage:
         'repeating-linear-gradient(180deg, transparent 0px, transparent 27px, rgba(255,255,255,0.025) 27px, rgba(255,255,255,0.025) 28px)',
     }}
   >
-    <span className="absolute -left-2 top-8 h-4 w-4 rounded-full bg-[var(--surface)]" />
-    <span className="absolute -right-2 top-8 h-4 w-4 rounded-full bg-[var(--surface)]" />
+    <span className="absolute -left-2 top-8 h-4 w-4 rounded-full bg-surface-1" />
+    <span className="absolute -right-2 top-8 h-4 w-4 rounded-full bg-surface-1" />
 
     <LogSection title="o rank de cada um">
       {round.ballots.length === 0 ? (
-        <p className="text-xs text-[var(--muted)]">Rodada antiga, sem registro dos votos.</p>
+        <p className="text-caption">Rodada antiga, sem registro dos votos.</p>
       ) : null}
 
       {round.ballots.map((ballot) => (
         <div key={ballot.memberId} className="flex flex-col gap-1">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent-hover">
             {ballot.displayName}
           </span>
           {ballot.ranking.length === 0 ? (
-            <span className="text-xs text-[var(--muted)]">não ranqueou nada</span>
+            <span className="text-caption">não ranqueou nada</span>
           ) : (
             <ol className="flex flex-col gap-0.5">
               {ballot.ranking.map((entry, index) => (
                 <li
                   key={entry.restaurantId}
-                  className="flex items-baseline gap-2 text-xs text-[var(--foreground)]"
+                  className="flex items-baseline gap-2 text-xs text-ink"
                 >
-                  <span className="w-5 shrink-0 font-mono text-[10px] text-[var(--muted)]">
+                  <span className="w-5 shrink-0 font-mono text-[10px] text-ink-muted">
                     {positionMedals[index] ?? `${entry.position}º`}
                   </span>
                   <span className="truncate">{entry.restaurantName}</span>
@@ -146,14 +142,14 @@ const BallotLog = ({ round }: { round: HistoryRound }) => (
             key={`ban-${ballot.memberId}`}
             className="flex items-baseline justify-between gap-3 text-xs"
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-muted">
               {ballot.displayName}
             </span>
             <span
               className={
                 ballot.banVote?.restaurantName
                   ? 'truncate text-right text-[var(--danger)]'
-                  : 'truncate text-right text-[var(--muted)]'
+                  : 'truncate text-right text-ink-muted'
               }
             >
               {!ballot.banVote
@@ -174,7 +170,7 @@ const BallotLog = ({ round }: { round: HistoryRound }) => (
           </span>
         </div>
       ) : (
-        <p className="text-xs text-[var(--muted)]">Ninguém foi banido.</p>
+        <p className="text-caption">Ninguém foi banido.</p>
       )}
     </LogSection>
 
@@ -182,14 +178,14 @@ const BallotLog = ({ round }: { round: HistoryRound }) => (
       <LogSection title="plano b sorteado">
         <div className="flex items-baseline gap-2 text-xs">
           <span>🥈</span>
-          <span className="truncate text-[var(--foreground)]">{round.fallback.name}</span>
+          <span className="truncate text-ink">{round.fallback.name}</span>
           {round.fallback.addedByName ? (
-            <span className="truncate text-[var(--muted)]">
+            <span className="truncate text-ink-muted">
               indicação de {round.fallback.addedByName}
             </span>
           ) : null}
           {round.usedFallback ? (
-            <span className="ml-auto shrink-0 rounded-[var(--radius-pill)] bg-[var(--warning)]/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--warning)]">
+            <span className="ml-auto shrink-0 rounded-pill bg-[var(--warning)]/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--warning)]">
               foi esse
             </span>
           ) : null}
@@ -204,43 +200,41 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
 
   return (
   <Card className="flex flex-col gap-4">
-    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-      <span className="text-xs uppercase tracking-widest text-[var(--muted)]">
-        rodada {round.roundNumber}
-      </span>
-      <span className="text-xs text-[var(--muted)]">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+      <span className="text-micro-cap text-accent">rodada {round.roundNumber}</span>
+      <span className="text-caption">
         sorteio {formatDrawMoment(round.drawnAt)} · fomos{' '}
         {round.visitDateConfirmedAt && round.visitedAt ? formatVisitDay(round.visitedAt) : '—'}
       </span>
     </div>
 
     <div className="flex items-start gap-3">
-      <Trophy size={18} className="mt-0.5 shrink-0 text-[var(--accent)]" />
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
+        <Trophy size={17} className="text-accent" />
+      </span>
       <div className="min-w-0">
-        <p className="text-base font-semibold leading-tight">{round.winnerRestaurantName}</p>
-        <p className="mt-0.5 text-xs text-[var(--muted)]">
-          indicação de {round.winnerNominatedByName}
-        </p>
+        <p className="text-heading-md leading-tight">{round.winnerRestaurantName}</p>
+        <p className="mt-0.5 text-caption">indicação de {round.winnerNominatedByName}</p>
       </div>
-      <span className="ml-auto flex shrink-0 flex-col items-end gap-0.5">
+      <span className="ml-auto flex shrink-0 flex-col items-end gap-1">
         {round.finalScore === null ? null : (
-          <span className="text-xl font-semibold tabular-nums">{round.finalScore.toFixed(2)}</span>
+          <span className={`text-numeric text-heading-lg ${scoreTone(round.finalScore)}`}>
+            {round.finalScore.toFixed(2)}
+          </span>
         )}
         {round.totalPaid ? (
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
+          <Badge tone="quiet" size="small">
             {currencyFormatter.format(Number(round.totalPaid))}
             {round.paidPerPerson
               ? ` · ${currencyFormatter.format(round.paidPerPerson)} cada`
               : ''}
-          </span>
+          </Badge>
         ) : null}
       </span>
     </div>
 
     <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-        quem estava disputando
-      </p>
+      <p className="text-micro-cap text-ink-faint">quem estava disputando</p>
       {round.contenders.map((contender) => {
         const isWinner = contender.restaurantId === round.winnerRestaurantId
 
@@ -249,16 +243,16 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
             key={`${round.drawId}-${contender.restaurantId}`}
             className={classNames(
               'flex items-baseline justify-between gap-3 rounded-lg px-2.5 py-1.5 text-sm',
-              isWinner ? 'bg-[var(--accent)]/12' : 'bg-[var(--surface-raised)]',
+              isWinner ? 'bg-accent-tint' : 'bg-surface-2',
             )}
           >
             <span className="min-w-0 truncate">
               {contender.restaurantName}
-              <span className="ml-2 text-xs text-[var(--muted)]">
+              <span className="ml-2 text-caption">
                 {contender.nominatedByName}
               </span>
               {contender.supporters > 0 ? (
-                <span className="ml-2 text-[10px] uppercase text-[var(--muted)]">
+                <span className="ml-2 text-micro-cap text-ink-faint">
                   {contender.supporters} quiseram
                   {contender.topChoiceCount > 0 ? ` · ${contender.topChoiceCount} em 1º` : ''}
                 </span>
@@ -269,7 +263,7 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
                 </span>
               ) : null}
             </span>
-            <span className="shrink-0 tabular-nums text-xs text-[var(--muted)]">
+            <span className="shrink-0 tabular-nums text-caption">
               {formatPercentage(contender.chance)}
             </span>
           </div>
@@ -279,7 +273,7 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
 
     {round.ratings.length === 0 ? null : (
       <div className="flex flex-col gap-1.5">
-        <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">notas que deram</p>
+        <p className="text-micro-cap text-ink-faint">notas que deram</p>
         {round.ratings.map((rating) => (
           <RatingRow key={`${round.drawId}-${rating.memberId}`} rating={rating} />
         ))}
@@ -287,12 +281,12 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
     )}
 
     {round.isRevealed || round.ratings.length > 0 ? null : (
-      <p className="text-xs text-[var(--muted)]">notas ainda não reveladas</p>
+      <p className="text-caption">notas ainda não reveladas</p>
     )}
 
     <button
       onClick={() => setIsLogOpen((open) => !open)}
-      className="inline-flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+      className="inline-flex min-h-9 items-center justify-center gap-1.5 text-micro-cap text-ink-faint transition-colors hover:text-ink"
     >
       {isLogOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
       {isLogOpen ? 'esconder quem votou em quem' : 'ver quem votou em quem'}
@@ -306,28 +300,38 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
 export const HistoryScreen = () => {
   const historyQuery = useQuery({ queryKey: ['history'], queryFn: fetchHistory })
 
-  if (historyQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
+  if (historyQuery.isLoading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-52 w-full" />
+        <Skeleton className="h-52 w-full" />
+      </div>
+    )
+  }
 
   const rounds = historyQuery.data ?? []
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-lg font-semibold">Histórico</h1>
-        <p className="mt-1 text-xs text-[var(--muted)]">
+        <h1 className="text-heading-xl">Histórico</h1>
+        <p className="mt-1 text-caption max-w-prose">
           Cada rodada com quem estava na disputa, a chance de cada um e as notas.
         </p>
       </div>
 
       {rounds.length === 0 ? (
         <Card>
-          <p className="text-sm text-[var(--muted)]">Nenhum sorteio ainda.</p>
+          <EmptyState glyph="🎲" title="Nenhum sorteio ainda" />
         </Card>
       ) : null}
 
-      {rounds.map((round) => (
-        <RoundCard key={round.drawId} round={round} />
-      ))}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start">
+        {rounds.map((round) => (
+          <RoundCard key={round.drawId} round={round} />
+        ))}
+      </div>
     </div>
   )
 }

@@ -26,7 +26,7 @@ export const FallbackToggle = ({ visitId, usedFallback }: FallbackToggleProps) =
 
   return (
     <Card className="flex flex-col gap-2">
-      <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">onde vocês foram</p>
+      <p className="text-micro-cap text-ink-faint">onde vocês foram</p>
       <div className="flex gap-2">
         <Button
           variant={usedFallback ? 'secondary' : 'primary'}
@@ -47,7 +47,7 @@ export const FallbackToggle = ({ visitId, usedFallback }: FallbackToggleProps) =
           No segundo lugar
         </Button>
       </div>
-      <p className="text-xs text-[var(--muted)]">
+      <p className="text-caption">
         A nota vai para o lugar onde vocês realmente foram.
       </p>
     </Card>

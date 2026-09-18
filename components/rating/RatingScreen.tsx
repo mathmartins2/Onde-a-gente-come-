@@ -3,7 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Smartphone, Users } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { classNames } from '@/lib/utilities/classNames'
 import { apiClient } from '@/lib/http/apiClient'
 import { BlindRatingSession } from './BlindRatingSession'
 import { OwnRatingPanel } from './OwnRatingPanel'
@@ -37,43 +38,50 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
   })
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)]">avaliando</p>
-        <h1 className="mt-1 text-xl font-semibold">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+      <header className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-6 text-center">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 h-28 w-48 -translate-x-1/2 rounded-full bg-accent opacity-[0.12] blur-3xl"
+        />
+        <p className="text-micro-cap text-accent">avaliando</p>
+        <h1 className="font-display mt-1 text-display-large">
           {visitQuery.data?.restaurantName ?? 'Carregando...'}
         </h1>
-        {visitQuery.data?.usedFallback ? (
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-[var(--warning)]">
-            foi o segundo lugar
-          </p>
-        ) : null}
-        {visitQuery.data ? (
-          <div className="mt-1.5">
-            <VisitDate visitId={visitId} visitedAt={visitQuery.data.visitedAt} />
-          </div>
-        ) : null}
-      </div>
 
-      <div className="flex gap-2">
-        <Button
-          variant={isPassAroundMode ? 'secondary' : 'primary'}
-          size="small"
-          className="flex-1"
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          {visitQuery.data ? (
+            <VisitDate visitId={visitId} visitedAt={visitQuery.data.visitedAt} />
+          ) : null}
+          {visitQuery.data?.usedFallback ? (
+            <Badge tone="warning" size="small">
+              foi o plano B
+            </Badge>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="flex gap-1 rounded-pill border border-hairline bg-surface-1 p-1">
+        <button
           onClick={() => setIsPassAroundMode(false)}
+          className={classNames(
+            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill text-body-sm transition-colors',
+            isPassAroundMode ? 'text-ink-muted hover:text-ink' : 'bg-accent-tint font-semibold text-accent',
+          )}
         >
-          <Smartphone size={14} />
+          <Smartphone size={15} />
           No meu celular
-        </Button>
-        <Button
-          variant={isPassAroundMode ? 'primary' : 'secondary'}
-          size="small"
-          className="flex-1"
+        </button>
+        <button
           onClick={() => setIsPassAroundMode(true)}
+          className={classNames(
+            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill text-body-sm transition-colors',
+            isPassAroundMode ? 'bg-accent-tint font-semibold text-accent' : 'text-ink-muted hover:text-ink',
+          )}
         >
-          <Users size={14} />
+          <Users size={15} />
           Passando um só
-        </Button>
+        </button>
       </div>
 
       {visitQuery.data?.hasFallbackOption ? (

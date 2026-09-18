@@ -1,22 +1,29 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AnimatePresence, motion } from 'framer-motion'
-import { useCallback, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowDown,
   ArrowUp,
+  Ban,
   Check,
   Dices,
   ExternalLink,
   Plus,
-  Sparkles,
+  Trophy,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { ActionBar } from '@/components/ui/ActionBar'
+import { Badge } from '@/components/ui/Badge'
+import { Collapsible } from '@/components/ui/Collapsible'
+import { Meter } from '@/components/ui/Meter'
+import { ListRow } from '@/components/ui/ListRow'
+import { StatTile } from '@/components/ui/StatTile'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import {
   fetchSessionState,
@@ -26,6 +33,10 @@ import {
 import { sessionQueryKey, useSessionStream } from '@/lib/http/useSessionStream'
 import { DrawReveal } from './DrawReveal'
 import { PendingRatings } from './PendingRatings'
+import { fetchHistory } from '@/lib/http/historyQueries'
+import { formatDrawMoment, formatVisitDay } from '@/lib/utilities/formatDate'
+import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
+import { CallToTable } from './CallToTable'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { classNames } from '@/lib/utilities/classNames'
 
@@ -82,7 +93,7 @@ const RevealCard = ({
   const markRevealFinished = useCallback(() => setHasRevealFinished(true), [])
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="mx-auto flex w-full max-w-xl flex-col justify-center gap-4 lg:min-h-[calc(100dvh-6rem)]">
       <DrawReveal data={revealData} onFinished={markRevealFinished} />
 
       <div className={hasRevealFinished ? 'flex flex-col gap-2' : 'hidden'}>
@@ -91,7 +102,7 @@ const RevealCard = ({
             href={buildGoogleMapsUrl({ name: winner.name })}
             target="_blank"
             rel="noreferrer noopener"
-            className="inline-flex items-center justify-center gap-1.5 text-xs text-[var(--accent)] underline"
+            className="inline-flex items-center justify-center gap-1.5 text-xs text-accent underline"
           >
             <ExternalLink size={12} />
             abrir no Google Maps
@@ -111,7 +122,7 @@ const RevealCard = ({
             Beleza, fechar a rodada
           </Button>
         ) : (
-          <p className="text-center text-xs text-[var(--muted)]">
+          <p className="text-center text-xs text-ink-muted">
             Quem sorteou encerra a revelação.
           </p>
         )}
@@ -124,23 +135,84 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
   isAdmin: boolean
   onOpen: () => void
   isOpening: boolean
-}) => (
-  <Card className="flex flex-col items-center gap-4 py-12 text-center">
-    <p className="text-5xl">🍽️</p>
-    <p className="text-lg font-semibold">Nenhum sorteio aberto</p>
-    {isAdmin ? (
-      <>
-        <p className="text-xs text-[var(--muted)]">Abra a rodada pra galera entrar e ranquear.</p>
-        <Button size="large" onClick={onOpen} disabled={isOpening} className="w-full">
-          <Dices size={18} />
-          Abrir sorteio
-        </Button>
-      </>
-    ) : (
-      <p className="text-xs text-[var(--muted)]">Espere o admin abrir a rodada.</p>
-    )}
-  </Card>
-)
+}) => {
+  const historyQuery = useQuery({ queryKey: ['history'], queryFn: fetchHistory })
+  const rounds = historyQuery.data ?? []
+  const lastRound = rounds.at(0)
+  const ratedRounds = rounds.filter((round) => round.finalScore !== null)
+  const averageScore =
+    ratedRounds.length === 0
+      ? null
+      : ratedRounds.reduce((sum, round) => sum + (round.finalScore ?? 0), 0) / ratedRounds.length
+
+  return (
+    <div className="flex flex-col gap-4">
+      <section className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-8 text-center">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 h-32 w-56 -translate-x-1/2 rounded-full bg-accent opacity-[0.12] blur-3xl"
+        />
+        <p className="relative text-micro-cap text-accent">entre rodadas</p>
+        <h1 className="font-display relative mt-1 text-display-large">
+          Ninguém decidiu nada ainda
+        </h1>
+        <p className="relative mx-auto mt-2 max-w-sm text-body-sm text-ink-muted">
+          {isAdmin
+            ? 'Abra a rodada pra galera entrar, colocar lugar e ranquear.'
+            : 'Quando o admin abrir a rodada, ela aparece aqui.'}
+        </p>
+
+        {isAdmin ? (
+          <Button size="large" onClick={onOpen} disabled={isOpening} className="relative mt-5">
+            <Dices size={19} />
+            {isOpening ? 'Abrindo...' : 'Abrir sorteio'}
+          </Button>
+        ) : null}
+      </section>
+
+      <div className="grid grid-cols-3 gap-2">
+        <StatTile label="rodadas" value={String(rounds.length)} />
+        <StatTile
+          label="média"
+          value={averageScore === null ? '—' : averageScore.toFixed(2)}
+          tone={averageScore !== null && averageScore >= 4 ? 'good' : 'neutral'}
+        />
+        <StatTile label="avaliadas" value={String(ratedRounds.length)} />
+      </div>
+
+      {lastRound ? (
+        <Link href="/history" className="block">
+          <Card className="flex items-center gap-3 transition-colors hover:border-accent">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
+              <Trophy size={18} className="text-accent" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-micro-cap text-ink-faint">último rolê · rodada {lastRound.roundNumber}</p>
+              <p className="truncate text-heading-md">{lastRound.winnerRestaurantName}</p>
+              <p className="truncate text-caption">
+                indicação de {lastRound.winnerNominatedByName} ·{' '}
+                {lastRound.visitDateConfirmedAt && lastRound.visitedAt
+                  ? formatVisitDay(lastRound.visitedAt)
+                  : formatDrawMoment(lastRound.drawnAt)}
+              </p>
+            </div>
+            {lastRound.finalScore === null ? (
+              <Badge tone="quiet" size="small">
+                sem nota
+              </Badge>
+            ) : (
+              <span
+                className={`text-numeric shrink-0 text-heading-lg ${scoreTextClassFor(lastRound.finalScore)}`}
+              >
+                {lastRound.finalScore.toFixed(2)}
+              </span>
+            )}
+          </Card>
+        </Link>
+      ) : null}
+    </div>
+  )
+}
 
 export const SessionScreen = () => {
   const queryClient = useQueryClient()
@@ -226,18 +298,36 @@ export const SessionScreen = () => {
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível sortear')),
   })
 
+  const joinMutation = useMutation({
+    mutationFn: () => apiClient.post(`/sessions/${sessionId}/join`),
+    onSuccess: () => {
+      toast.success('Você entrou na rodada')
+      invalidateSession()
+    },
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível entrar')),
+  })
+
   const closeRevealMutation = useMutation({
     mutationFn: () => apiClient.post(`/sessions/${sessionId}/close`),
     onSuccess: invalidateSession,
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível encerrar')),
   })
 
-  if (sessionQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
-  if (!state) return <p className="text-sm text-[var(--muted)]">Não consegui carregar.</p>
+  const canAutoJoin = Boolean(sessionId) && state?.hasJoined === false
+  const joinRequested = joinMutation.isPending || joinMutation.isSuccess
+
+  useEffect(() => {
+    if (!canAutoJoin || joinRequested) return
+    if (new URLSearchParams(window.location.search).get('entrar') !== '1') return
+    joinMutation.mutate()
+  }, [canAutoJoin, joinRequested, joinMutation])
+
+  if (sessionQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (!state) return <p className="text-sm text-ink-muted">Não consegui carregar.</p>
 
   if (!state.session) {
     return (
-      <div className="flex flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-xl flex-col justify-center gap-4 lg:min-h-[calc(100dvh-6rem)]">
         <PendingRatings />
         <ClosedSession
           isAdmin={state.isAdmin}
@@ -270,326 +360,341 @@ export const SessionScreen = () => {
     )
   }
 
+  const readyCount = state.participants.filter((participant) => participant.isReady).length
+  const canDraw =
+    state.everyoneReady && state.quorum.hasQuorum && state.contenders.length > 0
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-h-[calc(100dvh-8.5rem)] flex-col gap-4 lg:min-h-[calc(100dvh-5.5rem)]">
       <PendingRatings />
 
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold">Rodada {state.session.roundNumber}</h1>
-        <span className="text-xs text-[var(--muted)]">
-          {state.participants.filter((participant) => participant.isReady).length}/
-          {state.participants.length} ready
-        </span>
+      <header className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-5">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-full bg-accent opacity-[0.14] blur-3xl"
+        />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-micro-cap text-accent">rodada aberta</p>
+            <h1 className="font-display mt-1 text-display-large">
+              Rodada {state.session.roundNumber}
+            </h1>
+          </div>
+          <CallToTable roundNumber={state.session.roundNumber} />
+        </div>
+
+        {state.hasJoined ? null : (
+          <div className="mt-4 flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent-tint px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-body-sm">
+              Você ainda não está na mesa desta rodada.
+            </p>
+            <Button
+              size="small"
+              onClick={() => joinMutation.mutate()}
+              disabled={joinMutation.isPending}
+            >
+              Entrar na rodada
+            </Button>
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <StatTile
+            label="mesa"
+            value={`${state.quorum.presentCount}/${state.quorum.totalMemberCount}`}
+            tone={state.quorum.hasQuorum ? 'good' : 'warn'}
+          />
+          <StatTile
+            label="prontos"
+            value={`${readyCount}/${state.participants.length}`}
+            tone={state.everyoneReady ? 'good' : 'neutral'}
+          />
+          <StatTile label="disputa" value={String(state.pool.length)} tone="neutral" />
+        </div>
+      </header>
+
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+        <div className="flex flex-col gap-3">
+          <Collapsible
+            title="Meu rank"
+            summary={ranking.length === 0 ? 'vazio' : `${ranking.length} lugar(es)`}
+            defaultOpen={ranking.length === 0 || !me?.isReady}
+          >
+            <div className="flex flex-col gap-2">
+              {ranking.length === 0 ? (
+                <p className="text-body-sm text-ink-muted">
+                  Você ainda não ranqueou nada. Sem rank você não participa do sorteio.
+                </p>
+              ) : null}
+
+              {ranking.map((restaurantId, index) => {
+                const item = poolById.get(restaurantId)
+                if (!item) return null
+
+                return (
+                  <div
+                    key={restaurantId}
+                    className="flex items-center gap-3 rounded-lg border border-hairline bg-surface-2 px-3 py-2.5"
+                  >
+                    <span className="text-numeric flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-tint text-body-sm font-bold text-accent">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-body-md font-medium">{item.name}</p>
+                      <p className="truncate text-caption">
+                        {[item.cuisines.join(', ') || null, item.neighborhood]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                      {item.isPreviousWinner ? (
+                        <Badge tone="warning" size="small" className="mt-1">
+                          foi o último · fora desta rodada
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 flex-col">
+                      <button
+                        aria-label="Subir"
+                        onClick={() => persistRanking(moveItem(ranking, index, index - 1))}
+                        disabled={index === 0}
+                        className="flex h-6 w-8 items-center justify-center rounded text-ink-muted transition-colors hover:text-accent disabled:opacity-30"
+                      >
+                        <ArrowUp size={15} />
+                      </button>
+                      <button
+                        aria-label="Descer"
+                        onClick={() => persistRanking(moveItem(ranking, index, index + 1))}
+                        disabled={index === ranking.length - 1}
+                        className="flex h-6 w-8 items-center justify-center rounded text-ink-muted transition-colors hover:text-accent disabled:opacity-30"
+                      >
+                        <ArrowDown size={15} />
+                      </button>
+                    </div>
+                    <button
+                      aria-label={`Tirar ${item.name} do rank`}
+                      onClick={() => persistRanking(ranking.filter((entry) => entry !== restaurantId))}
+                      className="flex h-11 w-9 shrink-0 items-center justify-center rounded text-ink-faint transition-colors hover:text-[var(--danger)]"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                )
+              })}
+
+              {availableToRank.length > 0 ? (
+                <div className="flex flex-col gap-1 rounded-lg border border-dashed border-hairline-strong p-2">
+                  <p className="px-1 text-micro-cap text-ink-faint">
+                    outros colocaram — toque pra entrar no seu rank
+                  </p>
+                  {availableToRank.map((item) => (
+                    <ListRow
+                      key={item.restaurantId}
+                      state="plain"
+                      onClick={() => persistRanking([...ranking, item.restaurantId])}
+                      trailing={<Plus size={15} className="text-accent" />}
+                    >
+                      {item.name}
+                    </ListRow>
+                  ))}
+                </div>
+              ) : null}
+
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setIsCatalogOpen((open) => !open)}
+                className="self-start"
+              >
+                {isCatalogOpen ? <X size={14} /> : <Plus size={14} />}
+                {isCatalogOpen ? 'fechar catálogo' : 'adicionar lugar'}
+              </Button>
+
+              {isCatalogOpen ? (
+                <div className="flex flex-col gap-1 rounded-lg border border-hairline bg-surface-sunken p-2">
+                  <p className="px-1 text-caption">
+                    Toque num lugar pra colocar na rodada. Ou{' '}
+                    <Link href="/restaurants" className="text-accent underline">
+                      cadastre um novo
+                    </Link>
+                    .
+                  </p>
+                  {(catalogQuery.data ?? []).map((restaurant) => (
+                    <ListRow
+                      key={restaurant.id}
+                      state="plain"
+                      disabled={alreadyInPool.has(restaurant.id) || addToPoolMutation.isPending}
+                      onClick={() => addToPoolMutation.mutate(restaurant.id)}
+                      className="disabled:opacity-40"
+                      trailing={
+                        alreadyInPool.has(restaurant.id) ? (
+                          <Check size={15} className="text-[var(--success)]" />
+                        ) : (
+                          <Plus size={15} />
+                        )
+                      }
+                    >
+                      {restaurant.name}
+                    </ListRow>
+                  ))}
+                </div>
+              ) : null}
+
+              {ranking.length > 0 ? (
+                <p className="text-micro-cap text-ink-faint">
+                  {saveRankingMutation.isPending ? 'salvando...' : 'salvo automaticamente'}
+                </p>
+              ) : null}
+            </div>
+          </Collapsible>
+
+          <Collapsible
+            title="Banir um lugar"
+            summary={`${state.banOutcome.decidedCount}/${state.banOutcome.participantCount}`}
+            defaultOpen={!state.hasDecidedBan}
+          >
+            <div className="flex flex-col gap-2">
+              <p className="text-caption">
+                O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional e o
+                resultado só aparece depois do sorteio. Empatou? A gente sorteia quem cai na hora.
+              </p>
+
+              {votableForBan.map((item) => {
+                const isMyVote = state.myBanVote === item.restaurantId
+
+                return (
+                  <ListRow
+                    key={item.restaurantId}
+                    state={item.isBanned ? 'struck' : isMyVote ? 'selected' : 'idle'}
+                    disabled={banDecisionMutation.isPending}
+                    onClick={() => banDecisionMutation.mutate(isMyVote ? null : item.restaurantId)}
+                    trailing={
+                      <>
+                        {isMyVote ? (
+                          <Badge tone="accent" size="small">
+                            seu voto
+                          </Badge>
+                        ) : null}
+                        {item.banVotes > 0 ? (
+                          <span className="text-numeric text-caption">{item.banVotes}</span>
+                        ) : null}
+                      </>
+                    }
+                  >
+                    {item.name}
+                  </ListRow>
+                )
+              })}
+
+              <ListRow
+                state={hasAbstainedFromBan ? 'selected' : 'idle'}
+                disabled={banDecisionMutation.isPending}
+                onClick={() => banDecisionMutation.mutate(null)}
+                leading={<Ban size={15} className="text-ink-faint" />}
+                trailing={
+                  hasAbstainedFromBan ? (
+                    <Badge tone="accent" size="small">
+                      seu voto
+                    </Badge>
+                  ) : null
+                }
+              >
+                Não banir ninguém
+              </ListRow>
+
+              {state.hasDecidedBan ? (
+                <button
+                  onClick={() => clearBanDecisionMutation.mutate()}
+                  className="self-start text-micro-cap text-ink-faint transition-colors hover:text-ink"
+                >
+                  tirar meu voto
+                </button>
+              ) : null}
+            </div>
+          </Collapsible>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <Collapsible
+            title="Chances agora"
+            summary={state.contenders.length === 0 ? 'sem ninguém' : 'sem contar o ban'}
+            defaultOpen
+          >
+            <div className="flex flex-col gap-3">
+              {state.contenders.length === 0 ? (
+                <p className="text-body-sm text-ink-muted">
+                  Ninguém ranqueou nada ainda — as chances aparecem quando o rank começar.
+                </p>
+              ) : null}
+
+              {state.contenders.map((contender) => (
+                <div key={contender.restaurantId} className="flex flex-col gap-1.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate text-body-md">{contender.name}</span>
+                    <span className="text-numeric shrink-0 text-body-sm text-accent">
+                      {formatPercentage(contender.chance)}
+                    </span>
+                  </div>
+                  <Meter value={contender.chance} />
+                  <p className="text-caption">
+                    {contender.supporters} quiseram
+                    {contender.topChoiceCount > 0 ? ` · ${contender.topChoiceCount} em 1º` : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Collapsible>
+
+          <Collapsible
+            title="Quem tá na mesa"
+            summary={`${readyCount}/${state.participants.length}`}
+            defaultOpen={!state.quorum.hasQuorum}
+          >
+            <div className="flex flex-col gap-2">
+              {state.participants.map((participant) => (
+                <div
+                  key={participant.memberId}
+                  className="flex items-center justify-between gap-3 text-body-md"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      className={classNames(
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px]',
+                        participant.isReady
+                          ? 'bg-[color-mix(in_srgb,var(--success)_20%,transparent)] text-[var(--success)]'
+                          : 'bg-surface-3 text-ink-faint',
+                      )}
+                    >
+                      {participant.isReady ? '✓' : '·'}
+                    </span>
+                    <span className="truncate">{participant.displayName}</span>
+                    {participant.memberId === state.currentMemberId ? (
+                      <Badge tone="accent" size="small">
+                        você
+                      </Badge>
+                    ) : null}
+                  </span>
+                  <span className="text-caption shrink-0">{participant.rankedCount} lugar(es)</span>
+                </div>
+              ))}
+
+              {state.quorum.hasQuorum ? null : (
+                <p className="text-body-sm text-[var(--warning)]">
+                  Faltam {state.quorum.requiredCount - state.quorum.presentCount} pessoa(s) pra bater
+                  o quórum.
+                </p>
+              )}
+            </div>
+          </Collapsible>
+        </div>
       </div>
 
-      <Card
-        className={classNames(
-          'flex items-center justify-between gap-3 py-3',
-          state.quorum.hasQuorum ? '' : 'border-[var(--warning)]',
-        )}
-      >
-        <div>
-          <p className="text-sm font-medium">
-            {state.quorum.hasQuorum ? 'Quórum atingido' : 'Sem quórum'}
-          </p>
-          <p className="mt-0.5 text-xs text-[var(--muted)]">
-            {state.quorum.presentCount} de {state.quorum.totalMemberCount} na sessão · precisa de{' '}
-            {state.quorum.requiredCount}
-          </p>
-        </div>
-        <span
-          className={classNames(
-            'shrink-0 text-lg font-semibold tabular-nums',
-            state.quorum.hasQuorum ? 'text-[var(--success)]' : 'text-[var(--warning)]',
-          )}
-        >
-          {state.quorum.presentCount}/{state.quorum.requiredCount}
-        </span>
-      </Card>
-
-      <Card className="flex flex-col gap-2.5">
-        {state.participants.map((participant) => (
-          <div key={participant.memberId} className="flex items-center justify-between text-sm">
-            <span className={classNames(participant.isReady ? '' : 'text-[var(--muted)]')}>
-              {participant.isReady ? '✓' : '○'} {participant.displayName}
-              {participant.memberId === state.currentMemberId ? (
-                <span className="ml-1.5 text-[10px] uppercase text-[var(--accent)]">você</span>
-              ) : null}
-            </span>
-            <span className="text-xs text-[var(--muted)]">
-              {participant.rankedCount} lugar(es)
-            </span>
-          </div>
-        ))}
-      </Card>
-
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Meu rank</h2>
-          <Button variant="secondary" size="small" onClick={() => setIsCatalogOpen((open) => !open)}>
-            {isCatalogOpen ? <X size={14} /> : <Plus size={14} />}
-            {isCatalogOpen ? 'fechar' : 'adicionar'}
-          </Button>
-        </div>
-
-        {ranking.length === 0 ? (
-          <Card>
-            <p className="text-xs text-[var(--muted)]">
-              Você ainda não ranqueou nada. Sem rank você não participa do sorteio.
-            </p>
-          </Card>
-        ) : null}
-
-        {ranking.map((restaurantId, index) => {
-          const item = poolById.get(restaurantId)
-          if (!item) return null
-
-          return (
-            <Card key={restaurantId} className="flex items-center gap-3 py-3">
-              <span className="w-5 text-center text-sm font-semibold text-[var(--accent)]">
-                {index + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm">{item.name}</p>
-                <p className="truncate text-xs text-[var(--muted)]">
-                  {[
-                    item.cuisines.join(', ') || null,
-                    item.neighborhood,
-                    item.addedByName ? `indicação de ${item.addedByName}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  {item.isPreviousWinner ? (
-                    <span className="ml-2 text-[10px] uppercase tracking-wide text-[var(--warning)]">
-                      foi o último · fora desta rodada
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  variant="ghost"
-                  size="small"
-                  onClick={() => persistRanking(moveItem(ranking, index, index - 1))}
-                  disabled={index === 0}
-                >
-                  <ArrowUp size={14} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="small"
-                  onClick={() => persistRanking(moveItem(ranking, index, index + 1))}
-                  disabled={index === ranking.length - 1}
-                >
-                  <ArrowDown size={14} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="small"
-                  onClick={() =>
-                    persistRanking(ranking.filter((entry) => entry !== restaurantId))
-                  }
-                >
-                  <X size={14} />
-                </Button>
-              </div>
-            </Card>
-          )
-        })}
-
-        {availableToRank.length > 0 ? (
-          <Card className="flex flex-col gap-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-              outros colocaram — toque pra entrar no seu rank
-            </p>
-            {availableToRank.map((item) => (
-              <button
-                key={item.restaurantId}
-                onClick={() => persistRanking([...ranking, item.restaurantId])}
-                className="flex items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-[var(--surface-raised)]"
-              >
-                <span className="truncate">
-                  {item.name}
-                  <span className="ml-2 text-xs text-[var(--muted)]">{item.addedByName}</span>
-                </span>
-                <Plus size={14} />
-              </button>
-            ))}
-          </Card>
-        ) : null}
-
-        {ranking.length > 0 ? (
-          <p className="text-center text-[10px] uppercase tracking-wide text-[var(--muted)]">
-            {saveRankingMutation.isPending ? 'salvando...' : 'salvo automaticamente'}
-          </p>
-        ) : null}
-        {isCatalogOpen ? (
-          <Card className="flex flex-col gap-2">
-            <p className="text-xs text-[var(--muted)]">
-              Toque num lugar pra colocar na rodada — ele já entra no fim do seu rank. Ou{' '}
-              <Link href="/restaurants" className="text-[var(--accent)] underline">
-                cadastre um novo
-              </Link>
-              .
-            </p>
-            {(catalogQuery.data ?? []).map((restaurant) => (
-              <button
-                key={restaurant.id}
-                disabled={alreadyInPool.has(restaurant.id) || addToPoolMutation.isPending}
-                onClick={() => addToPoolMutation.mutate(restaurant.id)}
-                className="flex items-center justify-between rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-[var(--surface-raised)] disabled:opacity-40"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm">{restaurant.name}</span>
-                  <span className="block truncate text-xs text-[var(--muted)]">
-                    {[restaurant.cuisines.join(', ') || null, restaurant.neighborhood]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                  {restaurant.isMine ? (
-                    <span className="block truncate text-[10px] uppercase tracking-wide text-[var(--accent)]">
-                      seu
-                    </span>
-                  ) : null}
-                </span>
-                {alreadyInPool.has(restaurant.id) ? (
-                  <Check size={14} className="shrink-0 text-[var(--success)]" />
-                ) : (
-                  <Plus size={14} className="shrink-0" />
-                )}
-              </button>
-            ))}
-          </Card>
-        ) : null}
-      </section>
-
-
-      <section>
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold">Banir um lugar</h2>
-          <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-            {state.banOutcome.decidedCount}/{state.banOutcome.participantCount} votaram
-          </span>
-        </div>
-
-        <Card className="flex flex-col gap-2">
-          <p className="text-xs text-[var(--muted)]">
-            O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, o
-            resultado só aparece depois do sorteio, e você não pode banir um lugar que indicou.
-            Empatou? A gente sorteia quem cai na hora.
-          </p>
-
-          {votableForBan.map((item) => {
-            const isMyVote = state.myBanVote === item.restaurantId
-
-            return (
-              <button
-                key={item.restaurantId}
-                onClick={() =>
-                  banDecisionMutation.mutate(isMyVote ? null : item.restaurantId)
-                }
-                disabled={banDecisionMutation.isPending}
-                className={classNames(
-                  'flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-                  item.isBanned
-                    ? 'bg-red-500/15 text-red-300 line-through'
-                    : isMyVote
-                      ? 'bg-[var(--accent)]/15'
-                      : 'bg-[var(--surface-raised)]',
-                )}
-              >
-                <span className="min-w-0 truncate">
-                  {item.name}
-                  {isMyVote ? (
-                    <span className="ml-2 text-[10px] uppercase text-[var(--accent)]">
-                      seu voto
-                    </span>
-                  ) : null}
-                  {item.isBanned ? (
-                    <span className="ml-2 text-[10px] uppercase text-red-400">banido</span>
-                  ) : null}
-                </span>
-                <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
-                  {item.banVotes > 0 ? `${item.banVotes} voto(s)` : ''}
-                </span>
-              </button>
-            )
-          })}
-
-          <button
-            onClick={() => banDecisionMutation.mutate(null)}
-            disabled={banDecisionMutation.isPending}
-            className={classNames(
-              'flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
-              hasAbstainedFromBan ? 'bg-[var(--accent)]/15' : 'bg-[var(--surface-raised)]',
-            )}
-          >
-            <span className="min-w-0 truncate">
-              Não banir ninguém
-              {hasAbstainedFromBan ? (
-                <span className="ml-2 text-[10px] uppercase text-[var(--accent)]">seu voto</span>
-              ) : null}
-            </span>
-          </button>
-
-          {state.hasDecidedBan ? (
-            <button
-              onClick={() => clearBanDecisionMutation.mutate()}
-              className="text-[10px] uppercase tracking-wide text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
-            >
-              tirar meu voto
-            </button>
-          ) : null}
-
-          <p className="text-xs text-[var(--muted)]">
-            Os votos ficam escondidos até o sorteio acontecer.
-          </p>
-        </Card>
-      </section>
-
-      {state.contenders.length > 0 ? (
-        <section>
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold">Chances agora</h2>
-            <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-              sem contar o banimento
-            </span>
-          </div>
-          <Card className="flex flex-col gap-2.5">
-            {state.contenders.map((contender) => (
-              <div key={contender.restaurantId} className="flex flex-col gap-1">
-                <div className="flex items-baseline justify-between text-sm">
-                  <span className="truncate">{contender.name}</span>
-                  <span className="tabular-nums">{formatPercentage(contender.chance)}</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-raised)]">
-                  <motion.div
-                    className="h-full rounded-full bg-[var(--accent)]"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${contender.chance * 100}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
-                <p className="text-[10px] text-[var(--muted)]">
-                  {contender.supporters} quiseram · {contender.topChoiceCount} em 1º
-                  {contender.addedByName ? ` · indicação de ${contender.addedByName}` : ''}
-                </p>
-                <p className="font-mono text-[10px] text-[var(--muted)]">
-                  {contender.bordaPoints.toFixed(3)} pontos
-                  {contender.ownerWeight !== 1
-                    ? ` × ${contender.ownerWeight.toFixed(2)} (peso de ${contender.addedByName})`
-                    : ''}
-                  {contender.revisitWeight < 1
-                    ? ` × ${contender.revisitWeight.toFixed(2)} (já foram)`
-                    : ''}
-                </p>
-              </div>
-            ))}
-          </Card>
-        </section>
+      {state.quorum.hasQuorum && !state.everyoneReady ? (
+        <p className="text-center text-caption">O sorteio destrava quando todo mundo der ready.</p>
       ) : null}
 
-      <div className="flex gap-2">
+      <div className="mt-auto" />
+
+      <ActionBar>
         <Button
           variant={me?.isReady ? 'secondary' : 'primary'}
           size="large"
@@ -598,42 +703,25 @@ export const SessionScreen = () => {
           disabled={readyMutation.isPending || ranking.length === 0}
         >
           <Check size={18} />
-          {me?.isReady ? 'Cancelar ready' : 'Tô pronto'}
+          {me?.isReady ? 'Cancelar' : 'Tô pronto'}
         </Button>
-      </div>
 
-      <Button
-        size="large"
-        onClick={() => drawMutation.mutate()}
-        disabled={
-          !state.everyoneReady ||
-          !state.quorum.hasQuorum ||
-          drawMutation.isPending ||
-          state.contenders.length === 0
-        }
-      >
-        <motion.span
-          animate={drawMutation.isPending ? { rotate: 1440 } : { rotate: 0 }}
-          transition={{ duration: 2, ease: [0.2, 0.8, 0.3, 1] }}
-          className="inline-flex"
+        <Button
+          size="large"
+          className="flex-[1.4]"
+          onClick={() => drawMutation.mutate()}
+          disabled={!canDraw || drawMutation.isPending}
         >
-          <Dices size={20} />
-        </motion.span>
-        {drawMutation.isPending ? 'Sorteando...' : 'Sortear'}
-      </Button>
-
-      {state.quorum.hasQuorum ? null : (
-        <p className="text-center text-xs text-[var(--warning)]">
-          Faltam {state.quorum.requiredCount - state.quorum.presentCount} pessoa(s) entrarem na
-          sessão para bater o quórum.
-        </p>
-      )}
-
-      {state.quorum.hasQuorum && !state.everyoneReady ? (
-        <p className="text-center text-xs text-[var(--muted)]">
-          O sorteio destrava quando todo mundo der ready.
-        </p>
-      ) : null}
+          <motion.span
+            animate={drawMutation.isPending ? { rotate: 1440 } : { rotate: 0 }}
+            transition={{ duration: 2, ease: [0.2, 0.8, 0.3, 1] }}
+            className="inline-flex"
+          >
+            <Dices size={20} />
+          </motion.span>
+          {drawMutation.isPending ? 'Sorteando...' : 'Sortear'}
+        </Button>
+      </ActionBar>
     </div>
   )
 }

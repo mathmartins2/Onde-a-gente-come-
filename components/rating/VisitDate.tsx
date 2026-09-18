@@ -50,7 +50,7 @@ export const VisitDate = ({ visitId, visitedAt }: { visitId: string; visitedAt: 
   return (
     <button
       onClick={() => setIsEditing(true)}
-      className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+      className="inline-flex items-center gap-1.5 text-caption transition-colors hover:text-ink"
     >
       <CalendarDays size={12} />
       {format(new Date(visitedAt), "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}

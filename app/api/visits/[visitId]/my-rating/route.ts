@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { selfRatingSchema } from '@/lib/validation/schemas'
 import { submitOwnRating } from '@/lib/services/ratingService'
+import { publishVisitChanged } from '@/lib/realtime/sessionChannel'
 
 const failureMessages: Record<string, string> = {
   VISIT_NOT_FOUND: 'Visita não encontrada',
@@ -31,7 +32,10 @@ export const POST = async (request: Request, context: { params: Promise<{ visitI
       comment: parsed.data.comment ? parsed.data.comment : null,
     })
 
-    if (result.ok) return NextResponse.json({ ok: true })
+    if (result.ok) {
+      await publishVisitChanged(visitId)
+      return NextResponse.json({ ok: true })
+    }
 
     return NextResponse.json(
       { error: failureMessages[result.reason] ?? 'Não foi possível salvar a nota' },

@@ -38,7 +38,7 @@ const FlapBoard = ({ cells, isSettled }: { cells: string[]; isSettled: boolean }
     {cells.map((character, index) => (
       <span
         key={`${index}-${character}`}
-        className={`board-grain relative flex h-9 w-[18px] items-center justify-center rounded-[3px] border border-[var(--border-strong)] bg-[var(--surface-sunken)] font-mono text-[15px] font-bold leading-none text-[var(--accent-soft)] shadow-[inset_0_-6px_10px_-8px_rgba(0,0,0,0.9)] ${isSettled ? 'flap-cell' : ''}`}
+        className={`board-grain relative flex h-9 w-[18px] items-center justify-center rounded-[3px] border border-hairline-strong bg-surface-sunken font-mono text-[15px] font-bold leading-none text-accent-hover shadow-[inset_0_-6px_10px_-8px_rgba(0,0,0,0.9)] ${isSettled ? 'flap-cell' : ''}`}
         style={isSettled ? { animationDelay: `${index * 42}ms` } : undefined}
       >
         <span className="absolute inset-x-0 top-1/2 h-px bg-black/50" />
@@ -131,20 +131,20 @@ export const DrawReveal = ({
   return (
     <div
       data-draw-stage={stage}
-      className="relative overflow-hidden rounded-[var(--radius-large)] border border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-lifted)]"
+      className="relative overflow-hidden rounded-2xl border border-hairline-strong bg-surface-1 shadow-[var(--elevation-3)]"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent" />
 
       <AnimatePresence mode="wait">
         {stage === 'spinning' ? (
           <motion.div key="spinning" exit={{ opacity: 0, y: -10 }} className="px-5 py-12">
-            <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--muted)]">
+            <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-ink-muted">
               destino de hoje
             </p>
             <div className="board-shake mt-6">
               <FlapBoard cells={scrambledCells} isSettled={false} />
             </div>
-            <div className="mx-auto mt-7 h-[3px] w-40 overflow-hidden rounded-full bg-[var(--surface-raised)]">
+            <div className="mx-auto mt-7 h-[3px] w-40 overflow-hidden rounded-full bg-surface-2">
               <motion.div
                 initial={{ x: '-100%' }}
                 animate={{ x: '0%' }}
@@ -166,13 +166,13 @@ export const DrawReveal = ({
             <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--warning)]">
               empate na votação
             </p>
-            <p className="mt-4 text-sm text-[var(--muted)]">
+            <p className="mt-4 text-sm text-ink-muted">
               {data.tiedRestaurantNames.join(' · ')}
             </p>
             <div className="board-shake mt-6">
               <FlapBoard cells={scrambledCells} isSettled={false} />
             </div>
-            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
               sorteando quem cai
             </p>
           </motion.div>
@@ -186,7 +186,7 @@ export const DrawReveal = ({
             exit={{ opacity: 0, y: -10 }}
             className="relative px-5 py-14 text-center"
           >
-            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--muted)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-ink-muted">
               {data.wasBanDecidedByTiebreak ? 'caiu no sorteio do empate' : 'o grupo cortou'}
             </p>
             <div className="stamp-in mt-6 inline-block">
@@ -196,11 +196,11 @@ export const DrawReveal = ({
                 </span>
                 <Ban
                   size={16}
-                  className="absolute -right-2 -top-2 rounded-full bg-[var(--surface)] text-[var(--danger)]"
+                  className="absolute -right-2 -top-2 rounded-full bg-surface-1 text-[var(--danger)]"
                 />
               </div>
             </div>
-            <p className="mt-5 text-lg font-medium text-[var(--muted)] line-through decoration-[var(--danger)] decoration-2">
+            <p className="mt-5 text-lg font-medium text-ink-muted line-through decoration-[var(--danger)] decoration-2">
               {data.bannedRestaurantName}
             </p>
           </motion.div>
@@ -214,17 +214,17 @@ export const DrawReveal = ({
             exit={{ opacity: 0, y: -10 }}
             className="px-5 py-12"
           >
-            <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--muted)]">
+            <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-ink-muted">
               se não rolar, o plano b
             </p>
-            <div className="ticket-in relative mx-auto mt-6 max-w-[19rem] rounded-[var(--radius-medium)] border border-dashed border-[var(--border-strong)] bg-[var(--surface-raised)] px-5 py-5 text-center">
-              <span className="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-[var(--surface)]" />
-              <span className="absolute -right-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-[var(--surface)]" />
+            <div className="ticket-in relative mx-auto mt-6 max-w-[19rem] rounded-xl border border-dashed border-hairline-strong bg-surface-2 px-5 py-5 text-center">
+              <span className="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-surface-1" />
+              <span className="absolute -right-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-surface-1" />
               <p className="text-2xl">🥈</p>
               <p className="font-display mt-2 text-xl font-semibold leading-tight">
                 {fallback?.name}
               </p>
-              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
                 indicação de {fallback?.addedByName}
               </p>
             </div>
@@ -249,7 +249,7 @@ export const DrawReveal = ({
               }}
             />
 
-            <p className="relative font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--accent)]">
+            <p className="relative font-mono text-[10px] uppercase tracking-[0.4em] text-accent">
               vai ser em
             </p>
 
@@ -272,11 +272,11 @@ export const DrawReveal = ({
               transition={{ delay: boardColumnCount * 0.042 + 0.45 }}
               className="relative mt-3 flex flex-col items-center gap-1.5"
             >
-              <p className="text-sm text-[var(--muted)]">
+              <p className="text-sm text-ink-muted">
                 indicação de{' '}
-                <span className="text-[var(--foreground)]">{winner?.addedByName}</span>
+                <span className="text-ink">{winner?.addedByName}</span>
               </p>
-              <span className="rounded-[var(--radius-pill)] border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--accent-soft)]">
+              <span className="rounded-pill border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-accent-hover">
                 tinha {((winner?.chance ?? 0) * 100).toFixed(1)}% de chance
               </span>
             </motion.div>

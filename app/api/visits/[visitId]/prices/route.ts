@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { priceEntrySchema } from '@/lib/validation/schemas'
+import { publishVisitChanged } from '@/lib/realtime/sessionChannel'
 
 export const GET = async (_request: Request, context: { params: Promise<{ visitId: string }> }) =>
   withMember(async () => {
@@ -55,6 +56,8 @@ export const POST = async (request: Request, context: { params: Promise<{ visitI
         set: { amount: String(parsed.data.amount), addedByMemberId: member.id },
       })
       .returning()
+
+    await publishVisitChanged(visitId)
 
     return NextResponse.json({ entry })
   })

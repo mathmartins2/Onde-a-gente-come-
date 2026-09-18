@@ -20,6 +20,7 @@ export type RatingSessionState = {
   hasFallbackOption: boolean
   pendingMembers: Array<{ id: string; displayName: string; hasRatingPin: boolean }>
   ratedMemberIds: string[]
+  reveal: Awaited<ReturnType<typeof loadRevealedVisit>>
 }
 
 export const loadRatingSession = async (visitId: string): Promise<RatingSessionState | null> => {
@@ -77,6 +78,7 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
     hasFallbackOption: Boolean(visit.drawId),
     recommendedByMemberId: visit.recommendedByMemberId,
     isRevealed: Boolean(visit.revealedAt),
+    reveal: visit.revealedAt ? await loadRevealedVisit(visitId) : null,
     pendingMembers: allMembers
       .filter((member) => !ratedMemberIds.includes(member.id))
       .map((member) => ({
@@ -186,7 +188,7 @@ const averageOf = (values: ReadonlyArray<string | null>) => {
   return present.reduce((sum, value) => sum + value, 0) / present.length
 }
 
-export const revealVisit = async (visitId: string) => {
+export const loadRevealedVisit = async (visitId: string) => {
   const visitRows = await database
     .select({
       id: schema.visits.id,
@@ -235,13 +237,6 @@ export const revealVisit = async (visitId: string) => {
     visit.recommendedByMemberId,
   )
 
-  if (!visit.revealedAt) {
-    await database
-      .update(schema.visits)
-      .set({ revealedAt: new Date() })
-      .where(eq(schema.visits.id, visitId))
-  }
-
   return {
     revealed: true as const,
     finalScore,
@@ -276,6 +271,18 @@ export type CriterionScores = {
   ambience: number
   menu: number
   waitTime: number
+}
+
+export const revealVisit = async (visitId: string) => {
+  const outcome = await loadRevealedVisit(visitId)
+  if (!outcome || !outcome.revealed) return outcome
+
+  await database
+    .update(schema.visits)
+    .set({ revealedAt: new Date() })
+    .where(and(eq(schema.visits.id, visitId), isNull(schema.visits.revealedAt)))
+
+  return outcome
 }
 
 export const calculateOverallScore = (scores: CriterionScores) => {

@@ -42,7 +42,7 @@ const PasswordCard = () => {
 
   return (
     <Card className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold">Trocar senha</h2>
+      <h2 className="text-heading-sm">Trocar senha</h2>
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="flex flex-col gap-3">
         <Field label="Senha atual" error={errors.currentPassword?.message}>
           <TextInput type="password" autoComplete="current-password" {...register('currentPassword')} />
@@ -81,8 +81,8 @@ const PinCard = ({ hasRatingPin }: { hasRatingPin: boolean }) => {
   return (
     <Card className="flex flex-col gap-3">
       <div>
-        <h2 className="text-sm font-semibold">PIN de votação</h2>
-        <p className="mt-1 text-xs text-[var(--muted)]">
+        <h2 className="text-heading-sm">PIN de votação</h2>
+        <p className="mt-1 text-caption">
           4 dígitos, só usados quando o celular passa na mesa. {hasRatingPin ? 'Você já tem um.' : 'Você ainda não tem um.'}
         </p>
       </div>
@@ -136,12 +136,12 @@ export const ProfileScreen = ({
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-lg font-semibold">{displayName}</h1>
+      <h1 className="text-heading-xl">{displayName}</h1>
 
       <Card className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Minhas indicações</h2>
+        <h2 className="text-heading-sm">Minhas indicações</h2>
         {(nominationsQuery.data ?? []).length === 0 ? (
-          <p className="text-xs text-[var(--muted)]">
+          <p className="text-caption">
             Você não indicou nada — sem indicação você fica fora do sorteio.
           </p>
         ) : null}
@@ -150,7 +150,7 @@ export const ProfileScreen = ({
           <div key={nomination.id} className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm">{nomination.restaurantName}</p>
-              <p className="truncate text-xs text-[var(--muted)]">
+              <p className="truncate text-caption">
                 {[nomination.cuisines.join(', ') || null, nomination.neighborhood]
                   .filter(Boolean)
                   .join(' · ')}
