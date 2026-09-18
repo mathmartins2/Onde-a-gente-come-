@@ -6,6 +6,7 @@ import { Check, Eye, Lock, Pencil, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { ScoreReveal } from './ScoreReveal'
@@ -132,7 +133,14 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
   })
 
   const session = sessionQuery.data
-  if (sessionQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (sessionQuery.isLoading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    )
+  }
   if (!session) return <p className="text-body-sm text-ink-muted">Visita não encontrada.</p>
 
   const hasRated = session.ratedMemberIds.includes(currentMemberId)

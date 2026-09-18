@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient } from '@/lib/http/apiClient'
 
 type FrequencyBucket = { period: string; visitCount: number }
@@ -197,7 +198,20 @@ export const StatisticsScreen = () => {
     },
   })
 
-  if (statisticsQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (statisticsQuery.isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <div className="grid grid-cols-3 gap-2">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    )
+  }
   const data = statisticsQuery.data
   if (!data) return <p className="text-body-sm text-ink-muted">Sem dados.</p>
 

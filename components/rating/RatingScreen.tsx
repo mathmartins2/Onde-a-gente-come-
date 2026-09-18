@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Smartphone, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { classNames } from '@/lib/utilities/classNames'
 import { apiClient } from '@/lib/http/apiClient'
 import { BlindRatingSession } from './BlindRatingSession'
@@ -46,7 +47,9 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
         />
         <p className="text-micro-cap text-accent">avaliando</p>
         <h1 className="font-display mt-1 text-display-large">
-          {visitQuery.data?.restaurantName ?? 'Carregando...'}
+          {visitQuery.data?.restaurantName ?? (
+            <Skeleton className="mx-auto h-9 w-56" />
+          )}
         </h1>
 
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">

@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
+import { ScoreRating } from '@/components/ui/ScoreRating'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -129,15 +129,18 @@ export const RankingScreen = () => {
               </div>
 
               {restaurant.averageScore === null ? (
-                <Badge tone="quiet" size="small">
-                  aguardando
-                </Badge>
+                <span className="text-numeric shrink-0 text-heading-lg text-ink-faint">—</span>
               ) : (
                 <span
                   title="Score do ranking: mistura a nota real com uma âncora neutra de 3,0 até o lugar acumular avaliações"
-                  className={`text-numeric shrink-0 text-heading-lg ${scoreTextClassFor(restaurant.bayesianScore)}`}
+                  className="flex shrink-0 flex-col items-end gap-1"
                 >
-                  {restaurant.bayesianScore.toFixed(2)}
+                  <span
+                    className={`text-numeric text-heading-lg ${scoreTextClassFor(restaurant.bayesianScore)}`}
+                  >
+                    {restaurant.bayesianScore.toFixed(2)}
+                  </span>
+                  <ScoreRating score={restaurant.bayesianScore} />
                 </span>
               )}
             </div>

@@ -18,10 +18,12 @@ import {
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionBar } from '@/components/ui/ActionBar'
 import { Badge } from '@/components/ui/Badge'
 import { Collapsible } from '@/components/ui/Collapsible'
 import { Meter } from '@/components/ui/Meter'
+import { ScoreRating } from '@/components/ui/ScoreRating'
 import { ListRow } from '@/components/ui/ListRow'
 import { StatTile } from '@/components/ui/StatTile'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
@@ -197,14 +199,15 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
               </p>
             </div>
             {lastRound.finalScore === null ? (
-              <Badge tone="quiet" size="small">
-                sem nota
-              </Badge>
+              <span className="text-numeric shrink-0 text-heading-lg text-ink-faint">—</span>
             ) : (
-              <span
-                className={`text-numeric shrink-0 text-heading-lg ${scoreTextClassFor(lastRound.finalScore)}`}
-              >
-                {lastRound.finalScore.toFixed(2)}
+              <span className="flex shrink-0 flex-col items-end gap-1">
+                <span
+                  className={`text-numeric text-heading-lg ${scoreTextClassFor(lastRound.finalScore)}`}
+                >
+                  {lastRound.finalScore.toFixed(2)}
+                </span>
+                <ScoreRating score={lastRound.finalScore} />
               </span>
             )}
           </Card>
@@ -322,7 +325,17 @@ export const SessionScreen = () => {
     joinMutation.mutate()
   }, [canAutoJoin, joinRequested, joinMutation])
 
-  if (sessionQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (sessionQuery.isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+        </div>
+      </div>
+    )
+  }
   if (!state) return <p className="text-sm text-ink-muted">Não consegui carregar.</p>
 
   if (!state.session) {

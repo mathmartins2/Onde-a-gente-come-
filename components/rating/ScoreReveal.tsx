@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Meter } from '@/components/ui/Meter'
+import { ScoreRating } from '@/components/ui/ScoreRating'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
 
@@ -164,6 +165,10 @@ export const ScoreReveal = ({ data, footnote }: { data: ScoreRevealData; footnot
             >
               {finalScore === null ? '—' : countedScore.toFixed(2)}
             </p>
+
+            {finalScore === null ? null : (
+              <ScoreRating score={countedScore} size={20} className="relative mt-3" />
+            )}
 
             <div className="relative mt-6 flex flex-col gap-2.5 text-left">
               {ratingCriteria.map((criterion) => {

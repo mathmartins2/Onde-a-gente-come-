@@ -4,12 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Ban, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { ScoreRating } from '@/components/ui/ScoreRating'
 import { fetchHistory, type HistoryRating, type HistoryRound } from '@/lib/http/historyQueries'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { classNames } from '@/lib/utilities/classNames'
 import { formatDrawMoment, formatVisitDay } from '@/lib/utilities/formatDate'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
-import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Meter } from '@/components/ui/Meter'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -203,8 +203,10 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
       <span className="text-micro-cap text-accent">rodada {round.roundNumber}</span>
       <span className="text-caption">
-        sorteio {formatDrawMoment(round.drawnAt)} · fomos{' '}
-        {round.visitDateConfirmedAt && round.visitedAt ? formatVisitDay(round.visitedAt) : '—'}
+        sorteio {formatDrawMoment(round.drawnAt)}
+        {round.visitDateConfirmedAt && round.visitedAt
+          ? ` · fomos ${formatVisitDay(round.visitedAt)}`
+          : ''}
       </span>
     </div>
 
@@ -218,17 +220,20 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
       </div>
       <span className="ml-auto flex shrink-0 flex-col items-end gap-1">
         {round.finalScore === null ? null : (
-          <span className={`text-numeric text-heading-lg ${scoreTone(round.finalScore)}`}>
-            {round.finalScore.toFixed(2)}
-          </span>
+          <>
+            <span className={`text-numeric text-heading-lg ${scoreTone(round.finalScore)}`}>
+              {round.finalScore.toFixed(2)}
+            </span>
+            <ScoreRating score={round.finalScore} />
+          </>
         )}
         {round.totalPaid ? (
-          <Badge tone="quiet" size="small">
+          <span className="text-numeric text-caption">
             {currencyFormatter.format(Number(round.totalPaid))}
             {round.paidPerPerson
               ? ` · ${currencyFormatter.format(round.paidPerPerson)} cada`
               : ''}
-          </Badge>
+          </span>
         ) : null}
       </span>
     </div>

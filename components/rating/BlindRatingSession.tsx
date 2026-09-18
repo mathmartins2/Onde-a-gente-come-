@@ -7,6 +7,7 @@ import { ArrowRight, Delete, Eye, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { ScoreReveal } from './ScoreReveal'
 import { useVisitStream, visitQueryKey } from '@/lib/http/useVisitStream'
@@ -118,7 +119,14 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
   const reveal = sessionQuery.data?.reveal?.revealed ? sessionQuery.data.reveal : null
   const stage = resolveStage(activeRating, Boolean(reveal), submitMutation.isSuccess)
 
-  if (sessionQuery.isLoading) return <p className="text-body-sm text-ink-muted">Carregando...</p>
+  if (sessionQuery.isLoading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-24 w-full rounded-xl" />
+        <Skeleton className="h-60 w-full rounded-xl" />
+      </div>
+    )
+  }
   if (!session) return <p className="text-body-sm text-ink-muted">Visita não encontrada.</p>
 
   const activeMember = session.pendingMembers.find(
