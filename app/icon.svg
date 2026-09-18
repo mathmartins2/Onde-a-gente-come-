@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="ember" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff9c63" />
+      <stop offset="58%" stop-color="#ff6b35" />
+      <stop offset="100%" stop-color="#d64a17" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0d0a09" />
+  <rect x="4" y="4" width="56" height="56" rx="13" fill="url(#ember)" />
+  <g
+    transform="translate(11 11) scale(1.75)"
+    fill="none"
+    stroke="#1d0c04"
+    stroke-width="2.1"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8" />
+    <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7" />
+    <path d="M2.1 21.8 13 11" />
+    <path d="m9 11 3 3" />
+  </g>
+</svg>
