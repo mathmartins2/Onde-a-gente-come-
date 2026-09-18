@@ -1,44 +1,11 @@
 import { NextResponse } from 'next/server'
 import { withMember } from '@/lib/http/routeHelpers'
-import { findOpenSession, loadSessionState, openSession } from '@/lib/services/sessionService'
+import { buildSessionPayload } from '@/lib/services/sessionPayload'
+import { openSession } from '@/lib/services/sessionService'
+import { publishSessionChanged } from '@/lib/realtime/sessionChannel'
 
 export const GET = async () =>
-  withMember(async (member) => {
-    const session = await findOpenSession()
-    if (!session) return NextResponse.json({ session: null, isAdmin: member.isAdmin })
-
-    const state = await loadSessionState(session.id)
-    if (!state) return NextResponse.json({ session: null, isAdmin: member.isAdmin })
-
-    const myPreferences = state.myPreferences.get(member.id) ?? []
-
-    return NextResponse.json({
-      isAdmin: member.isAdmin,
-      currentMemberId: member.id,
-      session: {
-        id: state.session.id,
-        roundNumber: state.session.roundNumber,
-        status: state.session.status,
-        openedByMemberId: state.session.openedByMemberId,
-      },
-      participants: state.participants,
-      pool: state.pool.map((item) => {
-        const { effectiveOwnerMemberId, ...visible } = item
-        return { ...visible, isMine: effectiveOwnerMemberId === member.id }
-      }),
-      contenders: state.contenders,
-      quorum: state.quorum,
-      needsBanRunoff: state.needsBanRunoff,
-      banRunoff: state.banRunoff,
-      banOutcome: state.banOutcome,
-      myBanVote: state.banVotesByMember.get(member.id) ?? null,
-      everyoneReady: state.everyoneReady,
-      hasJoined: state.participants.some((participant) => participant.memberId === member.id),
-      myRankedRestaurantIds: [...myPreferences]
-        .sort((first, second) => first.position - second.position)
-        .map((entry) => entry.restaurantId),
-    })
-  })
+  withMember(async (member) => NextResponse.json(await buildSessionPayload(member)))
 
 export const POST = async () =>
   withMember(async (member) => {
@@ -50,6 +17,8 @@ export const POST = async () =>
     if (!result.ok) {
       return NextResponse.json({ error: 'Já existe um sorteio aberto' }, { status: 409 })
     }
+
+    await publishSessionChanged(result.session.id)
 
     return NextResponse.json({ session: result.session })
   })

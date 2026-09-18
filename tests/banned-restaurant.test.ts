@@ -8,7 +8,7 @@ describe('banned restaurant', () => {
   it('bans nothing when nobody voted', () => {
     const outcome = resolveBannedRestaurant([])
     expect(outcome.bannedRestaurantId).toBeNull()
-    expect(outcome.isTied).toBe(false)
+    expect(outcome.tiedRestaurantIds).toEqual([])
   })
 
   it('bans the single most voted restaurant', () => {
@@ -42,7 +42,7 @@ describe('banned restaurant', () => {
     ])
 
     expect(outcome.bannedRestaurantId).toBeNull()
-    expect(outcome.isTied).toBe(true)
+    expect(outcome.tiedRestaurantIds).toEqual(['outback', 'zen'])
   })
 
   it('bans with a single vote when it is the only one cast', () => {

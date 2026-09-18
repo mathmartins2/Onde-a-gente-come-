@@ -85,6 +85,20 @@
       "when": 1788562414563,
       "tag": "0011_sudden_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789756475496,
+      "tag": "0012_dizzy_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789756475497,
+      "tag": "0013_confirm_past_visit_dates",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,8 @@ export type HistoryRound = {
   drawId: string
   roundNumber: number
   drawnAt: string
+  visitedAt: string | null
+  visitDateConfirmedAt: string | null
   winnerRestaurantId: string
   winnerRestaurantName: string
   winnerNominatedByName: string

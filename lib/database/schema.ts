@@ -118,6 +118,7 @@ export const visits = pgTable('visits', {
     onDelete: 'set null',
   }),
   visitedAt: timestamp('visited_at', { withTimezone: true }).notNull().defaultNow(),
+  visitDateConfirmedAt: timestamp('visit_date_confirmed_at', { withTimezone: true }),
   revealedAt: timestamp('revealed_at', { withTimezone: true }),
   legacyScore: numeric('legacy_score', { precision: 3, scale: 1 }),
   legacyComment: text('legacy_comment'),
@@ -219,6 +220,9 @@ export const drawSessions = pgTable('draw_sessions', {
   banRound: integer('ban_round').notNull().default(1),
   banRunoffRestaurantIds: jsonb('ban_runoff_restaurant_ids'),
   drawId: uuid('draw_id').references(() => draws.id, { onDelete: 'set null' }),
+  drawnByMemberId: uuid('drawn_by_member_id').references(() => members.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   drawnAt: timestamp('drawn_at', { withTimezone: true }),
 })

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { sessionPoolSchema } from '@/lib/validation/schemas'
 import { addRestaurantToPool, joinSession } from '@/lib/services/sessionService'
+import { publishSessionChanged } from '@/lib/realtime/sessionChannel'
 
 export const POST = async (request: Request, context: { params: Promise<{ sessionId: string }> }) =>
   withMember(async (member) => {
@@ -14,5 +15,7 @@ export const POST = async (request: Request, context: { params: Promise<{ sessio
 
     await joinSession(sessionId, member.id)
     await addRestaurantToPool(sessionId, parsed.data.restaurantId, member.id)
+    await publishSessionChanged(sessionId)
+
     return NextResponse.json({ ok: true })
   })

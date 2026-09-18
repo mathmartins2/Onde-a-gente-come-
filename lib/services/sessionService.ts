@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { database, schema } from '@/lib/database/client'
 import { calculateNominationWeight } from '@/lib/draw/calculateNominationWeight'
@@ -12,23 +12,48 @@ import {
   type SessionPoolRestaurant,
 } from '@/lib/draw/selectSessionWinner'
 import { checkQuorum } from '@/lib/draw/checkQuorum'
-import { resolveBannedRestaurant } from '@/lib/draw/resolveBannedRestaurant'
+import { resolveBannedRestaurant, type BanOutcome } from '@/lib/draw/resolveBannedRestaurant'
 import { loadNominatorQuality } from './drawService'
+import { publishSessionChanged } from '@/lib/realtime/sessionChannel'
 
 const randomFraction = () => randomInt(0, 1_000_000) / 1_000_000
 
 export const collectingStatus = 'collecting'
+export const revealingStatus = 'revealing'
 export const drawnStatus = 'drawn'
 
-export const findOpenSession = async () => {
+const abandonedRevealInMilliseconds = 30 * 60 * 1000
+
+const selectLatestOpenSession = async () => {
   const rows = await database
     .select()
     .from(schema.drawSessions)
-    .where(eq(schema.drawSessions.status, collectingStatus))
+    .where(inArray(schema.drawSessions.status, [collectingStatus, revealingStatus]))
     .orderBy(desc(schema.drawSessions.roundNumber))
     .limit(1)
 
   return rows.at(0) ?? null
+}
+
+const closeAbandonedReveal = async (sessionId: string) =>
+  database
+    .update(schema.drawSessions)
+    .set({ status: drawnStatus })
+    .where(
+      and(eq(schema.drawSessions.id, sessionId), eq(schema.drawSessions.status, revealingStatus)),
+    )
+
+export const findOpenSession = async () => {
+  const session = await selectLatestOpenSession()
+  if (!session) return null
+  if (session.status !== revealingStatus) return session
+
+  const revealAge = Date.now() - (session.drawnAt?.getTime() ?? 0)
+  if (revealAge < abandonedRevealInMilliseconds) return session
+
+  await closeAbandonedReveal(session.id)
+  await publishSessionChanged(session.id)
+  return selectLatestOpenSession()
 }
 
 export const openSession = async (memberId: string) => {
@@ -188,7 +213,71 @@ const loadVisitHistoryByRestaurant = async () => {
   return new Map(rows.map((row) => [row.restaurantId, row]))
 }
 
-export const loadSessionState = async (sessionId: string) => {
+export type RevealedContender = {
+  restaurantId: string
+  name: string
+  addedByName: string
+  chance: number
+}
+
+export type SettledBanTiebreak = {
+  bannedRestaurantId: string | null
+  tiedRestaurantIds: string[]
+  tiedRestaurantNames: string[]
+  wasDecidedByTiebreak: boolean
+}
+
+const loadDrawSummary = async (drawId: string | null) => {
+  if (!drawId) return null
+
+  const drawRows = await database
+    .select({
+      restaurantId: schema.draws.restaurantId,
+      fallbackRestaurantId: schema.draws.fallbackRestaurantId,
+      weightSnapshot: schema.draws.weightSnapshot,
+      visitId: schema.visits.id,
+    })
+    .from(schema.draws)
+    .leftJoin(schema.visits, eq(schema.visits.drawId, schema.draws.id))
+    .where(eq(schema.draws.id, drawId))
+    .limit(1)
+
+  const drawRow = drawRows.at(0)
+  if (!drawRow) return null
+
+  const snapshot = drawRow.weightSnapshot as {
+    banTiebreak?: SettledBanTiebreak
+    contenders?: RevealedContender[]
+  } | null
+
+  return {
+    winnerRestaurantId: drawRow.restaurantId,
+    fallbackRestaurantId: drawRow.fallbackRestaurantId,
+    visitId: drawRow.visitId,
+    banTiebreak: snapshot?.banTiebreak ?? null,
+    contenders: snapshot?.contenders ?? [],
+  }
+}
+
+const buildBanTiebreak = (
+  settled: SettledBanTiebreak | null,
+  outcome: BanOutcome,
+  bannedRestaurantId: string | null,
+  restaurantNameById: ReadonlyMap<string, string>,
+): SettledBanTiebreak => {
+  if (settled) return settled
+
+  return {
+    bannedRestaurantId,
+    tiedRestaurantIds: outcome.tiedRestaurantIds,
+    tiedRestaurantNames: outcome.tiedRestaurantIds.map(
+      (restaurantId) => restaurantNameById.get(restaurantId) ?? 'Restaurante',
+    ),
+    wasDecidedByTiebreak: outcome.wasDecidedByTiebreak,
+  }
+}
+
+export const loadSessionState = async (sessionId: string, banTiebreakFraction?: number) => {
   const sessionRows = await database
     .select()
     .from(schema.drawSessions)
@@ -255,18 +344,19 @@ export const loadSessionState = async (sessionId: string) => {
         eq(schema.vetoes.banRound, session.banRound),
       ),
     )
+    .orderBy(asc(schema.vetoes.createdAt), asc(schema.vetoes.id))
 
   const decidedMemberIds = new Set(vetoRows.map((veto) => veto.memberId))
-  const isAlreadyDrawn = session.status === drawnStatus
+  const isAlreadyDrawn = session.status !== collectingStatus
   const everyoneReadyNow =
     participantRows.length > 0 && participantRows.every((participant) => participant.isReady)
 
-  const banOutcome = resolveBannedRestaurant(
-    vetoRows.flatMap((veto) =>
-      veto.restaurantId ? [{ memberId: veto.memberId, restaurantId: veto.restaurantId }] : [],
-    ),
-  )
-  const bannedRestaurantId = banOutcome.bannedRestaurantId
+  const banOutcome = resolveBannedRestaurant(vetoRows, banTiebreakFraction)
+  const drawSummary = isAlreadyDrawn ? await loadDrawSummary(session.drawId) : null
+  const settledBanTiebreak = drawSummary?.banTiebreak ?? null
+  const bannedRestaurantId = settledBanTiebreak
+    ? settledBanTiebreak.bannedRestaurantId
+    : banOutcome.bannedRestaurantId
   const visibleBannedRestaurantId = isAlreadyDrawn ? bannedRestaurantId : null
   const previousDrawRows = await database
     .select({ restaurantId: schema.draws.restaurantId })
@@ -327,12 +417,10 @@ export const loadSessionState = async (sessionId: string) => {
     ? contenders
     : buildSessionContenders(previewPool, participants, preferences)
   const restaurantById = new Map(poolRows.map((row) => [row.restaurantId, row]))
+  const restaurantNameById = new Map(poolRows.map((row) => [row.restaurantId, row.name]))
   const banVotesByRestaurant = new Map(
     banOutcome.tally.map((entry) => [entry.restaurantId, entry.votes]),
   )
-  const myBanVote =
-    vetoRows.find((veto) => veto.restaurantId !== null)?.restaurantId ?? null
-
   return {
     session,
     participants: participantRows.map((row) => ({
@@ -375,22 +463,20 @@ export const loadSessionState = async (sessionId: string) => {
         : '',
     })),
     quorum,
-    needsBanRunoff: !isAlreadyDrawn && everyoneReadyNow && banOutcome.isTied,
-    banRunoff: {
-      round: session.banRound,
-      restaurantIds: (session.banRunoffRestaurantIds as string[] | null) ?? null,
-      tiedRestaurantIds: banOutcome.isTied
-        ? banOutcome.tally
-            .filter((entry) => entry.votes === banOutcome.tally[0]?.votes)
-            .map((entry) => entry.restaurantId)
-        : [],
-    },
+    winnerRestaurantId: drawSummary?.winnerRestaurantId ?? null,
+    revealContenders: drawSummary?.contenders ?? [],
+    fallbackRestaurantId: drawSummary?.fallbackRestaurantId ?? null,
+    visitId: drawSummary?.visitId ?? null,
     bannedRestaurantName:
       poolRows.find((row) => row.restaurantId === bannedRestaurantId)?.name ?? null,
+    banTiebreak: buildBanTiebreak(
+      settledBanTiebreak,
+      banOutcome,
+      bannedRestaurantId,
+      restaurantNameById,
+    ),
     banOutcome: {
       bannedRestaurantId: visibleBannedRestaurantId,
-      isTied: isAlreadyDrawn && banOutcome.isTied,
-      isRevealed: isAlreadyDrawn,
       decidedCount: decidedMemberIds.size,
       participantCount: participantRows.length,
     },
@@ -422,8 +508,7 @@ export const loadSessionState = async (sessionId: string) => {
         veto.restaurantId ? [[veto.memberId, veto.restaurantId] as const] : [],
       ),
     ),
-    everyoneReady:
-      participantRows.length > 0 && participantRows.every((participant) => participant.isReady),
+    everyoneReady: everyoneReadyNow,
     rawPool: pool,
     rawParticipants: participants,
     rawPreferences: preferences,
@@ -431,31 +516,38 @@ export const loadSessionState = async (sessionId: string) => {
 }
 
 
-export const startBanRunoff = async (sessionId: string) => {
-  const state = await loadSessionState(sessionId)
-  if (!state) return { ok: false as const, reason: 'NOT_FOUND' as const }
-  if (!state.needsBanRunoff) return { ok: false as const, reason: 'NO_TIE' as const }
+export const closeReveal = async (sessionId: string, memberId: string, isAdmin: boolean) => {
+  const sessionRows = await database
+    .select({
+      id: schema.drawSessions.id,
+      status: schema.drawSessions.status,
+      drawnByMemberId: schema.drawSessions.drawnByMemberId,
+    })
+    .from(schema.drawSessions)
+    .where(eq(schema.drawSessions.id, sessionId))
+    .limit(1)
 
-  const nextBanRound = state.session.banRound + 1
+  const session = sessionRows.at(0)
+  if (!session) return { ok: false as const, reason: 'NOT_FOUND' as const }
+  if (session.status !== revealingStatus) {
+    return { ok: false as const, reason: 'NOT_REVEALING' as const }
+  }
+  if (!isAdmin && session.drawnByMemberId !== memberId) {
+    return { ok: false as const, reason: 'NOT_ALLOWED' as const }
+  }
 
   await database
     .update(schema.drawSessions)
-    .set({
-      banRound: nextBanRound,
-      banRunoffRestaurantIds: state.banRunoff.tiedRestaurantIds,
-    })
-    .where(eq(schema.drawSessions.id, sessionId))
+    .set({ status: drawnStatus })
+    .where(
+      and(eq(schema.drawSessions.id, sessionId), eq(schema.drawSessions.status, revealingStatus)),
+    )
 
-  await database
-    .update(schema.sessionParticipants)
-    .set({ isReady: false, readyAt: null })
-    .where(eq(schema.sessionParticipants.sessionId, sessionId))
-
-  return { ok: true as const, banRound: nextBanRound }
+  return { ok: true as const }
 }
 
-export const runSessionDraw = async (sessionId: string) => {
-  const state = await loadSessionState(sessionId)
+export const runSessionDraw = async (sessionId: string, drawnByMemberId: string) => {
+  const state = await loadSessionState(sessionId, randomFraction())
   if (!state) return { ok: false as const, reason: 'NOT_FOUND' as const }
   if (state.session.status !== collectingStatus) {
     return { ok: false as const, reason: 'ALREADY_DRAWN' as const }
@@ -467,14 +559,6 @@ export const runSessionDraw = async (sessionId: string) => {
     const missing = state.participants.filter((participant) => !participant.isReady)
     return { ok: false as const, reason: 'NOT_READY' as const, missing }
   }
-  if (state.needsBanRunoff) {
-    return {
-      ok: false as const,
-      reason: 'BAN_TIE' as const,
-      tiedRestaurantIds: state.banRunoff.tiedRestaurantIds,
-    }
-  }
-
   const selection = selectSessionWinner(
     state.rawPool,
     state.rawParticipants,
@@ -499,6 +583,7 @@ export const runSessionDraw = async (sessionId: string) => {
           ballots: state.detailedBallots,
           bannedRestaurantName: state.bannedRestaurantName,
           banRound: state.session.banRound,
+          banTiebreak: state.banTiebreak,
           fallback: (() => {
             const fallbackContender = state.revealedContenders.find(
               (contender) => contender.restaurantId === selection.fallbackRestaurantId,
@@ -525,7 +610,7 @@ export const runSessionDraw = async (sessionId: string) => {
 
     await transaction
       .update(schema.drawSessions)
-      .set({ status: drawnStatus, drawId: draw.id, drawnAt: new Date() })
+      .set({ status: revealingStatus, drawId: draw.id, drawnByMemberId, drawnAt: new Date() })
       .where(eq(schema.drawSessions.id, sessionId))
 
     const updatedParticipants = applySessionOutcome(
@@ -556,6 +641,7 @@ export const runSessionDraw = async (sessionId: string) => {
       selection,
       contenders: state.revealedContenders,
       bannedRestaurantName: state.bannedRestaurantName,
+      banTiebreak: state.banTiebreak,
     }
   })
 }

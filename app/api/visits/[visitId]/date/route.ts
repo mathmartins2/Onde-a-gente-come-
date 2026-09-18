@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
+import { parseVisitDayInput } from '@/lib/utilities/formatDate'
 
 const visitDateSchema = z.object({
   visitedAt: z.iso.datetime({ offset: true }).or(z.iso.date()),
@@ -17,7 +18,7 @@ export const PUT = async (request: Request, context: { params: Promise<{ visitId
       return validationErrorResponse('Data inválida')
     }
 
-    const visitedAt = new Date(parsed.data.visitedAt)
+    const visitedAt = parseVisitDayInput(parsed.data.visitedAt)
     if (Number.isNaN(visitedAt.getTime())) return validationErrorResponse('Data inválida')
     if (visitedAt.getTime() > Date.now()) {
       return validationErrorResponse('A data não pode estar no futuro')
@@ -25,7 +26,7 @@ export const PUT = async (request: Request, context: { params: Promise<{ visitId
 
     const [visit] = await database
       .update(schema.visits)
-      .set({ visitedAt })
+      .set({ visitedAt, visitDateConfirmedAt: new Date() })
       .where(eq(schema.visits.id, visitId))
       .returning()
 

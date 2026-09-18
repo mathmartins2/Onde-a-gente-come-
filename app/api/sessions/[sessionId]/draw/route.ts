@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withMember } from '@/lib/http/routeHelpers'
 import { runSessionDraw } from '@/lib/services/sessionService'
+import { publishSessionChanged } from '@/lib/realtime/sessionChannel'
 
 const failureMessages: Record<string, string> = {
   NOT_FOUND: 'Sorteio não encontrado',
@@ -9,11 +10,13 @@ const failureMessages: Record<string, string> = {
 }
 
 export const POST = async (_request: Request, context: { params: Promise<{ sessionId: string }> }) =>
-  withMember(async () => {
+  withMember(async (member) => {
     const { sessionId } = await context.params
-    const result = await runSessionDraw(sessionId)
+    const result = await runSessionDraw(sessionId, member.id)
 
     if (result.ok) {
+      await publishSessionChanged(sessionId)
+
       return NextResponse.json({
         drawId: result.draw.id,
         visitId: result.visit.id,
@@ -29,16 +32,6 @@ export const POST = async (_request: Request, context: { params: Promise<{ sessi
       return NextResponse.json(
         {
           error: `Precisa de pelo menos ${result.quorum.requiredCount} de ${result.quorum.totalMemberCount} membros na sessão. Tem ${result.quorum.presentCount}.`,
-        },
-        { status: 409 },
-      )
-    }
-
-    if (result.reason === 'BAN_TIE') {
-      return NextResponse.json(
-        {
-          error: 'Empate na votação de banimento. Faça o desempate antes de sortear.',
-          tiedRestaurantIds: result.tiedRestaurantIds,
         },
         { status: 409 },
       )

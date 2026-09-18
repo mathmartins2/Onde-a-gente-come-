@@ -2,13 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { Ban, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { fetchHistory, type HistoryRating, type HistoryRound } from '@/lib/http/historyQueries'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { classNames } from '@/lib/utilities/classNames'
+import { formatDrawMoment, formatVisitDay } from '@/lib/utilities/formatDate'
 
 const formatPercentage = (value: number) => `${(value * 100).toFixed(0)}%`
 
@@ -205,12 +204,13 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
 
   return (
   <Card className="flex flex-col gap-4">
-    <div className="flex items-baseline justify-between">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
       <span className="text-xs uppercase tracking-widest text-[var(--muted)]">
         rodada {round.roundNumber}
       </span>
       <span className="text-xs text-[var(--muted)]">
-        {format(new Date(round.drawnAt), "d 'de' MMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+        sorteio {formatDrawMoment(round.drawnAt)} · fomos{' '}
+        {round.visitDateConfirmedAt && round.visitedAt ? formatVisitDay(round.visitedAt) : '—'}
       </span>
     </div>
 

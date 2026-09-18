@@ -84,6 +84,8 @@ export const loadHistory = async () => {
     .select({
       visitId: schema.visits.id,
       drawId: schema.visits.drawId,
+      visitedAt: schema.visits.visitedAt,
+      visitDateConfirmedAt: schema.visits.visitDateConfirmedAt,
       revealedAt: schema.visits.revealedAt,
       recommendedByMemberId: schema.visits.recommendedByMemberId,
       usedFallback: schema.visits.usedFallback,
@@ -166,6 +168,8 @@ export const loadHistory = async () => {
       drawId: draw.drawId,
       roundNumber: draw.roundNumber,
       drawnAt: draw.drawnAt,
+      visitedAt: visit?.visitedAt ?? null,
+      visitDateConfirmedAt: visit?.visitDateConfirmedAt ?? null,
       winnerRestaurantId: draw.winnerRestaurantId,
       winnerRestaurantName: draw.winnerRestaurantName,
       winnerNominatedByName: draw.winnerNominatedByName,

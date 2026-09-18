@@ -48,6 +48,7 @@ Confira antes que `.env.local` **não** entrou no commit (ele está no `.gitigno
 | variável | valor |
 |---|---|
 | `DATABASE_URL` | a string do Neon **com pooler** |
+| `DATABASE_URL_UNPOOLED` | a mesma string **sem** o `-pooler` no host — o `LISTEN/NOTIFY` do sorteio em tempo real não funciona pelo pooler. Se não definir, o app deriva sozinho tirando o `-pooler`. |
 | `SESSION_SECRET` | string aleatória de 32+ caracteres (gere com o comando abaixo) |
 
 ```bash

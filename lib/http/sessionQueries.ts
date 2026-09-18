@@ -33,6 +33,24 @@ export type SessionContenderView = {
   topChoiceCount: number
 }
 
+export type BanTiebreakView = {
+  bannedRestaurantId: string | null
+  tiedRestaurantIds: string[]
+  tiedRestaurantNames: string[]
+  wasDecidedByTiebreak: boolean
+}
+
+export type SessionRevealView = {
+  drawId: string | null
+  visitId: string | null
+  restaurantId: string | null
+  fallbackRestaurantId: string | null
+  bannedRestaurantName: string | null
+  banTiebreak: BanTiebreakView
+  contenders: SessionContenderView[]
+  canClose: boolean
+}
+
 export type SessionState = {
   isAdmin: boolean
   currentMemberId: string
@@ -42,6 +60,7 @@ export type SessionState = {
     status: string
     openedByMemberId: string
   } | null
+  reveal: SessionRevealView | null
   participants: SessionParticipantView[]
   pool: SessionPoolItem[]
   contenders: SessionContenderView[]
@@ -51,20 +70,13 @@ export type SessionState = {
     requiredCount: number
     hasQuorum: boolean
   }
-  needsBanRunoff: boolean
-  banRunoff: {
-    round: number
-    restaurantIds: string[] | null
-    tiedRestaurantIds: string[]
-  }
   banOutcome: {
     bannedRestaurantId: string | null
-    isTied: boolean
-    isRevealed: boolean
     decidedCount: number
     participantCount: number
   }
   myBanVote: string | null
+  hasDecidedBan: boolean
   everyoneReady: boolean
   hasJoined: boolean
   myRankedRestaurantIds: string[]

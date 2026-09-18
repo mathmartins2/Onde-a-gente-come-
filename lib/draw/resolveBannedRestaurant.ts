@@ -1,6 +1,6 @@
 export type BanVote = {
   memberId: string
-  restaurantId: string
+  restaurantId: string | null
 }
 
 export type BanTallyEntry = {
@@ -11,24 +11,66 @@ export type BanTallyEntry = {
 export type BanOutcome = {
   tally: BanTallyEntry[]
   bannedRestaurantId: string | null
-  isTied: boolean
+  tiedRestaurantIds: string[]
+  wasDecidedByTiebreak: boolean
 }
 
-export const resolveBannedRestaurant = (votes: ReadonlyArray<BanVote>): BanOutcome => {
-  const counts = new Map<string, number>()
-  votes.forEach((vote) => {
-    counts.set(vote.restaurantId, (counts.get(vote.restaurantId) ?? 0) + 1)
-  })
+const emptyOutcome: BanOutcome = {
+  tally: [],
+  bannedRestaurantId: null,
+  tiedRestaurantIds: [],
+  wasDecidedByTiebreak: false,
+}
+
+export const resolveBannedRestaurant = (
+  votes: ReadonlyArray<BanVote>,
+  tiebreakFraction?: number,
+): BanOutcome => {
+  const counts = votes.reduce((accumulated, vote) => {
+    if (!vote.restaurantId) return accumulated
+    return accumulated.set(vote.restaurantId, (accumulated.get(vote.restaurantId) ?? 0) + 1)
+  }, new Map<string, number>())
 
   const tally = [...counts.entries()]
     .map(([restaurantId, count]) => ({ restaurantId, votes: count }))
-    .sort((first, second) => second.votes - first.votes)
+    .sort(
+      (first, second) =>
+        second.votes - first.votes || first.restaurantId.localeCompare(second.restaurantId),
+    )
 
-  if (tally.length === 0) return { tally, bannedRestaurantId: null, isTied: false }
+  if (tally.length === 0) return emptyOutcome
 
   const highestVoteCount = tally[0].votes
-  const leaders = tally.filter((entry) => entry.votes === highestVoteCount)
-  if (leaders.length > 1) return { tally, bannedRestaurantId: null, isTied: true }
+  const leaderRestaurantIds = tally
+    .filter((entry) => entry.votes === highestVoteCount)
+    .map((entry) => entry.restaurantId)
+    .sort((first, second) => first.localeCompare(second))
 
-  return { tally, bannedRestaurantId: tally[0].restaurantId, isTied: false }
+  if (leaderRestaurantIds.length === 1) {
+    return {
+      tally,
+      bannedRestaurantId: leaderRestaurantIds[0],
+      tiedRestaurantIds: [],
+      wasDecidedByTiebreak: false,
+    }
+  }
+
+  if (tiebreakFraction === undefined) {
+    return {
+      tally,
+      bannedRestaurantId: null,
+      tiedRestaurantIds: leaderRestaurantIds,
+      wasDecidedByTiebreak: false,
+    }
+  }
+
+  const boundedFraction = Math.min(Math.max(tiebreakFraction, 0), 0.999999)
+  const drawnIndex = Math.floor(boundedFraction * leaderRestaurantIds.length)
+
+  return {
+    tally,
+    bannedRestaurantId: leaderRestaurantIds[drawnIndex],
+    tiedRestaurantIds: leaderRestaurantIds,
+    wasDecidedByTiebreak: true,
+  }
 }

@@ -5,19 +5,22 @@ import { useEffect, useMemo, useState } from 'react'
 import { Ban } from 'lucide-react'
 
 export type DrawRevealData = {
-  restaurantId: string
+  restaurantId: string | null
   fallbackRestaurantId: string | null
   bannedRestaurantName: string | null
+  tiedRestaurantNames: string[]
+  wasBanDecidedByTiebreak: boolean
   contenders: Array<{ restaurantId: string; name: string; addedByName: string; chance: number }>
 }
 
-type Stage = 'spinning' | 'banned' | 'fallback' | 'winner'
+type Stage = 'spinning' | 'tiebreak' | 'banned' | 'fallback' | 'winner'
 
 const scrambleAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 const minimumBoardColumns = 6
 const maximumBoardColumns = 16
 const scrambleTickInMilliseconds = 55
 const spinDurationInMilliseconds = 2500
+const tiebreakDurationInMilliseconds = 2600
 const bannedDurationInMilliseconds = 2400
 const fallbackDurationInMilliseconds = 2600
 
@@ -57,11 +60,20 @@ const Embers = () => (
   </>
 )
 
-export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
+export const DrawReveal = ({
+  data,
+  onFinished,
+}: {
+  data: DrawRevealData
+  onFinished?: () => void
+}) => {
   const winner = data.contenders.find((entry) => entry.restaurantId === data.restaurantId)
   const fallback = data.contenders.find(
     (entry) => entry.restaurantId === data.fallbackRestaurantId,
   )
+  const hasFallback = Boolean(fallback)
+  const hasBan = Boolean(data.bannedRestaurantName)
+  const wasBanDecidedByTiebreak = data.wasBanDecidedByTiebreak
 
   const [stage, setStage] = useState<Stage>('spinning')
   const winnerCells = useMemo(() => toBoardCells(winner?.name ?? 'RESTAURANTE'), [winner?.name])
@@ -72,15 +84,18 @@ export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
   )
 
   useEffect(() => {
-    if (stage !== 'spinning') return
+    if (stage !== 'spinning' && stage !== 'tiebreak') return
 
     const ticker = setInterval(() => {
       setScrambledCells(Array.from({ length: boardColumnCount }, randomCharacter))
     }, scrambleTickInMilliseconds)
 
+    if (stage === 'tiebreak') return () => clearInterval(ticker)
+
     const advance = setTimeout(() => {
-      if (data.bannedRestaurantName) return setStage('banned')
-      if (fallback) return setStage('fallback')
+      if (wasBanDecidedByTiebreak) return setStage('tiebreak')
+      if (hasBan) return setStage('banned')
+      if (hasFallback) return setStage('fallback')
       setStage('winner')
     }, spinDurationInMilliseconds)
 
@@ -88,12 +103,16 @@ export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
       clearInterval(ticker)
       clearTimeout(advance)
     }
-  }, [stage, data.bannedRestaurantName, fallback])
+  }, [stage, boardColumnCount, hasBan, wasBanDecidedByTiebreak, hasFallback])
 
   useEffect(() => {
+    if (stage === 'tiebreak') {
+      const next = setTimeout(() => setStage('banned'), tiebreakDurationInMilliseconds)
+      return () => clearTimeout(next)
+    }
     if (stage === 'banned') {
       const next = setTimeout(
-        () => setStage(fallback ? 'fallback' : 'winner'),
+        () => setStage(hasFallback ? 'fallback' : 'winner'),
         bannedDurationInMilliseconds,
       )
       return () => clearTimeout(next)
@@ -102,10 +121,18 @@ export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
       const next = setTimeout(() => setStage('winner'), fallbackDurationInMilliseconds)
       return () => clearTimeout(next)
     }
-  }, [stage, fallback])
+  }, [stage, hasFallback])
+
+  useEffect(() => {
+    if (stage !== 'winner') return
+    onFinished?.()
+  }, [stage, onFinished])
 
   return (
-    <div className="relative overflow-hidden rounded-[var(--radius-large)] border border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-lifted)]">
+    <div
+      data-draw-stage={stage}
+      className="relative overflow-hidden rounded-[var(--radius-large)] border border-[var(--border-strong)] bg-[var(--surface)] shadow-[var(--shadow-lifted)]"
+    >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent" />
 
       <AnimatePresence mode="wait">
@@ -128,6 +155,29 @@ export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
           </motion.div>
         ) : null}
 
+        {stage === 'tiebreak' ? (
+          <motion.div
+            key="tiebreak"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="px-5 py-12 text-center"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--warning)]">
+              empate na votação
+            </p>
+            <p className="mt-4 text-sm text-[var(--muted)]">
+              {data.tiedRestaurantNames.join(' · ')}
+            </p>
+            <div className="board-shake mt-6">
+              <FlapBoard cells={scrambledCells} isSettled={false} />
+            </div>
+            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">
+              sorteando quem cai
+            </p>
+          </motion.div>
+        ) : null}
+
         {stage === 'banned' ? (
           <motion.div
             key="banned"
@@ -137,7 +187,7 @@ export const DrawReveal = ({ data }: { data: DrawRevealData }) => {
             className="relative px-5 py-14 text-center"
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--muted)]">
-              o grupo cortou
+              {data.wasBanDecidedByTiebreak ? 'caiu no sorteio do empate' : 'o grupo cortou'}
             </p>
             <div className="stamp-in mt-6 inline-block">
               <div className="relative rounded-[6px] border-[3px] border-[var(--danger)] px-5 py-2.5">

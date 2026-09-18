@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowDown,
@@ -18,8 +18,13 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
-import { fetchSessionState, type SessionState } from '@/lib/http/sessionQueries'
-import { DrawReveal, type DrawRevealData } from './DrawReveal'
+import {
+  fetchSessionState,
+  type SessionRevealView,
+  type SessionState,
+} from '@/lib/http/sessionQueries'
+import { sessionQueryKey, useSessionStream } from '@/lib/http/useSessionStream'
+import { DrawReveal } from './DrawReveal'
 import { PendingRatings } from './PendingRatings'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { classNames } from '@/lib/utilities/classNames'
@@ -33,11 +38,6 @@ type CatalogRestaurant = {
   isMine: boolean
 }
 
-type DrawOutcome = DrawRevealData & {
-  addedByMemberId: string
-  visitId: string
-}
-
 const formatPercentage = (value: number) => `${(value * 100).toFixed(1)}%`
 
 const moveItem = (items: string[], fromIndex: number, toIndex: number) => {
@@ -48,16 +48,44 @@ const moveItem = (items: string[], fromIndex: number, toIndex: number) => {
   return reordered
 }
 
-const DrawOutcomeCard = ({ outcome }: { outcome: DrawOutcome }) => {
-  const winner = outcome.contenders.find(
-    (contender) => contender.restaurantId === outcome.restaurantId,
+const RevealCard = ({
+  reveal,
+  onClose,
+  isClosing,
+}: {
+  reveal: SessionRevealView
+  onClose: () => void
+  isClosing: boolean
+}) => {
+  const [hasRevealFinished, setHasRevealFinished] = useState(false)
+  const winner = reveal.contenders.find(
+    (contender) => contender.restaurantId === reveal.restaurantId,
   )
+  const revealData = useMemo(
+    () => ({
+      restaurantId: reveal.restaurantId,
+      fallbackRestaurantId: reveal.fallbackRestaurantId,
+      bannedRestaurantName: reveal.bannedRestaurantName,
+      tiedRestaurantNames: reveal.banTiebreak.tiedRestaurantNames,
+      wasBanDecidedByTiebreak: reveal.banTiebreak.wasDecidedByTiebreak,
+      contenders: reveal.contenders,
+    }),
+    [
+      reveal.restaurantId,
+      reveal.fallbackRestaurantId,
+      reveal.bannedRestaurantName,
+      reveal.banTiebreak.tiedRestaurantNames,
+      reveal.banTiebreak.wasDecidedByTiebreak,
+      reveal.contenders,
+    ],
+  )
+  const markRevealFinished = useCallback(() => setHasRevealFinished(true), [])
 
   return (
     <div className="flex flex-col gap-3">
-      <DrawReveal data={outcome} />
+      <DrawReveal data={revealData} onFinished={markRevealFinished} />
 
-      <div className="flex flex-col gap-2">
+      <div className={hasRevealFinished ? 'flex flex-col gap-2' : 'hidden'}>
         {winner ? (
           <a
             href={buildGoogleMapsUrl({ name: winner.name })}
@@ -70,11 +98,23 @@ const DrawOutcomeCard = ({ outcome }: { outcome: DrawOutcome }) => {
           </a>
         ) : null}
 
-        <Link href={`/visits/${outcome.visitId}/rate`}>
-          <Button variant="secondary" className="w-full">
-            Dar as notas depois do rolê
+        {reveal.visitId ? (
+          <Link href={`/visits/${reveal.visitId}/rate`}>
+            <Button variant="secondary" className="w-full">
+              Dar as notas depois do rolê
+            </Button>
+          </Link>
+        ) : null}
+
+        {reveal.canClose ? (
+          <Button size="large" onClick={onClose} disabled={isClosing} className="w-full">
+            Beleza, fechar a rodada
           </Button>
-        </Link>
+        ) : (
+          <p className="text-center text-xs text-[var(--muted)]">
+            Quem sorteou encerra a revelação.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -106,12 +146,12 @@ export const SessionScreen = () => {
   const queryClient = useQueryClient()
   const [draftRanking, setDraftRanking] = useState<string[] | null>(null)
   const [isCatalogOpen, setIsCatalogOpen] = useState(false)
-  const [outcome, setOutcome] = useState<DrawOutcome | null>(null)
+  const { isStreaming } = useSessionStream()
 
   const sessionQuery = useQuery({
-    queryKey: ['session'],
+    queryKey: sessionQueryKey,
     queryFn: fetchSessionState,
-    refetchInterval: 5000,
+    refetchInterval: isStreaming ? false : 5000,
   })
 
   const catalogQuery = useQuery({
@@ -127,7 +167,7 @@ export const SessionScreen = () => {
   const sessionId = state?.session?.id ?? null
   const ranking = draftRanking ?? state?.myRankedRestaurantIds ?? []
 
-  const invalidateSession = () => queryClient.invalidateQueries({ queryKey: ['session'] })
+  const invalidateSession = () => queryClient.invalidateQueries({ queryKey: sessionQueryKey })
 
   const openMutation = useMutation({
     mutationFn: () => apiClient.post('/sessions'),
@@ -174,15 +214,6 @@ export const SessionScreen = () => {
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível votar')),
   })
 
-  const startRunoffMutation = useMutation({
-    mutationFn: () => apiClient.post(`/sessions/${sessionId}/ban-runoff`),
-    onSuccess: () => {
-      toast.info('Empate! Votação de desempate aberta.')
-      invalidateSession()
-    },
-    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível desempatar')),
-  })
-
   const clearBanDecisionMutation = useMutation({
     mutationFn: () => apiClient.delete('/vetoes'),
     onSuccess: () => invalidateSession(),
@@ -190,15 +221,15 @@ export const SessionScreen = () => {
   })
 
   const drawMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post<DrawOutcome>(`/sessions/${sessionId}/draw`)
-      return response.data
-    },
-    onSuccess: (data) => {
-      setOutcome(data)
-      invalidateSession()
-    },
+    mutationFn: () => apiClient.post(`/sessions/${sessionId}/draw`),
+    onSuccess: invalidateSession,
     onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível sortear')),
+  })
+
+  const closeRevealMutation = useMutation({
+    mutationFn: () => apiClient.post(`/sessions/${sessionId}/close`),
+    onSuccess: invalidateSession,
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível encerrar')),
   })
 
   if (sessionQuery.isLoading) return <p className="text-sm text-[var(--muted)]">Carregando...</p>
@@ -207,7 +238,6 @@ export const SessionScreen = () => {
   if (!state.session) {
     return (
       <div className="flex flex-col gap-5">
-        {outcome ? <DrawOutcomeCard outcome={outcome} /> : null}
         <PendingRatings />
         <ClosedSession
           isAdmin={state.isAdmin}
@@ -226,13 +256,19 @@ export const SessionScreen = () => {
     (item) => !item.isBanned && !ranking.includes(item.restaurantId),
   )
   const alreadyInPool = new Set(state.pool.map((item) => item.restaurantId))
-  const isRunoff = state.banRunoff.round > 1
-  const runoffRestaurantIds = state.banRunoff.restaurantIds
-  const votableForBan = (
-    runoffRestaurantIds
-      ? state.pool.filter((item) => runoffRestaurantIds.includes(item.restaurantId))
-      : state.pool
-  ).filter((item) => !item.isMine)
+  const votableForBan = state.pool.filter((item) => !item.isMine)
+  const hasAbstainedFromBan = state.hasDecidedBan && !state.myBanVote
+
+  if (state.reveal) {
+    return (
+      <RevealCard
+        key={state.reveal.drawId ?? state.session.id}
+        reveal={state.reveal}
+        onClose={() => closeRevealMutation.mutate()}
+        isClosing={closeRevealMutation.isPending}
+      />
+    )
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -428,28 +464,20 @@ export const SessionScreen = () => {
       </section>
 
 
-      <section className={votableForBan.length === 0 ? 'hidden' : undefined}>
+      <section>
         <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold">
-            {isRunoff ? `Desempate · ${state.banRunoff.round}º turno` : 'Banir um lugar'}
-          </h2>
+          <h2 className="text-sm font-semibold">Banir um lugar</h2>
           <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
             {state.banOutcome.decidedCount}/{state.banOutcome.participantCount} votaram
           </span>
         </div>
 
         <Card className="flex flex-col gap-2">
-          {isRunoff ? (
-            <p className="text-xs text-[var(--warning)]">
-              Deu empate. Votem de novo, só entre os empatados. Se empatar outra vez, ninguém é
-              banido.
-            </p>
-          ) : (
-            <p className="text-xs text-[var(--muted)]">
-              O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, o
-              resultado só aparece depois do sorteio, e você não pode banir um lugar que indicou.
-            </p>
-          )}
+          <p className="text-xs text-[var(--muted)]">
+            O mais votado fica fora do sorteio, e só 1 é banido por rodada. Votar é opcional, o
+            resultado só aparece depois do sorteio, e você não pode banir um lugar que indicou.
+            Empatou? A gente sorteia quem cai na hora.
+          </p>
 
           {votableForBan.map((item) => {
             const isMyVote = state.myBanVote === item.restaurantId
@@ -482,15 +510,29 @@ export const SessionScreen = () => {
                   ) : null}
                 </span>
                 <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
-                  {state.banOutcome.isRevealed && item.banVotes > 0
-                    ? `${item.banVotes} voto(s)`
-                    : ''}
+                  {item.banVotes > 0 ? `${item.banVotes} voto(s)` : ''}
                 </span>
               </button>
             )
           })}
 
-          {state.myBanVote ? (
+          <button
+            onClick={() => banDecisionMutation.mutate(null)}
+            disabled={banDecisionMutation.isPending}
+            className={classNames(
+              'flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm transition-colors',
+              hasAbstainedFromBan ? 'bg-[var(--accent)]/15' : 'bg-[var(--surface-raised)]',
+            )}
+          >
+            <span className="min-w-0 truncate">
+              Não banir ninguém
+              {hasAbstainedFromBan ? (
+                <span className="ml-2 text-[10px] uppercase text-[var(--accent)]">seu voto</span>
+              ) : null}
+            </span>
+          </button>
+
+          {state.hasDecidedBan ? (
             <button
               onClick={() => clearBanDecisionMutation.mutate()}
               className="text-[10px] uppercase tracking-wide text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
@@ -499,23 +541,9 @@ export const SessionScreen = () => {
             </button>
           ) : null}
 
-          {state.banOutcome.isRevealed ? null : (
-            <p className="text-xs text-[var(--muted)]">
-              Os votos ficam escondidos até o sorteio acontecer.
-            </p>
-          )}
-
-          {state.banOutcome.isTied ? (
-            <p className="text-xs text-[var(--warning)]">
-              Empate na votação — ninguém foi banido nesta rodada.
-            </p>
-          ) : null}
-
-          {state.banOutcome.isRevealed &&
-          !state.banOutcome.isTied &&
-          !state.banOutcome.bannedRestaurantId ? (
-            <p className="text-xs text-[var(--muted)]">Ninguém quis banir nada nesta rodada.</p>
-          ) : null}
+          <p className="text-xs text-[var(--muted)]">
+            Os votos ficam escondidos até o sorteio acontecer.
+          </p>
         </Card>
       </section>
 
@@ -574,31 +602,12 @@ export const SessionScreen = () => {
         </Button>
       </div>
 
-      {state.needsBanRunoff ? (
-        <Card className="flex flex-col items-center gap-3 border-[var(--warning)] py-6 text-center">
-          <p className="text-2xl">🤝</p>
-          <p className="text-sm font-medium">Empate na votação de banimento</p>
-          <p className="text-xs text-[var(--muted)]">
-            O sorteio fica travado até resolver. Todo mundo vota de novo, só entre os empatados.
-          </p>
-          <Button
-            size="large"
-            className="w-full"
-            onClick={() => startRunoffMutation.mutate()}
-            disabled={startRunoffMutation.isPending}
-          >
-            Abrir votação de desempate
-          </Button>
-        </Card>
-      ) : null}
-
       <Button
         size="large"
         onClick={() => drawMutation.mutate()}
         disabled={
           !state.everyoneReady ||
           !state.quorum.hasQuorum ||
-          state.needsBanRunoff ||
           drawMutation.isPending ||
           state.contenders.length === 0
         }
@@ -625,8 +634,6 @@ export const SessionScreen = () => {
           O sorteio destrava quando todo mundo der ready.
         </p>
       ) : null}
-
-      {outcome ? <DrawOutcomeCard outcome={outcome} /> : null}
     </div>
   )
 }

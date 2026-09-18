@@ -3,7 +3,8 @@ import { and, eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { banDecisionSchema } from '@/lib/validation/schemas'
-import { findOpenSession } from '@/lib/services/sessionService'
+import { collectingStatus, findOpenSession } from '@/lib/services/sessionService'
+import { publishSessionChanged } from '@/lib/realtime/sessionChannel'
 
 export const PUT = async (request: Request) =>
   withMember(async (member) => {
@@ -15,12 +16,11 @@ export const PUT = async (request: Request) =>
 
     const session = await findOpenSession()
     if (!session) return validationErrorResponse('Não há sorteio aberto')
+    if (session.status !== collectingStatus) {
+      return validationErrorResponse('A votação dessa rodada já fechou')
+    }
 
     const restaurantId = parsed.data.restaurantId
-    const runoffRestaurantIds = (session.banRunoffRestaurantIds as string[] | null) ?? null
-    if (restaurantId !== null && runoffRestaurantIds && !runoffRestaurantIds.includes(restaurantId)) {
-      return validationErrorResponse('No desempate só dá pra votar nos empatados')
-    }
     if (restaurantId !== null) {
       const poolRows = await database
         .select({
@@ -64,6 +64,8 @@ export const PUT = async (request: Request) =>
       })
       .returning()
 
+    await publishSessionChanged(session.id)
+
     return NextResponse.json({ decision })
   })
 
@@ -71,6 +73,9 @@ export const DELETE = async () =>
   withMember(async (member) => {
     const session = await findOpenSession()
     if (!session) return validationErrorResponse('Não há sorteio aberto')
+    if (session.status !== collectingStatus) {
+      return validationErrorResponse('A votação dessa rodada já fechou')
+    }
 
     await database
       .delete(schema.vetoes)
@@ -81,6 +86,8 @@ export const DELETE = async () =>
           eq(schema.vetoes.banRound, session.banRound),
         ),
       )
+
+    await publishSessionChanged(session.id)
 
     return NextResponse.json({ ok: true })
   })

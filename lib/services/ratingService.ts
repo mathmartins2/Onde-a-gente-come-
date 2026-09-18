@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { verifySecret } from '@/lib/auth/password'
 import { assertNotLocked, clearFailures, registerFailure } from '@/lib/auth/rateLimit'
@@ -103,6 +103,15 @@ export type SubmitRatingInput = {
   comment: string | null
 }
 
+export const confirmVisitDateOnFirstRating = async (visitId: string) => {
+  const confirmedAt = new Date()
+
+  await database
+    .update(schema.visits)
+    .set({ visitedAt: confirmedAt, visitDateConfirmedAt: confirmedAt })
+    .where(and(eq(schema.visits.id, visitId), isNull(schema.visits.visitDateConfirmedAt)))
+}
+
 export const submitRating = async (input: SubmitRatingInput) => {
   const lockScope = `rating-pin:${input.visitId}`
   const lockState = await assertNotLocked(lockScope, input.memberId)
@@ -165,6 +174,7 @@ export const submitRating = async (input: SubmitRatingInput) => {
     appliedWeight: String(appliedWeight),
   })
 
+  await confirmVisitDateOnFirstRating(input.visitId)
   await discardRatingDraft(input.visitId, input.memberId)
 
   return { ok: true as const }
@@ -369,6 +379,7 @@ export const submitOwnRating = async (input: {
       },
     })
 
+  await confirmVisitDateOnFirstRating(input.visitId)
   await discardRatingDraft(input.visitId, input.memberId)
 
   return { ok: true as const }
