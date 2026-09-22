@@ -1,0 +1,1 @@
+ALTER TABLE "story_renders" ADD COLUMN "progress_percentage" integer DEFAULT 0 NOT NULL;

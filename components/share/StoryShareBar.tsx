@@ -20,6 +20,7 @@ export const StoryShareBar = ({ visitId }: { visitId: string }) => {
         icon={Clapperboard}
         isCompact
         shouldPrefetch={false}
+        progressPath={`${storyPath}/video/status`}
       />
       <CopyLinkButton
         loadPath={() => createVisitRestaurantPublicLink(visitId)}

@@ -11,15 +11,19 @@ import {
   planStoryVideoTimeline,
   storyVideoFramesPerSecond,
 } from './buildStoryVideoFilterGraph'
+import { encodingProgress, parseFfmpegProgressSeconds } from './storyVideoProgress'
 import { findOpaqueBounds, type OpaqueBounds } from './findOpaqueBounds'
 import { resolveFfmpegPath } from './resolveFfmpegPath'
 
-const runFfmpeg = (argumentsList: string[]) =>
+const runFfmpeg = (argumentsList: string[], onProgressOutput: (output: string) => void) =>
   new Promise<void>((resolve, reject) => {
     const ffmpegPath = resolveFfmpegPath()
     if (!ffmpegPath) return reject(new Error('ffmpeg binary is not available'))
-    const ffmpegProcess = spawn(ffmpegPath, argumentsList, { stdio: ['ignore', 'ignore', 'pipe'] })
+    const ffmpegProcess = spawn(ffmpegPath, ['-progress', 'pipe:1', '-nostats', ...argumentsList], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
     const errorOutput: string[] = []
+    ffmpegProcess.stdout.on('data', (chunk: Buffer) => onProgressOutput(chunk.toString()))
     ffmpegProcess.stderr.on('data', (chunk: Buffer) => errorOutput.push(chunk.toString()))
     ffmpegProcess.on('error', reject)
     ffmpegProcess.on('close', (exitCode) =>
@@ -58,6 +62,7 @@ export const renderStoryVideo = async (input: {
   cardPngs: Buffer[]
   borderLight: { outlinePng: Buffer; colorHex: string } | null
   headerOutlinePng: Buffer | null
+  onProgress: (fraction: number) => void
 }) => {
   const workingDirectory = await mkdtemp(join(tmpdir(), 'story-video-'))
   try {
@@ -85,6 +90,7 @@ export const renderStoryVideo = async (input: {
 
     const durationSeconds = planStoryVideoTimeline(input.photoJpegs.length, input.cardPngs.length).totalSeconds.toFixed(3)
     const loopedStill = (path: string) => ['-loop', '1', '-t', durationSeconds, '-i', path]
+    const totalSeconds = Number(durationSeconds)
     await runFfmpeg([
       '-y',
       ...photoPaths.flatMap((photoPath) => ['-i', photoPath]),
@@ -98,7 +104,10 @@ export const renderStoryVideo = async (input: {
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '19', '-pix_fmt', 'yuv420p',
       '-movflags', '+faststart',
       outputPath,
-    ])
+    ], (progressOutput) => {
+      const encodedSeconds = parseFfmpegProgressSeconds(progressOutput)
+      if (encodedSeconds !== null) input.onProgress(encodingProgress(encodedSeconds, totalSeconds))
+    })
     return await readFile(outputPath)
   } finally {
     await rm(workingDirectory, { recursive: true, force: true })

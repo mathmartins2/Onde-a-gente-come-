@@ -255,6 +255,7 @@ export const storyRenders = pgTable(
     fingerprint: text('fingerprint').notNull(),
     status: text('status').notNull(),
     imageKey: text('image_key'),
+    progressPercentage: integer('progress_percentage').notNull().default(0),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique('story_renders_visit_kind_unique').on(table.visitId, table.kind)],

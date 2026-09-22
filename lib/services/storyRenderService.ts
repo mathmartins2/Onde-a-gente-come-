@@ -4,12 +4,14 @@ import { database, schema } from '@/lib/database/client'
 import { resolveImageStorage } from '@/lib/images/resolveImageStorage'
 import { decideStoryRenderStep, staleRenderAfterMilliseconds, type StoryRenderRecord } from '@/lib/share/decideStoryRenderStep'
 import { storySize } from '@/lib/share/storyTheme'
+import { toProgressPercentage } from '@/lib/share/storyVideoProgress'
 
 export type StoryRenderKind = 'image' | 'video'
 
 export type RenderedStory = { bytes: Buffer; contentType: string }
 
 const pollIntervalInMilliseconds = 1000
+const minimumProgressStepPercentage = 5
 const maximumWaitInMilliseconds = 110_000
 
 const matchesRender = (visitId: string, kind: StoryRenderKind) =>
@@ -35,7 +37,7 @@ const claimRender = async (visitId: string, kind: StoryRenderKind, fingerprint: 
     insert into story_renders (visit_id, kind, fingerprint, status, started_at)
     values (${visitId}, ${kind}, ${fingerprint}, 'rendering', now())
     on conflict (visit_id, kind) do update
-      set fingerprint = excluded.fingerprint, status = 'rendering', started_at = now()
+      set fingerprint = excluded.fingerprint, status = 'rendering', progress_percentage = 0, started_at = now()
       where story_renders.fingerprint <> excluded.fingerprint
          or story_renders.status = 'failed'
          or (story_renders.status = 'ready' and story_renders.image_key is null)
@@ -45,7 +47,12 @@ const claimRender = async (visitId: string, kind: StoryRenderKind, fingerprint: 
   return result.rows.length > 0
 }
 
-const markRender = (visitId: string, kind: StoryRenderKind, fingerprint: string, values: { status: string; imageKey?: string | null }) =>
+const markRender = (
+  visitId: string,
+  kind: StoryRenderKind,
+  fingerprint: string,
+  values: { status?: string; imageKey?: string | null; progressPercentage?: number },
+) =>
   database
     .update(schema.storyRenders)
     .set(values)
@@ -56,13 +63,20 @@ const produceAndStore = async (input: {
   kind: StoryRenderKind
   fingerprint: string
   previousImageKey: string | null
-  render: () => Promise<RenderedStory>
+  render: (reportProgress: (fraction: number) => void) => Promise<RenderedStory>
 }) => {
   const storage = resolveImageStorage()
+  const progressState = { lastWrittenPercentage: 0 }
+  const reportProgress = (fraction: number) => {
+    const percentage = toProgressPercentage(fraction)
+    if (percentage < progressState.lastWrittenPercentage + minimumProgressStepPercentage) return
+    progressState.lastWrittenPercentage = percentage
+    void markRender(input.visitId, input.kind, input.fingerprint, { progressPercentage: percentage }).catch(() => undefined)
+  }
   try {
-    const rendered = await input.render()
+    const rendered = await input.render(reportProgress)
     const imageKey = await storage.saveImage({ ...rendered, ...storySize })
-    await markRender(input.visitId, input.kind, input.fingerprint, { status: 'ready', imageKey })
+    await markRender(input.visitId, input.kind, input.fingerprint, { status: 'ready', imageKey, progressPercentage: 100 })
     if (input.previousImageKey && input.previousImageKey !== imageKey) await storage.removeImage(input.previousImageKey)
     return rendered
   } catch (error) {
@@ -80,7 +94,7 @@ export const renderStoryOnce = async (input: {
   visitId: string
   kind: StoryRenderKind
   fingerprint: string
-  render: () => Promise<RenderedStory>
+  render: (reportProgress: (fraction: number) => void) => Promise<RenderedStory>
 }): Promise<RenderedStory> => {
   const attempt = async (elapsedMilliseconds: number): Promise<RenderedStory> => {
     const record = await readRenderRecord(input.visitId, input.kind)
@@ -99,4 +113,13 @@ export const renderStoryOnce = async (input: {
   }
 
   return attempt(0)
+}
+
+export const readStoryRenderProgress = async (visitId: string, kind: StoryRenderKind) => {
+  const rows = await database
+    .select({ status: schema.storyRenders.status, progressPercentage: schema.storyRenders.progressPercentage })
+    .from(schema.storyRenders)
+    .where(matchesRender(visitId, kind))
+    .limit(1)
+  return rows.at(0) ?? { status: 'idle', progressPercentage: 0 }
 }

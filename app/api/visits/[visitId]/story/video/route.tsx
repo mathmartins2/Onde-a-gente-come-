@@ -7,6 +7,7 @@ import { loadStoryFonts } from '@/lib/share/loadStoryFonts'
 import { loadStoryImageDataUrl } from '@/lib/share/loadStoryImage'
 import { MemberScoreCard } from '@/lib/share/MemberScoreCard'
 import { renderStoryVideo } from '@/lib/share/renderStoryVideo'
+import { preparationShare } from '@/lib/share/storyVideoProgress'
 import { storyColors, storySize } from '@/lib/share/storyTheme'
 import { VisitStory, type VisitStoryData } from '@/lib/share/VisitStory'
 import { listFirstDishPhotoKeyByMember } from '@/lib/services/dishPhotoService'
@@ -59,7 +60,8 @@ export const GET = async (_request: Request, context: RouteContext<'/api/visits/
       visitId,
       kind: 'video',
       fingerprint: await loadVisitStoryFingerprint(visitId, renderRevision),
-      render: async () => {
+      render: async (reportProgress) => {
+        reportProgress(0.05)
         const [photoJpegs, foregroundPng, outlinePng, headerOutlinePng, cardPngs] = await Promise.all([
           loadVisitStoryVideoPhotos(visitId),
           renderPng(<VisitStory data={outcome.data} variant="videoForeground" />, storySize),
@@ -67,12 +69,14 @@ export const GET = async (_request: Request, context: RouteContext<'/api/visits/
           renderPng(<VisitStory data={outcome.data} variant="headerOutline" />, storySize),
           renderMemberCards(visitId, outcome.data.ratings),
         ])
+        reportProgress(preparationShare)
         const bytes = await renderStoryVideo({
           foregroundPng,
           photoJpegs,
           cardPngs,
           borderLight: { outlinePng, colorHex: storyColors.accent },
           headerOutlinePng,
+          onProgress: reportProgress,
         })
         return { bytes, contentType: 'video/mp4' }
       },

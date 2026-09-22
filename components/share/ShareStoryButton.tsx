@@ -5,11 +5,14 @@ import { Download, Share2, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { canShareStoryFile, downloadStoryFile, fetchStoryFile, shareStoryFile } from '@/lib/share/shareStoryImage'
 import { classNames } from '@/lib/utilities/classNames'
 
 export const compactButtonClassName =
   'flex h-10 w-10 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 text-ink transition-colors hover:border-accent hover:text-accent-hover disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]'
+
+const progressPollIntervalInMilliseconds = 1000
 
 const menuItemClassName =
   'flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 text-left text-body-sm text-ink transition-colors hover:bg-accent-tint hover:text-accent-hover focus-visible:bg-accent-tint focus-visible:outline-none'
@@ -23,6 +26,7 @@ export const ShareStoryButton = ({
   icon: Icon = Share2,
   isCompact = false,
   shouldPrefetch = true,
+  progressPath,
   className,
 }: {
   imagePath: string
@@ -33,6 +37,7 @@ export const ShareStoryButton = ({
   icon?: LucideIcon
   isCompact?: boolean
   shouldPrefetch?: boolean
+  progressPath?: string
   className?: string
 }) => {
   const [isChoosing, setIsChoosing] = useState(false)
@@ -75,6 +80,17 @@ export const ShareStoryButton = ({
 
   const storyFile = storyFileQuery.data
   const isPreparing = storyFileQuery.isFetching || shareMutation.isPending
+
+  const progressQuery = useQuery({
+    queryKey: ['story-progress', progressPath],
+    queryFn: async () => {
+      const response = await fetch(progressPath ?? '', { credentials: 'same-origin', cache: 'no-store' })
+      return (await response.json()) as { status: string; progressPercentage: number }
+    },
+    enabled: Boolean(progressPath) && storyFileQuery.isFetching,
+    refetchInterval: progressPollIntervalInMilliseconds,
+  })
+  const progressPercentage = progressQuery.data?.status === 'rendering' ? progressQuery.data.progressPercentage : 0
 
   const toggleMenu = () => {
     setHasRequestedFile(true)
@@ -134,10 +150,18 @@ export const ShareStoryButton = ({
           )}
         >
           {storyFile ? null : (
-            <p className="flex min-h-11 items-center gap-2.5 px-3 text-body-sm text-ink-muted">
-              <Icon size={16} className="animate-pulse text-accent" />
-              {storyFileQuery.isError ? 'Não consegui gerar agora' : preparingLabel}
-            </p>
+            <div className="flex min-h-11 flex-col justify-center gap-1.5 px-3 py-2">
+              <p className="flex items-center gap-2.5 text-body-sm text-ink-muted">
+                <Icon size={16} className="animate-pulse text-accent" />
+                {storyFileQuery.isError ? 'Não consegui gerar agora' : preparingLabel}
+                {progressPath && !storyFileQuery.isError ? (
+                  <span className="text-numeric ml-auto text-caption text-ink-faint">{progressPercentage}%</span>
+                ) : null}
+              </p>
+              {progressPath && !storyFileQuery.isError ? (
+                <ProgressBar percentage={progressPercentage} label={preparingLabel} />
+              ) : null}
+            </div>
           )}
           {canShareDirectly ? (
             <button type="button" role="menuitem" onClick={shareDirectly} className={menuItemClassName}>

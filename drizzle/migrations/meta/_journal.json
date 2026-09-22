@@ -127,6 +127,13 @@
       "when": 1790107474833,
       "tag": "0017_story_renders",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790107988497,
+      "tag": "0018_story_render_progress",
+      "breakpoints": true
     }
   ]
 }
