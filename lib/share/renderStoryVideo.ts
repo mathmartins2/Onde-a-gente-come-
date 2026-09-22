@@ -2,7 +2,6 @@ import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import ffmpegPath from 'ffmpeg-static'
 import sharp from 'sharp'
 import {
   borderLightSpotSize,
@@ -11,9 +10,11 @@ import {
   storyVideoFramesPerSecond,
 } from './buildStoryVideoFilterGraph'
 import { findOpaqueBounds } from './findOpaqueBounds'
+import { resolveFfmpegPath } from './resolveFfmpegPath'
 
 const runFfmpeg = (argumentsList: string[]) =>
   new Promise<void>((resolve, reject) => {
+    const ffmpegPath = resolveFfmpegPath()
     if (!ffmpegPath) return reject(new Error('ffmpeg binary is not available'))
     const ffmpegProcess = spawn(ffmpegPath, argumentsList, { stdio: ['ignore', 'ignore', 'pipe'] })
     const errorOutput: string[] = []
