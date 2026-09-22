@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PublicDishGallery } from '@/components/restaurants/PublicDishGallery'
 import { BrandMark } from '@/components/ui/BrandMark'
+import { BrandWordmark } from '@/components/ui/BrandWordmark'
 import { Card } from '@/components/ui/Card'
 import { Meter } from '@/components/ui/Meter'
 import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
@@ -46,7 +47,9 @@ const PublicRestaurantPage = async (props: PageProps<'/r/[shareToken]'>) => {
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-5">
         <span className="inline-flex items-center gap-2 self-start rounded-pill border border-hairline-strong bg-surface-1 px-3 py-1.5 text-micro-cap text-ink-muted">
           <BrandMark size={14} />
-          Onde a gente come
+          <span className="font-display text-body-sm font-bold normal-case tracking-normal text-ink">
+            <BrandWordmark />
+          </span>
         </span>
 
         <header className="flex items-center gap-4">

@@ -134,6 +134,7 @@ export const StoryFrame = ({
             >
               come
             </span>
+            <span style={{ display: 'flex', marginLeft: 6, color: storyColors.herb }}>?</span>
           </div>
           <div style={{ display: 'flex', fontSize: 26, color: storyColors.inkFaint, letterSpacing: 1.5, textTransform: 'uppercase' }}>
             Recife · sorteio e nota da mesa

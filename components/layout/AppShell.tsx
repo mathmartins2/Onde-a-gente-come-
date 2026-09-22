@@ -6,6 +6,7 @@ import { Dices, History, LogOut, User, UtensilsCrossed } from 'lucide-react'
 import { apiClient } from '@/lib/http/apiClient'
 import { Avatar } from '@/components/ui/Avatar'
 import { BrandMark } from '@/components/ui/BrandMark'
+import { BrandWordmark } from '@/components/ui/BrandWordmark'
 import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher'
 import type { ThemePreference } from '@/lib/theme/themePreference'
 import { classNames } from '@/lib/utilities/classNames'
@@ -64,9 +65,7 @@ export const AppShell = ({ displayName, avatarUrl, themePreference, children }: 
           <BrandMark size={40} className="shrink-0" />
           <span>
             <span className="font-display block text-heading-lg leading-tight">
-              Onde a gente
-              <br />
-              <span className="highlighter-stroke">come</span>
+              <BrandWordmark isStacked />
             </span>
             <span className="mt-1 block text-micro-cap text-ink-faint">Recife · mesa pra seis</span>
           </span>
@@ -114,7 +113,7 @@ export const AppShell = ({ displayName, avatarUrl, themePreference, children }: 
               <BrandMark size={34} className="shrink-0" />
               <span className="min-w-0">
                 <span className="font-display block truncate text-heading-md">
-                  Onde a gente <span className="highlighter-stroke">come</span>
+                  <BrandWordmark />
                 </span>
                 <span className="block text-micro-cap text-ink-faint">Recife · mesa pra seis</span>
               </span>

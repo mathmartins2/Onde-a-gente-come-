@@ -4,6 +4,7 @@ import { CravingBoard } from '@/components/auth/CravingBoard'
 import { cravingWords } from '@/components/auth/cravingWords'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { BrandMark } from '@/components/ui/BrandMark'
+import { BrandWordmark } from '@/components/ui/BrandWordmark'
 
 const houseRules = [
   'o sorteio escolhe, ninguém discute',
@@ -22,7 +23,9 @@ const LoginPage = async () => {
       <header className="animate-fade-up mx-auto flex w-full max-w-5xl items-center justify-between">
         <span className="flex items-center gap-2.5">
           <BrandMark size={30} />
-          <span className="font-display text-heading-md">Onde a gente come</span>
+          <span className="font-display text-heading-md">
+            <BrandWordmark />
+          </span>
         </span>
         <span className="text-micro-cap text-ink-faint">Recife · desde sempre</span>
       </header>
@@ -39,8 +42,7 @@ const LoginPage = async () => {
             className="animate-rise-in font-display mt-8 text-display-hero lg:text-[4.25rem] lg:leading-[0.98]"
             style={{ animationDelay: '160ms' }}
           >
-            Onde a gente <span className="highlighter-stroke">come</span>
-            <span className="text-[var(--herb)]">?</span>
+            <BrandWordmark />
           </h1>
 
           <p

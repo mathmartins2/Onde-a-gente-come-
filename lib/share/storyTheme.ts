@@ -17,6 +17,7 @@ export const storyColors = {
   accentHover: palette.accentHover,
   accentPress: palette.accentPress,
   onAccent: palette.onAccent,
+  herb: palette.herb,
 } as const
 
 export const storyFontFamilies = {
