@@ -336,7 +336,7 @@ export const VisitStory = ({ data, variant = 'image' }: { data: VisitStoryData; 
     <StoryFrame
       eyebrow="nota da mesa"
       backgroundPhotoDataUrl={isVideoForeground ? null : data.backgroundPhotoDataUrl}
-      leavesPhotoAreaTransparent={isVideoForeground}
+      leavesPhotoAreaTransparent={isVideoForeground && data.backgroundPhotoDataUrl !== null}
       isLayoutMask={isOutlineMask}
     >
       {polaroidDataUrls.length > 0 ? <DishPolaroids photoDataUrls={polaroidDataUrls} /> : null}

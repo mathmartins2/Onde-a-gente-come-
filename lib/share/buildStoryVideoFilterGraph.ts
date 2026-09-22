@@ -1,7 +1,7 @@
 import type { OpaqueBounds } from './findOpaqueBounds'
 import { storyColors, storyPhotoAreaHeight, storySize } from './storyTheme'
 
-export const storyVideoFramesPerSecond = 30
+export const storyVideoFramesPerSecond = 24
 export const memberCardCanvasSize = { width: 560, height: 540 } as const
 
 const minimumVideoSeconds = 4.5
@@ -28,7 +28,8 @@ const canvasColor = `0x${storyColors.canvas.slice(1)}`
 
 export const borderLightSpotSize = 300
 const borderLightLoopSeconds = 4
-const borderMaskBlurSigma = 3
+export const borderMaskBlurSigma = 3
+const borderLightRegionMargin = 16
 const borderLightGainCeiling = 0.35
 
 export type StoryVideoCardWindow = { startSeconds: number; endSeconds: number }
@@ -117,6 +118,22 @@ export const buildBorderLightPath = (bounds: OpaqueBounds) => {
   }
 }
 
+export type BorderLightRegion = { x: number; y: number; width: number; height: number }
+
+const roundDownToEven = (value: number) => Math.floor(value / 2) * 2
+
+export const planBorderLightRegion = (bounds: OpaqueBounds): BorderLightRegion => {
+  const padding = borderLightSpotSize / 2 + borderLightRegionMargin
+  const x = roundDownToEven(Math.max(0, bounds.x - padding))
+  const y = roundDownToEven(Math.max(0, bounds.y - padding))
+  return {
+    x,
+    y,
+    width: roundDownToEven(Math.min(storySize.width - x, bounds.x + bounds.width + padding - x)),
+    height: roundDownToEven(Math.min(storySize.height - y, bounds.y + bounds.height + padding - y)),
+  }
+}
+
 const buildBorderLightFilters = (input: {
   baseLabel: string
   maskInputIndex: number
@@ -124,14 +141,32 @@ const buildBorderLightFilters = (input: {
   bounds: OpaqueBounds
   totalSeconds: number
 }) => {
-  const path = buildBorderLightPath(input.bounds)
+  const region = planBorderLightRegion(input.bounds)
+  const path = buildBorderLightPath({ ...input.bounds, x: input.bounds.x - region.x, y: input.bounds.y - region.y })
+  const regionSize = `${region.width}x${region.height}`
   return [
-    `[${input.maskInputIndex}:v]alphaextract,format=gray,gblur=sigma=${borderMaskBlurSigma},format=gbrp[borderMask]`,
-    `color=c=black:s=${storySize.width}x${storySize.height}:r=${storyVideoFramesPerSecond}:d=${formatSeconds(input.totalSeconds)},format=gbrp[lightCanvas]`,
+    `[${input.maskInputIndex}:v]format=gbrp[borderMask]`,
+    `color=c=black:s=${regionSize}:r=${storyVideoFramesPerSecond}:d=${formatSeconds(input.totalSeconds)},format=gbrp[lightCanvas]`,
     `[lightCanvas][${input.spotInputIndex}:v]overlay=x='${path.x}':y='${path.y}':format=auto,format=gbrp[spotField]`,
     `[spotField][borderMask]blend=all_mode=multiply,colorlevels=rimax=${borderLightGainCeiling}:gimax=${borderLightGainCeiling}:bimax=${borderLightGainCeiling}[borderLight]`,
-    `${input.baseLabel}format=gbrp[baseRgb]`,
-    `[baseRgb][borderLight]blend=all_mode=screen[litStory]`,
+    `${input.baseLabel}split[baseFull][baseForRegion]`,
+    `[baseForRegion]crop=${region.width}:${region.height}:${region.x}:${region.y},format=gbrp[region]`,
+    `[region][borderLight]blend=all_mode=screen,format=yuv420p[litRegion]`,
+    `[baseFull][litRegion]overlay=${region.x}:${region.y}[litStory]`,
+  ]
+}
+
+const buildBackground = (photoCount: number, clipSeconds: number, totalSeconds: number) => {
+  if (photoCount === 0) {
+    return [
+      `color=c=${canvasColor}:s=${storySize.width}x${storySize.height}:r=${storyVideoFramesPerSecond}:d=${formatSeconds(totalSeconds)}[background]`,
+    ]
+  }
+  const slideshowLabel = photoCount === 1 ? '[clip0]' : `[fade${photoCount - 2}]`
+  return [
+    ...Array.from({ length: photoCount }, (_, photoIndex) => buildPhotoClip(photoIndex, clipSeconds)),
+    ...buildCrossfadeChain(photoCount, clipSeconds),
+    `${slideshowLabel}pad=${storySize.width}:${storySize.height}:0:0:color=${canvasColor}[background]`,
   ]
 }
 
@@ -141,8 +176,6 @@ export const buildStoryVideoFilterGraph = (
   borderLightBounds: OpaqueBounds | null = null,
 ) => {
   const { clipSeconds, cardWindows, totalSeconds } = planStoryVideoTimeline(photoCount, cardCount)
-  const photoClips = Array.from({ length: photoCount }, (_, photoIndex) => buildPhotoClip(photoIndex, clipSeconds))
-  const slideshowLabel = photoCount <= 1 ? '[clip0]' : `[fade${photoCount - 2}]`
   const foregroundInputIndex = photoCount
   const composedLabel = cardCount > 0 ? '[withCards]' : '[layered]'
   const firstExtraInputIndex = foregroundInputIndex + 1 + cardCount
@@ -158,9 +191,7 @@ export const buildStoryVideoFilterGraph = (
   const finalLabel = borderLightBounds ? '[litStory]' : composedLabel
 
   return [
-    ...photoClips,
-    ...buildCrossfadeChain(photoCount, clipSeconds),
-    `${slideshowLabel}pad=${storySize.width}:${storySize.height}:0:0:color=${canvasColor}[background]`,
+    ...buildBackground(photoCount, clipSeconds, totalSeconds),
     `[background][${foregroundInputIndex}:v]overlay=0:0:format=auto[layered]`,
     ...buildCardOverlays(cardWindows, foregroundInputIndex + 1, resolveCardBaseY(borderLightBounds)),
     ...borderLightFilters,

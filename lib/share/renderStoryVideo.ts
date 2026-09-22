@@ -5,11 +5,13 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 import {
   borderLightSpotSize,
+  borderMaskBlurSigma,
   buildStoryVideoFilterGraph,
+  planBorderLightRegion,
   planStoryVideoTimeline,
   storyVideoFramesPerSecond,
 } from './buildStoryVideoFilterGraph'
-import { findOpaqueBounds } from './findOpaqueBounds'
+import { findOpaqueBounds, type OpaqueBounds } from './findOpaqueBounds'
 import { resolveFfmpegPath } from './resolveFfmpegPath'
 
 const runFfmpeg = (argumentsList: string[]) =>
@@ -34,6 +36,17 @@ const buildBorderLightSpot = (colorHex: string) => {
   return sharp(Buffer.from(svg)).png().toBuffer()
 }
 
+const buildBlurredBorderMask = (outlinePng: Buffer, bounds: OpaqueBounds) => {
+  const region = planBorderLightRegion(bounds)
+  return sharp(outlinePng)
+    .ensureAlpha()
+    .extractChannel('alpha')
+    .blur(borderMaskBlurSigma)
+    .extract({ left: region.x, top: region.y, width: region.width, height: region.height })
+    .png()
+    .toBuffer()
+}
+
 const measureOutline = async (outlinePng: Buffer) => {
   const { data, info } = await sharp(outlinePng).ensureAlpha().extractChannel('alpha').raw().toBuffer({ resolveWithObject: true })
   return findOpaqueBounds(new Uint8Array(data), info.width)
@@ -56,7 +69,7 @@ export const renderStoryVideo = async (input: {
     const borderLightFiles =
       input.borderLight && borderLightBounds
         ? [
-            writeFile(outlinePath, input.borderLight.outlinePng),
+            buildBlurredBorderMask(input.borderLight.outlinePng, borderLightBounds).then((mask) => writeFile(outlinePath, mask)),
             buildBorderLightSpot(input.borderLight.colorHex).then((spot) => writeFile(spotPath, spot)),
           ]
         : []

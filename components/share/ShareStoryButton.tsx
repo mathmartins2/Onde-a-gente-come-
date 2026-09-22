@@ -22,6 +22,7 @@ export const ShareStoryButton = ({
   preparingLabel = 'Preparando imagem…',
   icon: Icon = Share2,
   isCompact = false,
+  shouldPrefetch = true,
   className,
 }: {
   imagePath: string
@@ -31,9 +32,11 @@ export const ShareStoryButton = ({
   preparingLabel?: string
   icon?: LucideIcon
   isCompact?: boolean
+  shouldPrefetch?: boolean
   className?: string
 }) => {
   const [isChoosing, setIsChoosing] = useState(false)
+  const [hasRequestedFile, setHasRequestedFile] = useState(shouldPrefetch)
   const menuReference = useRef<HTMLDivElement>(null)
 
   const storyFileQuery = useQuery({
@@ -41,6 +44,7 @@ export const ShareStoryButton = ({
     queryFn: () => fetchStoryFile(imagePath, fileName),
     staleTime: 60_000,
     retry: 1,
+    enabled: hasRequestedFile,
   })
 
   const shareMutation = useMutation({
@@ -70,7 +74,12 @@ export const ShareStoryButton = ({
   }, [isChoosing])
 
   const storyFile = storyFileQuery.data
-  const isPreparing = storyFileQuery.isLoading || shareMutation.isPending
+  const isPreparing = storyFileQuery.isFetching || shareMutation.isPending
+
+  const toggleMenu = () => {
+    setHasRequestedFile(true)
+    setIsChoosing((isOpen) => !isOpen)
+  }
   const canShareDirectly = storyFile ? canShareStoryFile(storyFile) : false
 
   const shareDirectly = () => {
@@ -91,12 +100,12 @@ export const ShareStoryButton = ({
       {isCompact ? (
         <button
           type="button"
-          disabled={isPreparing || !storyFile}
+          disabled={shareMutation.isPending}
           aria-haspopup="menu"
           aria-expanded={isChoosing}
           aria-label={isPreparing ? preparingLabel : label}
           title={isPreparing ? preparingLabel : label}
-          onClick={() => setIsChoosing((isOpen) => !isOpen)}
+          onClick={toggleMenu}
           className={classNames(compactButtonClassName, isPreparing ? 'animate-pulse' : '')}
         >
           <Icon size={18} />
@@ -105,10 +114,10 @@ export const ShareStoryButton = ({
         <Button
           type="button"
           variant={variant}
-          disabled={isPreparing || !storyFile}
+          disabled={shareMutation.isPending}
           aria-haspopup="menu"
           aria-expanded={isChoosing}
-          onClick={() => setIsChoosing((isOpen) => !isOpen)}
+          onClick={toggleMenu}
           className="w-full"
         >
           <Icon size={17} />
@@ -124,13 +133,19 @@ export const ShareStoryButton = ({
             isCompact ? 'right-0 top-full mt-2' : 'inset-x-0 bottom-full mb-2',
           )}
         >
+          {storyFile ? null : (
+            <p className="flex min-h-11 items-center gap-2.5 px-3 text-body-sm text-ink-muted">
+              <Icon size={16} className="animate-pulse text-accent" />
+              {storyFileQuery.isError ? 'Não consegui gerar agora' : preparingLabel}
+            </p>
+          )}
           {canShareDirectly ? (
             <button type="button" role="menuitem" onClick={shareDirectly} className={menuItemClassName}>
               <Share2 size={16} className="text-accent" />
               Compartilhar direto
             </button>
           ) : null}
-          <button type="button" role="menuitem" onClick={download} className={menuItemClassName}>
+          <button type="button" role="menuitem" disabled={!storyFile} onClick={download} className={classNames(menuItemClassName, 'disabled:opacity-45')}>
             <Download size={16} className="text-accent" />
             Baixar arquivo
           </button>

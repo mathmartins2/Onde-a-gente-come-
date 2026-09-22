@@ -96,8 +96,20 @@ const loadStoryVideoPhoto = async (imageKey: string) => {
   return (await normalizeImage(storedImage.bytes, 'storyBackground')).bytes
 }
 
+const loadRestaurantPhotoKey = async (visitId: string) => {
+  const rows = await database
+    .select({ photoImageKey: schema.restaurants.photoImageKey })
+    .from(schema.visits)
+    .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
+    .where(eq(schema.visits.id, visitId))
+    .limit(1)
+  return rows.at(0)?.photoImageKey ?? null
+}
+
 export const loadVisitStoryVideoPhotos = async (visitId: string) => {
   const dishPhotoKeys = (await listDishPhotoKeysByVisit([visitId])).get(visitId) ?? []
-  const photos = await Promise.all(dishPhotoKeys.slice(0, maximumStoryVideoPhotoCount).map(loadStoryVideoPhoto))
+  const restaurantPhotoKey = dishPhotoKeys.length > 0 ? null : await loadRestaurantPhotoKey(visitId)
+  const backgroundKeys = restaurantPhotoKey ? [restaurantPhotoKey] : dishPhotoKeys
+  const photos = await Promise.all(backgroundKeys.slice(0, maximumStoryVideoPhotoCount).map(loadStoryVideoPhoto))
   return photos.flatMap((photo) => (photo ? [photo] : []))
 }

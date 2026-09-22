@@ -12,7 +12,7 @@ import { listFirstDishPhotoKeyByMember } from '@/lib/services/dishPhotoService'
 import { loadVisitStory, loadVisitStoryVideoPhotos } from '@/lib/services/visitStoryService'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 120
 
 const cardTiltDegrees = [-5, 4, -3, 5, -4, 3]
 
@@ -52,9 +52,6 @@ export const GET = async (_request: Request, context: RouteContext<'/api/visits/
     }
 
     const photoJpegs = await loadVisitStoryVideoPhotos(visitId)
-    if (photoJpegs.length === 0) {
-      return NextResponse.json({ error: 'Essa rodada ainda não tem fotos dos pratos' }, { status: 409 })
-    }
 
     const [foregroundPng, outlinePng, cardPngs] = await Promise.all([
       renderPng(<VisitStory data={outcome.data} variant="videoForeground" />, storySize),
