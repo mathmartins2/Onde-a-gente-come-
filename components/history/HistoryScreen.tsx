@@ -1,9 +1,10 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Ban, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowRight, Ban, ChevronDown, ChevronUp } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { PhotoLightbox } from '@/components/ui/PhotoLightbox'
 import { storedImageLoader } from '@/lib/images/storedImageLoader'
@@ -335,6 +336,16 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
     {round.isRevealed || round.ratings.length > 0 ? null : (
       <p className="text-caption">notas ainda não reveladas</p>
     )}
+
+    {round.visitId ? (
+      <Link
+        href={`/visits/${round.visitId}/rate`}
+        className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent-tint px-3 py-2 text-body-sm font-semibold text-accent-hover transition-colors hover:border-accent"
+      >
+        {round.isRevealed ? 'Ver rodada e postar nos stories' : 'Dar nota nessa rodada'}
+        <ArrowRight size={16} />
+      </Link>
+    ) : null}
 
     <button
       onClick={() => setIsLogOpen((open) => !open)}
