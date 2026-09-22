@@ -1,6 +1,8 @@
 import { ratingCriteria } from '@/lib/scoring/configuration'
+import { formatHalfStarScore, roundToHalfStar } from '@/lib/scoring/roundToHalfStar'
 import { scoreHexFor } from '@/lib/utilities/scoreTone'
 import { StoryFrame } from './StoryFrame'
+import { LearnMorePrompt } from './LearnMorePrompt'
 import { ForkScore, StoryAvatar } from './StoryGlyphs'
 import { storyColors, storyFontFamilies } from './storyTheme'
 
@@ -46,16 +48,17 @@ const CriterionBar = ({ label, average }: { label: string; average: number }) =>
       />
     </div>
     <div style={{ display: 'flex', width: 84, flexShrink: 0, justifyContent: 'flex-end', fontSize: 32, fontWeight: 600, color: scoreHexFor(average) }}>
-      {average.toFixed(1)}
+      {formatHalfStarScore(average)}
     </div>
   </div>
 )
 
 export const VisitStory = ({ data }: { data: VisitStoryData }) => {
-  const finalScoreColor = scoreHexFor(data.finalScore)
+  const roundedFinalScore = roundToHalfStar(data.finalScore)
+  const finalScoreColor = scoreHexFor(roundedFinalScore)
   const criteriaWithAverages = ratingCriteria.flatMap((criterion) => {
     const average = data.criteriaAverages[criterion.key]
-    return average === null || average === undefined ? [] : [{ ...criterion, average }]
+    return average === null || average === undefined ? [] : [{ ...criterion, average: roundToHalfStar(average) }]
   })
 
   return (
@@ -89,13 +92,13 @@ export const VisitStory = ({ data }: { data: VisitStoryData }) => {
             color: finalScoreColor,
           }}
         >
-          {data.finalScore.toFixed(2)}
+          {formatHalfStarScore(roundedFinalScore)}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div style={{ display: 'flex', fontSize: 28, letterSpacing: 5, textTransform: 'uppercase', color: storyColors.inkFaint }}>
             de 5
           </div>
-          <ForkScore score={data.finalScore} size={58} color={finalScoreColor} />
+          <ForkScore score={roundedFinalScore} size={58} color={finalScoreColor} />
         </div>
       </div>
 
@@ -103,6 +106,10 @@ export const VisitStory = ({ data }: { data: VisitStoryData }) => {
         {criteriaWithAverages.map((criterion) => (
           <CriterionBar key={criterion.key} label={criterion.label} average={criterion.average} />
         ))}
+      </div>
+
+      <div style={{ display: 'flex', marginTop: 56 }}>
+        <LearnMorePrompt />
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginTop: 'auto', marginBottom: 48 }}>
@@ -121,8 +128,8 @@ export const VisitStory = ({ data }: { data: VisitStoryData }) => {
           >
             <StoryAvatar name={rating.displayName} imageDataUrl={rating.avatarDataUrl} size={64} />
             <div style={{ display: 'flex', fontSize: 32 }}>{rating.displayName}</div>
-            <div style={{ display: 'flex', fontSize: 32, fontWeight: 600, color: scoreHexFor(rating.score) }}>
-              {rating.score.toFixed(2)}
+            <div style={{ display: 'flex', fontSize: 32, fontWeight: 600, color: scoreHexFor(roundToHalfStar(rating.score)) }}>
+              {formatHalfStarScore(rating.score)}
             </div>
           </div>
         ))}

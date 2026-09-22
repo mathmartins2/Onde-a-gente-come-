@@ -1,6 +1,7 @@
 import { scoreHexFor } from '@/lib/utilities/scoreTone'
 import type { YearSlide } from '@/lib/yearInReview/types'
 import { StoryFrame } from './StoryFrame'
+import { LearnMorePrompt } from './LearnMorePrompt'
 import { StoryAvatar } from './StoryGlyphs'
 import { storyColors, storyFontFamilies } from './storyTheme'
 
@@ -9,31 +10,6 @@ export type YearSlideStoryImages = {
   avatarDataUrl: string | null
   entryAvatarDataUrls: Array<string | null>
 }
-
-const LearnMorePrompt = () => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      alignSelf: 'flex-start',
-      gap: 16,
-      marginTop: 'auto',
-      marginBottom: 44,
-      padding: '18px 32px',
-      borderRadius: 999,
-      backgroundColor: storyColors.accent,
-      color: storyColors.canvas,
-      fontSize: 32,
-      fontWeight: 600,
-    }}
-  >
-    saiba mais no link
-    <svg width={30} height={30} viewBox="0 0 24 24" fill="none" stroke={storyColors.canvas} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 17 17 7" />
-      <path d="M8 7h9v9" />
-    </svg>
-  </div>
-)
 
 const titleFontSize = (title: string) => {
   if (title.length > 48) return 72
@@ -126,7 +102,11 @@ export const YearSlideStory = ({ year, slide, images }: { year: number; slide: Y
         </div>
       ) : null}
 
-      {slide.restaurantId ? <LearnMorePrompt /> : null}
+      {slide.restaurantId ? (
+        <div style={{ display: 'flex', marginTop: 'auto', marginBottom: 44 }}>
+          <LearnMorePrompt />
+        </div>
+      ) : null}
     </StoryFrame>
   )
 }

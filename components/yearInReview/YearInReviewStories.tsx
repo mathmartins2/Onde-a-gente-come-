@@ -5,7 +5,7 @@ import { Pause, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { CopyLinkButton } from '@/components/share/CopyLinkButton'
 import { ShareStoryButton } from '@/components/share/ShareStoryButton'
-import { apiClient } from '@/lib/http/apiClient'
+import { createRestaurantPublicLink } from '@/lib/http/publicLinkQueries'
 import type { ClientYearInReview } from '@/lib/services/yearInReviewService'
 import { classNames } from '@/lib/utilities/classNames'
 import { YearSlideView } from './YearSlideView'
@@ -13,9 +13,6 @@ import { YearSlideView } from './YearSlideView'
 const slideDurationInMilliseconds = 6500
 const holdThresholdInMilliseconds = 220
 const previousZoneRatio = 1 / 3
-
-const createPublicRestaurantLink = (restaurantId: string) =>
-  apiClient.post<{ path: string }>(`/restaurants/${restaurantId}/public-link`).then((response) => response.data.path)
 
 export const YearInReviewStories = ({
   yearInReview,
@@ -174,7 +171,7 @@ export const YearInReviewStories = ({
           />
           {featuredRestaurantId ? (
             <CopyLinkButton
-              loadPath={() => createPublicRestaurantLink(featuredRestaurantId)}
+              loadPath={() => createRestaurantPublicLink(featuredRestaurantId)}
               label="Copiar link saiba mais"
               successMessage="Link copiado. Cola no sticker de link do story."
               className="w-full"

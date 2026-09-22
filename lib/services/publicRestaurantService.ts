@@ -106,6 +106,17 @@ export const ensureRestaurantShareToken = async (restaurantId: string) => {
   return rows.at(0)?.publicShareToken ?? null
 }
 
+export const ensureVisitRestaurantShareToken = async (visitId: string) => {
+  const rows = await database
+    .select({ restaurantId: schema.visits.restaurantId })
+    .from(schema.visits)
+    .where(eq(schema.visits.id, visitId))
+    .limit(1)
+  const visit = rows.at(0)
+  if (!visit) return null
+  return ensureRestaurantShareToken(visit.restaurantId)
+}
+
 export const loadPublicRestaurantSummary = cache(async (shareToken: string) => {
   const restaurant = await loadSharedRestaurantRow(shareToken)
   if (!restaurant) return null

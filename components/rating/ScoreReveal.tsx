@@ -6,8 +6,10 @@ import { Card } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Meter } from '@/components/ui/Meter'
+import { CopyLinkButton } from '@/components/share/CopyLinkButton'
 import { ShareStoryButton } from '@/components/share/ShareStoryButton'
 import { ScoreRating } from '@/components/ui/ScoreRating'
+import { createVisitRestaurantPublicLink } from '@/lib/http/publicLinkQueries'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
 
@@ -39,10 +41,12 @@ export const ScoreReveal = ({
   data,
   footnote,
   shareImagePath,
+  visitId,
 }: {
   data: ScoreRevealData
   footnote?: string
   shareImagePath?: string
+  visitId?: string
 }) => {
   const [stage, setStage] = useState<Stage>('tallying')
   const [scrambledScore, setScrambledScore] = useState(randomScore)
@@ -211,8 +215,17 @@ export const ScoreReveal = ({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: countUpDurationInMilliseconds / 1000 }}
+          className="flex flex-col gap-2"
         >
           <ShareStoryButton imagePath={shareImagePath} fileName="nota-da-mesa.png" className="w-full" />
+          {visitId ? (
+            <CopyLinkButton
+              loadPath={() => createVisitRestaurantPublicLink(visitId)}
+              label="Copiar link saiba mais"
+              successMessage="Link copiado. Cola no sticker de link do story."
+              className="w-full"
+            />
+          ) : null}
         </motion.div>
       ) : null}
     </div>

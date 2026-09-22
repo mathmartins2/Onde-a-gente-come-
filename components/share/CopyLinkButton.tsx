@@ -7,12 +7,27 @@ import { Button } from '@/components/ui/Button'
 
 const plainTextType = 'text/plain'
 
-const writeToClipboard = (pendingText: Promise<string>) => {
-  if (typeof ClipboardItem === 'undefined') return pendingText.then((text) => navigator.clipboard.writeText(text))
-  return navigator.clipboard.write([
-    new ClipboardItem({ [plainTextType]: pendingText.then((text) => new Blob([text], { type: plainTextType })) }),
-  ])
+class ClipboardUnavailableError extends Error {}
+
+const writeTextToClipboard = (pendingUrl: Promise<string>) =>
+  pendingUrl.then((url) => {
+    if (!navigator.clipboard?.writeText) throw new ClipboardUnavailableError()
+    return navigator.clipboard.writeText(url)
+  })
+
+const writeUrlToClipboard = (pendingUrl: Promise<string>) => {
+  const canWriteClipboardItem = typeof ClipboardItem !== 'undefined' && Boolean(navigator.clipboard?.write)
+  if (!canWriteClipboardItem) return writeTextToClipboard(pendingUrl)
+
+  return navigator.clipboard
+    .write([new ClipboardItem({ [plainTextType]: pendingUrl.then((url) => new Blob([url], { type: plainTextType })) })])
+    .catch(() => writeTextToClipboard(pendingUrl))
 }
+
+const showManualCopyFallback = (pendingUrl: Promise<string>) =>
+  pendingUrl
+    .then((url) => toast.error('Não deu pra copiar sozinho. Copia o link:', { description: url, duration: 20_000 }))
+    .catch(() => toast.error('Não consegui gerar o link agora'))
 
 export const CopyLinkButton = ({
   loadPath,
@@ -26,10 +41,15 @@ export const CopyLinkButton = ({
   className?: string
 }) => {
   const copyMutation = useMutation({
-    mutationFn: () => writeToClipboard(loadPath().then((path) => new URL(path, window.location.origin).toString())),
+    mutationFn: ({ pendingCopy }: { pendingUrl: Promise<string>; pendingCopy: Promise<void> }) => pendingCopy,
     onSuccess: () => toast.success(successMessage),
-    onError: () => toast.error('Não consegui copiar o link'),
+    onError: (_error, { pendingUrl }) => showManualCopyFallback(pendingUrl),
   })
+
+  const startCopy = () => {
+    const pendingUrl = loadPath().then((path) => new URL(path, window.location.origin).toString())
+    copyMutation.mutate({ pendingUrl, pendingCopy: writeUrlToClipboard(pendingUrl) })
+  }
 
   return (
     <Button
@@ -37,7 +57,7 @@ export const CopyLinkButton = ({
       variant="secondary"
       size="small"
       disabled={copyMutation.isPending}
-      onClick={() => copyMutation.mutate()}
+      onClick={startCopy}
       className={className}
     >
       <Link2 size={16} />
