@@ -1,10 +1,11 @@
 export const fetchStoryFile = async (imagePath: string, fileName: string) => {
   const response = await fetch(imagePath, { credentials: 'same-origin' })
   if (!response.ok) throw new Error(`Story image request failed with ${response.status}`)
-  return new File([await response.blob()], fileName, { type: 'image/png' })
+  const fileBlob = await response.blob()
+  return new File([fileBlob], fileName, { type: fileBlob.type || 'image/png' })
 }
 
-const downloadFile = (file: File) => {
+export const downloadStoryFile = (file: File) => {
   const objectUrl = URL.createObjectURL(file)
   const anchor = document.createElement('a')
   anchor.href = objectUrl
@@ -13,13 +14,16 @@ const downloadFile = (file: File) => {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
 }
 
+export const canShareStoryFile = (file: File) =>
+  typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })
+
 const isShareCancellation = (error: unknown) => error instanceof DOMException && error.name === 'AbortError'
 
 export const shareStoryFile = async (file: File) => {
   const shareData = { files: [file] }
   const canShareFiles = typeof navigator.canShare === 'function' && navigator.canShare(shareData)
   if (!canShareFiles) {
-    downloadFile(file)
+    downloadStoryFile(file)
     return 'downloaded' as const
   }
 

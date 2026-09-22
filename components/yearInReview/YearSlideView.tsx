@@ -1,8 +1,10 @@
 'use client'
 
+import Image from 'next/image'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Avatar } from '@/components/ui/Avatar'
 import type { ClientYearSlide } from '@/lib/services/yearInReviewService'
+import { storedImageLoader } from '@/lib/images/storedImageLoader'
 import { classNames } from '@/lib/utilities/classNames'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
 
@@ -57,6 +59,23 @@ export const YearSlideView = ({ slide }: { slide: ClientYearSlide }) => {
             </p>
             {slide.heroCaption ? <p className="mt-1.5 text-body-sm text-ink-muted">{slide.heroCaption}</p> : null}
           </motion.div>
+        ) : null}
+
+        {slide.galleryUrls.length > 0 ? (
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {slide.galleryUrls.map((galleryUrl, galleryIndex) => (
+              <motion.div
+                key={galleryUrl}
+                {...revealAt(2 + galleryIndex * 0.5)}
+                className={classNames(
+                  'relative aspect-square w-full overflow-hidden rounded-lg border-4 border-[var(--ink)] shadow-[var(--elevation-3)]',
+                  galleryIndex % 2 === 0 ? '-rotate-3' : 'rotate-2',
+                )}
+              >
+                <Image loader={storedImageLoader} src={galleryUrl} alt="" fill sizes="140px" className="object-cover" />
+              </motion.div>
+            ))}
+          </div>
         ) : null}
 
         <div className="mt-4 flex flex-col gap-1.5">

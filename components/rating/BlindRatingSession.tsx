@@ -329,7 +329,6 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
             <ScoreReveal
               data={reveal}
               footnote="quem não indicou pesou mais nessa conta"
-              shareImagePath={`/api/visits/${visitId}/story`}
               visitId={visitId}
             />
           </motion.div>

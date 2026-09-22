@@ -16,6 +16,7 @@ export type YearVisit = {
   legacyScore: number | null
   isFirstVisitEver: boolean
   billAmount: number | null
+  dishPhotoKeys: string[]
   ratings: YearRating[]
 }
 
@@ -30,7 +31,7 @@ export type YearMember = {
   avatarImageKey: string | null
 }
 
-export type YearSlideKey = 'summary' | 'bestAndWorst' | 'strictness' | 'moneyAndDraws' | 'personal'
+export type YearSlideKey = 'summary' | 'bestAndWorst' | 'dishPhotos' | 'strictness' | 'moneyAndDraws' | 'personal'
 
 export type YearSlideAvatar = {
   name: string
@@ -57,6 +58,7 @@ export type YearSlide = {
   photoImageKey: string | null
   avatar: YearSlideAvatar | null
   restaurantId: string | null
+  galleryImageKeys: string[]
 }
 
 export type YearInReviewInput = {

@@ -1,14 +1,27 @@
-import sharp from 'sharp'
+import sharp, { type Sharp } from 'sharp'
 import type { StoredImageInput } from './imageStorage'
 
 export const maximumUploadByteSize = 8 * 1024 * 1024
 
 export const imagePresets = {
-  restaurantPhoto: { width: 1280, height: 1280, fit: 'inside', quality: 82 },
-  memberAvatar: { width: 320, height: 320, fit: 'cover', quality: 82 },
-  storyBackground: { width: 1080, height: 1080, fit: 'cover', quality: 70 },
-  storyAvatar: { width: 128, height: 128, fit: 'cover', quality: 75 },
+  restaurantPhoto: { width: 1280, height: 1280, fit: 'inside', quality: 78, format: 'webp' },
+  dishPhoto: { width: 1280, height: 1280, fit: 'inside', quality: 78, format: 'webp' },
+  memberAvatar: { width: 320, height: 320, fit: 'cover', quality: 80, format: 'webp' },
+  publicDishPhoto: { width: 720, height: 720, fit: 'inside', quality: 76, format: 'webp' },
+  storyBackground: { width: 1080, height: 1080, fit: 'cover', quality: 70, format: 'jpeg' },
+  storyAvatar: { width: 128, height: 128, fit: 'cover', quality: 75, format: 'jpeg' },
+  storyPolaroid: { width: 360, height: 360, fit: 'cover', quality: 78, format: 'jpeg' },
+  storyCardPhoto: { width: 800, height: 600, fit: 'cover', quality: 78, format: 'jpeg' },
 } as const
+
+type OutputFormat = (typeof imagePresets)[keyof typeof imagePresets]['format']
+
+const contentTypeByFormat: Record<OutputFormat, string> = { jpeg: 'image/jpeg', webp: 'image/webp' }
+
+const encodeByFormat: Record<OutputFormat, (pipeline: Sharp, quality: number) => Sharp> = {
+  jpeg: (pipeline, quality) => pipeline.jpeg({ quality, mozjpeg: true }),
+  webp: (pipeline, quality) => pipeline.webp({ quality, effort: 5, smartSubsample: true }),
+}
 
 export type ImagePresetName = keyof typeof imagePresets
 
@@ -32,7 +45,7 @@ export const detectImageFormat = (bytes: Uint8Array) => {
 const decodeAndResize = async (bytes: Buffer, presetName: ImagePresetName) => {
   const preset = imagePresets[presetName]
   try {
-    return await sharp(bytes, { animated: false })
+    const resizedPipeline = sharp(bytes, { animated: false })
       .rotate()
       .resize({
         width: preset.width,
@@ -41,8 +54,7 @@ const decodeAndResize = async (bytes: Buffer, presetName: ImagePresetName) => {
         withoutEnlargement: preset.fit === 'inside',
       })
       .flatten({ background: '#0d0a09' })
-      .jpeg({ quality: preset.quality, mozjpeg: true })
-      .toBuffer({ resolveWithObject: true })
+    return await encodeByFormat[preset.format](resizedPipeline, preset.quality).toBuffer({ resolveWithObject: true })
   } catch {
     throw new UnsupportedImageError('Não consegui ler essa imagem. Tenta um JPG ou PNG.')
   }
@@ -60,5 +72,5 @@ export const normalizeImage = async (
 
   const { data, info } = await decodeAndResize(bytes, presetName)
 
-  return { bytes: data, contentType: 'image/jpeg', width: info.width, height: info.height }
+  return { bytes: data, contentType: contentTypeByFormat[imagePresets[presetName].format], width: info.width, height: info.height }
 }

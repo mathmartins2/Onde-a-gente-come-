@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { UtensilsCrossed } from 'lucide-react'
+import { PublicDishGallery } from '@/components/restaurants/PublicDishGallery'
 import { Card } from '@/components/ui/Card'
 import { Meter } from '@/components/ui/Meter'
 import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
@@ -89,6 +90,13 @@ const PublicRestaurantPage = async (props: PageProps<'/r/[shareToken]'>) => {
                 </div>
               ))}
             </Card>
+          </section>
+        ) : null}
+
+        {restaurant.dishPhotoUrls.length > 0 ? (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-micro-cap text-ink-muted">o que a mesa comeu</h2>
+            <PublicDishGallery restaurantName={restaurant.name} photoUrls={restaurant.dishPhotoUrls} />
           </section>
         ) : null}
 

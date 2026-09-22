@@ -1,9 +1,13 @@
 'use client'
 
+import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Ban, ChevronDown, ChevronUp } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
+import { PhotoLightbox } from '@/components/ui/PhotoLightbox'
+import { storedImageLoader } from '@/lib/images/storedImageLoader'
+import { useDragToScroll } from '@/lib/interaction/useDragToScroll'
 import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
 import { Card } from '@/components/ui/Card'
 import { ScoreRating } from '@/components/ui/ScoreRating'
@@ -200,6 +204,8 @@ const BallotLog = ({ round }: { round: HistoryRound }) => (
 
 const RoundCard = ({ round }: { round: HistoryRound }) => {
   const [isLogOpen, setIsLogOpen] = useState(false)
+  const [openPhotoIndex, setOpenPhotoIndex] = useState<number | null>(null)
+  const dragToScroll = useDragToScroll<HTMLDivElement>()
 
   return (
   <Card className="flex flex-col gap-4">
@@ -280,6 +286,42 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
         )
       })}
     </div>
+
+    {round.dishPhotoUrls.length === 0 ? null : (
+      <div className="flex flex-col gap-1.5">
+        <p className="text-micro-cap text-ink-faint">o que comemos</p>
+        <div
+          {...dragToScroll}
+          className="group -mx-1 flex cursor-grab gap-2 overflow-x-auto px-1 pb-1 select-none active:cursor-grabbing"
+        >
+          {round.dishPhotoUrls.map((photoUrl, photoIndex) => (
+            <button
+              key={photoUrl}
+              type="button"
+              aria-label={`Ver prato ${photoIndex + 1} em tela cheia`}
+              onClick={() => setOpenPhotoIndex(photoIndex)}
+              className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-hairline transition-transform duration-200 ease-out group-data-[motion=backward]:rotate-3 group-data-[motion=forward]:-rotate-3 group-data-[motion]:scale-95"
+            >
+              <Image
+                loader={storedImageLoader}
+                src={photoUrl}
+                alt={`Prato ${photoIndex + 1} de ${round.winnerRestaurantName}`}
+                fill
+                sizes="80px"
+                draggable={false}
+                className="object-cover transition-transform duration-300 hover:scale-105"
+              />
+            </button>
+          ))}
+        </div>
+        <PhotoLightbox
+          photos={round.dishPhotoUrls.map((photoUrl) => ({ url: photoUrl, caption: round.winnerRestaurantName }))}
+          openIndex={openPhotoIndex}
+          onChangeIndex={setOpenPhotoIndex}
+          onClose={() => setOpenPhotoIndex(null)}
+        />
+      </div>
+    )}
 
     {round.ratings.length === 0 ? null : (
       <div className="flex flex-col gap-1.5">

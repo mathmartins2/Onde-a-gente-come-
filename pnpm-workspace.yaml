@@ -3,3 +3,4 @@ allowBuilds:
   unrs-resolver: true
   "@node-rs/argon2": true
   sharp: true
+  ffmpeg-static: true

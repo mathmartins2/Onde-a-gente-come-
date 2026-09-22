@@ -113,5 +113,6 @@ export const buildMoneyAndDrawsSlide = (
     photoImageKey: null,
     avatar: null,
     restaurantId: null,
+    galleryImageKeys: [],
   }
 }

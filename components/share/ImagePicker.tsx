@@ -12,10 +12,14 @@ export const ImagePicker = ({
   uploadPath,
   label,
   onUploaded,
+  uploadMethod = 'put',
+  isDisabled = false,
 }: {
   uploadPath: string
   label: string
   onUploaded: () => void
+  uploadMethod?: 'put' | 'post'
+  isDisabled?: boolean
 }) => {
   const fileInputReference = useRef<HTMLInputElement>(null)
 
@@ -23,7 +27,12 @@ export const ImagePicker = ({
     mutationFn: async (file: File) => {
       const formData = new FormData()
       formData.append('image', await downscaleImageInBrowser(file), 'upload.jpg')
-      await apiClient.put(uploadPath, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await apiClient.request({
+        url: uploadPath,
+        method: uploadMethod,
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
     },
     onSuccess: () => {
       toast.success('Foto salva')
@@ -53,7 +62,7 @@ export const ImagePicker = ({
         type="button"
         variant="secondary"
         size="small"
-        disabled={uploadMutation.isPending}
+        disabled={isDisabled || uploadMutation.isPending}
         onClick={() => fileInputReference.current?.click()}
       >
         <Camera size={15} />

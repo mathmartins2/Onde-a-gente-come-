@@ -6,11 +6,9 @@ import { Card } from '@/components/ui/Card'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Meter } from '@/components/ui/Meter'
-import { CopyLinkButton } from '@/components/share/CopyLinkButton'
-import { ShareStoryButton } from '@/components/share/ShareStoryButton'
 import { ScoreRating } from '@/components/ui/ScoreRating'
-import { createVisitRestaurantPublicLink } from '@/lib/http/publicLinkQueries'
 import { ratingCriteria } from '@/lib/scoring/configuration'
+import { hasSeenScoreReveal, rememberScoreReveal } from '@/lib/utilities/scoreRevealMemory'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
 
 export type RevealedRating = {
@@ -40,18 +38,18 @@ const randomScore = () => (Math.random() * 5).toFixed(2)
 export const ScoreReveal = ({
   data,
   footnote,
-  shareImagePath,
   visitId,
 }: {
   data: ScoreRevealData
   footnote?: string
-  shareImagePath?: string
   visitId?: string
 }) => {
-  const [stage, setStage] = useState<Stage>('tallying')
+  const [shouldAnimate] = useState(() => !hasSeenScoreReveal(visitId))
+  const [stage, setStage] = useState<Stage>(shouldAnimate ? 'tallying' : 'final')
   const [scrambledScore, setScrambledScore] = useState(randomScore)
   const [visibleBallotCount, setVisibleBallotCount] = useState(0)
-  const [countedScore, setCountedScore] = useState(0)
+  const [countedScore, setCountedScore] = useState(shouldAnimate ? 0 : (data.finalScore ?? 0))
+
 
   const ballotCount = data.ratings.length
   const finalScore = data.finalScore
@@ -90,7 +88,12 @@ export const ScoreReveal = ({
   }, [stage, ballotCount])
 
   useEffect(() => {
-    if (stage !== 'final' || finalScore === null) return
+    if (stage !== 'final') return
+    rememberScoreReveal(visitId)
+  }, [stage, visitId])
+
+  useEffect(() => {
+    if (stage !== 'final' || finalScore === null || !shouldAnimate) return
 
     const startedAt = Date.now()
     const ticker = setInterval(() => {
@@ -101,7 +104,7 @@ export const ScoreReveal = ({
     }, 30)
 
     return () => clearInterval(ticker)
-  }, [stage, finalScore])
+  }, [stage, finalScore, shouldAnimate])
 
   return (
     <div className="flex flex-col gap-3">
@@ -126,40 +129,9 @@ export const ScoreReveal = ({
         ) : null}
       </AnimatePresence>
 
-      {stage === 'tallying'
-        ? null
-        : data.ratings.slice(0, stage === 'final' ? ballotCount : visibleBallotCount).map((rating) => (
-            <motion.div
-              key={rating.memberId}
-              initial={{ opacity: 0, y: 18, rotateX: -60 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              transition={{ type: 'spring', stiffness: 220, damping: 22 }}
-            >
-              <Card className="flex items-center justify-between gap-3 py-3.5">
-                <Avatar name={rating.displayName} imageUrl={rating.avatarUrl} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-body-md">
-                    {rating.displayName}
-                    {rating.isRecommender ? (
-                      <Badge tone="quiet" size="small" className="ml-2">
-                        colocou
-                      </Badge>
-                    ) : null}
-                  </p>
-                  {rating.comment ? (
-                    <p className="mt-0.5 text-caption italic">&ldquo;{rating.comment}&rdquo;</p>
-                  ) : null}
-                </div>
-                <span className={`text-numeric text-heading-lg ${scoreTextClassFor(rating.score)}`}>
-                  {rating.score.toFixed(2)}
-                </span>
-              </Card>
-            </motion.div>
-          ))}
-
       {stage === 'final' ? (
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
+          initial={shouldAnimate ? { opacity: 0, scale: 0.92 } : false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 180, damping: 18 }}
         >
@@ -210,24 +182,36 @@ export const ScoreReveal = ({
         </motion.div>
       ) : null}
 
-      {stage === 'final' && shareImagePath && finalScore !== null ? (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: countUpDurationInMilliseconds / 1000 }}
-          className="flex flex-col gap-2"
-        >
-          <ShareStoryButton imagePath={shareImagePath} fileName="nota-da-mesa.png" className="w-full" />
-          {visitId ? (
-            <CopyLinkButton
-              loadPath={() => createVisitRestaurantPublicLink(visitId)}
-              label="Copiar link saiba mais"
-              successMessage="Link copiado. Cola no sticker de link do story."
-              className="w-full"
-            />
-          ) : null}
-        </motion.div>
-      ) : null}
+      {stage === 'tallying'
+        ? null
+        : data.ratings.slice(0, stage === 'final' ? ballotCount : visibleBallotCount).map((rating) => (
+            <motion.div
+              key={rating.memberId}
+              initial={shouldAnimate ? { opacity: 0, y: 18, rotateX: -60 } : false}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+            >
+              <Card className="flex items-center justify-between gap-3 py-3.5">
+                <Avatar name={rating.displayName} imageUrl={rating.avatarUrl} />
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 text-body-md">
+                    <span className="truncate">{rating.displayName}</span>
+                    {rating.isRecommender ? (
+                      <Badge tone="accent" size="small" className="h-5 px-2">
+                        colocou
+                      </Badge>
+                    ) : null}
+                  </p>
+                  {rating.comment ? (
+                    <p className="mt-0.5 text-caption italic">&ldquo;{rating.comment}&rdquo;</p>
+                  ) : null}
+                </div>
+                <span className={`text-numeric text-heading-lg ${scoreTextClassFor(rating.score)}`}>
+                  {rating.score.toFixed(2)}
+                </span>
+              </Card>
+            </motion.div>
+          ))}
     </div>
   )
 }

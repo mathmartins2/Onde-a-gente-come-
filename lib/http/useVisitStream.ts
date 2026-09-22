@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query'
 
 export const visitQueryKey = (visitId: string) => ['rating-session', visitId]
 
+export const dishPhotosQueryKey = (visitId: string) => ['dish-photos', visitId]
+
 export const useVisitStream = (visitId: string) => {
   const queryClient = useQueryClient()
   const [isStreaming, setIsStreaming] = useState(false)
@@ -14,6 +16,7 @@ export const useVisitStream = (visitId: string) => {
 
     const handleVisit = (event: MessageEvent<string>) => {
       queryClient.setQueryData(visitQueryKey(visitId), JSON.parse(event.data))
+      void queryClient.invalidateQueries({ queryKey: dishPhotosQueryKey(visitId) })
       setIsStreaming(true)
     }
 

@@ -55,5 +55,6 @@ export const buildPersonalSlide = (
     photoImageKey: favorite.visit.photoImageKey,
     avatar: { name: member.displayName, imageKey: member.avatarImageKey },
     restaurantId: favorite.visit.restaurantId,
+    galleryImageKeys: [],
   }
 }

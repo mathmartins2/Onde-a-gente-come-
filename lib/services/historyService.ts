@@ -2,6 +2,7 @@ import { desc, eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { calculateVisitScore } from '@/lib/scoring/calculateVisitScore'
 import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
+import { listDishPhotoKeysByVisit } from './dishPhotoService'
 
 type SnapshotContender = {
   restaurantId: string
@@ -109,6 +110,8 @@ export const loadHistory = async () => {
 
   const priceByVisit = new Map(priceRows.map((row) => [row.visitId, row]))
 
+  const dishPhotoKeysByVisit = await listDishPhotoKeysByVisit(visitRows.map((visit) => visit.visitId))
+
   const ratingRows = await database
     .select({
       visitId: schema.ratings.visitId,
@@ -198,6 +201,12 @@ export const loadHistory = async () => {
       fallback: snapshot.fallback,
       usedFallback: visit?.usedFallback ?? false,
       visitId: visit?.visitId ?? null,
+      dishPhotoUrls: visit
+        ? (dishPhotoKeysByVisit.get(visit.visitId) ?? []).flatMap((imageKey) => {
+            const imageUrl = resolveImageUrl(imageKey)
+            return imageUrl ? [imageUrl] : []
+          })
+        : [],
       totalPaid: visit ? (priceByVisit.get(visit.visitId)?.amount ?? null) : null,
       paidPerPerson:
         visit && priceByVisit.get(visit.visitId) && snapshot.participants.length > 0

@@ -47,8 +47,9 @@ export const buildBestAndWorstSlide = (visits: YearVisit[], members: YearMember[
       }),
     ],
     quote: findExtremeQuote(worst.visit, members, false) ?? findExtremeQuote(best.visit, members, true),
-    photoImageKey: best.visit.photoImageKey,
+    photoImageKey: best.visit.dishPhotoKeys.at(0) ?? best.visit.photoImageKey,
     avatar: null,
     restaurantId: best.visit.restaurantId,
+    galleryImageKeys: [],
   }
 }

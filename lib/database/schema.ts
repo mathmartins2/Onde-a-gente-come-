@@ -228,6 +228,22 @@ export const visitPriceEntries = pgTable(
   (table) => [unique('visit_price_entries_visit_unique').on(table.visitId)],
 )
 
+export const visitDishPhotos = pgTable(
+  'visit_dish_photos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    visitId: uuid('visit_id')
+      .notNull()
+      .references(() => visits.id, { onDelete: 'cascade' }),
+    addedByMemberId: uuid('added_by_member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    imageKey: text('image_key').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('visit_dish_photos_visit_index').on(table.visitId)],
+)
+
 export const drawSessions = pgTable('draw_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   roundNumber: integer('round_number').notNull().unique(),

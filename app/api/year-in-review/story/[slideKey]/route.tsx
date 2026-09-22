@@ -17,17 +17,23 @@ export const GET = async (_request: Request, context: { params: Promise<{ slideK
     const slide = yearInReview.slides.find((candidate) => candidate.key === slideKey)
     if (!slide) return NextResponse.json({ error: 'Tela não encontrada' }, { status: 404 })
 
-    const [photoDataUrl, avatarDataUrl, entryAvatarDataUrls] = await Promise.all([
+    const [photoDataUrl, avatarDataUrl, entryAvatarDataUrls, galleryDataUrls] = await Promise.all([
       loadStoryImageDataUrl(slide.photoImageKey, 'storyBackground'),
       loadStoryImageDataUrl(slide.avatar?.imageKey ?? null, 'storyAvatar'),
       Promise.all(slide.entries.map((entry) => loadStoryImageDataUrl(entry.avatar?.imageKey ?? null, 'storyAvatar'))),
+      Promise.all(slide.galleryImageKeys.map((imageKey) => loadStoryImageDataUrl(imageKey, 'storyPolaroid'))),
     ])
 
     return new ImageResponse(
       <YearSlideStory
         year={yearInReview.year}
         slide={slide}
-        images={{ photoDataUrl, avatarDataUrl, entryAvatarDataUrls }}
+        images={{
+          photoDataUrl,
+          avatarDataUrl,
+          entryAvatarDataUrls,
+          galleryDataUrls: galleryDataUrls.flatMap((dataUrl) => (dataUrl ? [dataUrl] : [])),
+        }}
       />,
       { ...storySize, fonts: await loadStoryFonts(), headers: { 'Cache-Control': 'private, no-store' } },
     )

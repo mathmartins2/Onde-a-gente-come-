@@ -40,5 +40,6 @@ export const buildStrictnessSlide = (visits: YearVisit[], members: YearMember[])
     photoImageKey: null,
     avatar: { name: strictest.member.displayName, imageKey: strictest.member.avatarImageKey },
     restaurantId: null,
+    galleryImageKeys: [],
   }
 }

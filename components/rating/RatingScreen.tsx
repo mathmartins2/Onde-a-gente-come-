@@ -3,11 +3,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Smartphone, Users } from 'lucide-react'
+import { StoryShareBar } from '@/components/share/StoryShareBar'
 import { Badge } from '@/components/ui/Badge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { classNames } from '@/lib/utilities/classNames'
 import { apiClient } from '@/lib/http/apiClient'
 import { BlindRatingSession } from './BlindRatingSession'
+import { DishPhotos } from './DishPhotos'
 import { OwnRatingPanel } from './OwnRatingPanel'
 import { FallbackToggle } from './FallbackToggle'
 import { PriceHistory } from './PriceHistory'
@@ -25,6 +27,7 @@ type VisitSummary = {
   usedFallback: boolean
   hasFallbackOption: boolean
   ratedMemberIds: string[]
+  isRevealed: boolean
 }
 
 export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) => {
@@ -40,6 +43,8 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+      {visitQuery.data?.isRevealed ? <StoryShareBar visitId={visitId} /> : null}
+
       <header className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-6 text-center">
         <span
           aria-hidden
@@ -92,6 +97,8 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
       ) : null}
 
       <PriceHistory visitId={visitId} />
+
+      <DishPhotos visitId={visitId} currentMemberId={currentMemberId} />
 
       {isPassAroundMode ? (
         <BlindRatingSession visitId={visitId} />

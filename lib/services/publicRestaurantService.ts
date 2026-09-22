@@ -4,7 +4,10 @@ import { cache } from 'react'
 import { database, schema } from '@/lib/database/client'
 import { buildRestaurantSummary, type SummaryRating } from '@/lib/restaurantSummary/buildRestaurantSummary'
 import { normalizeImage } from '@/lib/images/normalizeImage'
+import { resizeToResponsiveWidth } from '@/lib/images/resizeToResponsiveWidth'
 import { resolveImageStorage } from '@/lib/images/resolveImageStorage'
+import type { ResponsiveImageWidth } from '@/lib/images/responsiveImageWidths'
+import { listDishPhotoKeysByVisit } from './dishPhotoService'
 
 const shareTokenByteLength = 12
 const shareTokenPattern = /^[A-Za-z0-9_-]{16}$/
@@ -15,6 +18,11 @@ export const buildPublicRestaurantPath = (shareToken: string) => `/r/${shareToke
 
 const buildPublicRestaurantPhotoPath = (shareToken: string, imageKey: string) =>
   `${buildPublicRestaurantPath(shareToken)}/photo/${imageKey}`
+
+const buildPublicDishPhotoPath = (shareToken: string, imageKey: string) =>
+  `${buildPublicRestaurantPath(shareToken)}/dish/${imageKey}`
+
+const maximumPublicDishPhotoCount = 12
 
 const toScoreOrNull = (value: string | null) => (value === null ? null : Number(value))
 
@@ -124,6 +132,11 @@ export const loadPublicRestaurantSummary = cache(async (shareToken: string) => {
   const visitRows = await loadCompletedVisitRows(restaurant.id)
   const revealedVisitIds = visitRows.filter((visit) => visit.revealedAt !== null).map((visit) => visit.visitId)
   const ratingsByVisit = await loadRevealedRatingsByVisit(revealedVisitIds)
+  const dishPhotoKeysByVisit = await listDishPhotoKeysByVisit(revealedVisitIds)
+  const dishPhotoKeys = [...visitRows]
+    .sort((first, second) => second.visitedAt.getTime() - first.visitedAt.getTime())
+    .flatMap((visit) => dishPhotoKeysByVisit.get(visit.visitId) ?? [])
+    .slice(0, maximumPublicDishPhotoCount)
 
   const summary = buildRestaurantSummary(
     visitRows.map((visit) => ({
@@ -141,6 +154,7 @@ export const loadPublicRestaurantSummary = cache(async (shareToken: string) => {
     city: restaurant.city,
     cuisines: restaurant.cuisines,
     photoUrl: restaurant.photoImageKey ? buildPublicRestaurantPhotoPath(shareToken, restaurant.photoImageKey) : null,
+    dishPhotoUrls: dishPhotoKeys.map((imageKey) => buildPublicDishPhotoPath(shareToken, imageKey)),
     ...summary,
   }
 })
@@ -154,4 +168,35 @@ export const loadPublicRestaurantPhoto = async (shareToken: string, imageKey: st
   const storedImage = await resolveImageStorage().readImage(imageKey)
   if (!storedImage) return null
   return normalizeImage(storedImage.bytes, 'storyAvatar')
+}
+
+const isRevealedDishPhotoOfRestaurant = async (restaurantId: string, imageKey: string) => {
+  const rows = await database
+    .select({ id: schema.visitDishPhotos.id })
+    .from(schema.visitDishPhotos)
+    .innerJoin(schema.visits, eq(schema.visits.id, schema.visitDishPhotos.visitId))
+    .where(
+      and(
+        eq(schema.visitDishPhotos.imageKey, imageKey),
+        eq(schema.visits.restaurantId, restaurantId),
+        isNotNull(schema.visits.revealedAt),
+      ),
+    )
+    .limit(1)
+  return rows.length > 0
+}
+
+export const loadPublicDishPhoto = async (
+  shareToken: string,
+  imageKey: string,
+  requestedWidth: ResponsiveImageWidth | null,
+) => {
+  const restaurant = await loadSharedRestaurantRow(shareToken)
+  if (!restaurant) return null
+  if (!(await isRevealedDishPhotoOfRestaurant(restaurant.id, imageKey))) return null
+
+  const storedImage = await resolveImageStorage().readImage(imageKey)
+  if (!storedImage) return null
+  if (requestedWidth) return resizeToResponsiveWidth(storedImage, requestedWidth)
+  return normalizeImage(storedImage.bytes, 'publicDishPhoto')
 }

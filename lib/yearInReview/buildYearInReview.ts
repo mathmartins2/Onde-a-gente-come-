@@ -1,4 +1,5 @@
 import { buildBestAndWorstSlide } from './buildBestAndWorstSlide'
+import { buildDishPhotosSlide } from './buildDishPhotosSlide'
 import { buildMoneyAndDrawsSlide } from './buildMoneyAndDrawsSlide'
 import { buildPersonalSlide } from './buildPersonalSlide'
 import { buildStrictnessSlide } from './buildStrictnessSlide'
@@ -12,6 +13,7 @@ export const buildYearInReview = ({ year, memberId, visits, draws, members }: Ye
     ? [
         buildSummarySlide(year, visits),
         buildBestAndWorstSlide(visits, members),
+        buildDishPhotosSlide(year, visits),
         buildStrictnessSlide(visits, members),
         buildMoneyAndDrawsSlide(visits, draws, members),
         buildPersonalSlide(year, memberId, visits, draws, members),

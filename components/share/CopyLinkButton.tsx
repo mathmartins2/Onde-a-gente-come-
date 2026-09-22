@@ -3,7 +3,9 @@
 import { useMutation } from '@tanstack/react-query'
 import { Link2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { compactButtonClassName } from '@/components/share/ShareStoryButton'
 import { Button } from '@/components/ui/Button'
+import { classNames } from '@/lib/utilities/classNames'
 
 const plainTextType = 'text/plain'
 
@@ -33,11 +35,13 @@ export const CopyLinkButton = ({
   loadPath,
   label,
   successMessage,
+  isCompact = false,
   className,
 }: {
   loadPath: () => Promise<string>
   label: string
   successMessage: string
+  isCompact?: boolean
   className?: string
 }) => {
   const copyMutation = useMutation({
@@ -49,6 +53,21 @@ export const CopyLinkButton = ({
   const startCopy = () => {
     const pendingUrl = loadPath().then((path) => new URL(path, window.location.origin).toString())
     copyMutation.mutate({ pendingUrl, pendingCopy: writeUrlToClipboard(pendingUrl) })
+  }
+
+  if (isCompact) {
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        disabled={copyMutation.isPending}
+        onClick={startCopy}
+        className={classNames(compactButtonClassName, className)}
+      >
+        <Link2 size={18} />
+      </button>
+    )
   }
 
   return (

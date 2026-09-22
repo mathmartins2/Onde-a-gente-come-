@@ -1,5 +1,7 @@
 export const storySize = { width: 1080, height: 1920 } as const
 
+export const storyPhotoAreaHeight = 1040
+
 export const storyColors = {
   canvas: '#0d0a09',
   canvasDeep: '#070505',
@@ -19,3 +21,10 @@ export const storyFontFamilies = {
   display: 'Fraunces',
   body: 'Archivo',
 } as const
+
+export const withAlpha = (hexColor: string, alpha: number) => {
+  const red = Number.parseInt(hexColor.slice(1, 3), 16)
+  const green = Number.parseInt(hexColor.slice(3, 5), 16)
+  const blue = Number.parseInt(hexColor.slice(5, 7), 16)
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+}

@@ -1,7 +1,6 @@
 import { scoreHexFor } from '@/lib/utilities/scoreTone'
 import type { YearSlide } from '@/lib/yearInReview/types'
 import { StoryFrame } from './StoryFrame'
-import { LearnMorePrompt } from './LearnMorePrompt'
 import { StoryAvatar } from './StoryGlyphs'
 import { storyColors, storyFontFamilies } from './storyTheme'
 
@@ -9,7 +8,31 @@ export type YearSlideStoryImages = {
   photoDataUrl: string | null
   avatarDataUrl: string | null
   entryAvatarDataUrls: Array<string | null>
+  galleryDataUrls: string[]
 }
+
+const galleryTileSize = 250
+const galleryRotations = [-4, 3, -2, 4, -3, 2]
+
+const GalleryMosaic = ({ galleryDataUrls }: { galleryDataUrls: string[] }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 30, marginTop: 56 }}>
+    {galleryDataUrls.map((galleryDataUrl, galleryIndex) => (
+      <div
+        key={galleryDataUrl.slice(-32)}
+        style={{
+          display: 'flex',
+          padding: 10,
+          backgroundColor: storyColors.ink,
+          borderRadius: 12,
+          boxShadow: '0 24px 50px rgba(0, 0, 0, 0.5)',
+          transform: `rotate(${galleryRotations[galleryIndex % galleryRotations.length]}deg)`,
+        }}
+      >
+        <img src={galleryDataUrl} width={galleryTileSize} height={galleryTileSize} style={{ objectFit: 'cover', borderRadius: 6 }} alt="" />
+      </div>
+    ))}
+  </div>
+)
 
 const titleFontSize = (title: string) => {
   if (title.length > 48) return 72
@@ -57,6 +80,8 @@ export const YearSlideStory = ({ year, slide, images }: { year: number; slide: Y
         </div>
       ) : null}
 
+      {images.galleryDataUrls.length > 0 ? <GalleryMosaic galleryDataUrls={images.galleryDataUrls} /> : null}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 56 }}>
         {slide.entries.map((entry, entryIndex) => (
           <div
@@ -99,12 +124,6 @@ export const YearSlideStory = ({ year, slide, images }: { year: number; slide: Y
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 40, paddingLeft: 28, borderLeft: `6px solid ${storyColors.accent}` }}>
           <div style={{ display: 'flex', fontSize: 34, fontStyle: 'normal', color: storyColors.ink }}>“{slide.quote.text}”</div>
           <div style={{ display: 'flex', marginTop: 10, fontSize: 26, color: storyColors.inkFaint }}>— {slide.quote.author}</div>
-        </div>
-      ) : null}
-
-      {slide.restaurantId ? (
-        <div style={{ display: 'flex', marginTop: 'auto', marginBottom: 44 }}>
-          <LearnMorePrompt />
         </div>
       ) : null}
     </StoryFrame>

@@ -4,6 +4,7 @@ import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 import { buildYearBoundariesInAppTimeZone } from '@/lib/utilities/appTimeZone'
 import { buildYearInReview, type YearInReview } from '@/lib/yearInReview/buildYearInReview'
 import type { YearSlide, YearSlideAvatar } from '@/lib/yearInReview/types'
+import { listDishPhotoKeysByVisit } from './dishPhotoService'
 
 const completedVisits = or(isNotNull(schema.visits.revealedAt), isNotNull(schema.visits.legacyScore))
 
@@ -93,9 +94,10 @@ export const loadYearInReview = async (year: number, memberId: string): Promise<
 
   const visitIds = visitRows.map((visit) => visit.visitId)
   const revealedVisitIds = visitRows.filter((visit) => visit.revealedAt !== null).map((visit) => visit.visitId)
-  const [ratingsByVisit, billByVisit] = await Promise.all([
+  const [ratingsByVisit, billByVisit, dishPhotoKeysByVisit] = await Promise.all([
     loadRatingsByVisit(revealedVisitIds),
     loadBillByVisit(visitIds),
+    listDishPhotoKeysByVisit(revealedVisitIds),
   ])
 
   return buildYearInReview({
@@ -115,6 +117,7 @@ export const loadYearInReview = async (year: number, memberId: string): Promise<
         legacyScore: visit.legacyScore === null ? null : Number(visit.legacyScore),
         isFirstVisitEver: firstVisitedAt !== undefined && firstVisitedAt >= startsAt,
         billAmount: billByVisit.get(visit.visitId) ?? null,
+        dishPhotoKeys: dishPhotoKeysByVisit.get(visit.visitId) ?? [],
         ratings: ratingsByVisit.get(visit.visitId) ?? [],
       }
     }),
@@ -126,9 +129,13 @@ export const loadYearInReview = async (year: number, memberId: string): Promise<
 const toClientAvatar = (avatar: YearSlideAvatar | null) =>
   avatar ? { name: avatar.name, imageUrl: resolveImageUrl(avatar.imageKey) } : null
 
-const toClientSlide = ({ photoImageKey, avatar, entries, ...slide }: YearSlide) => ({
+const toClientSlide = ({ photoImageKey, avatar, entries, galleryImageKeys, ...slide }: YearSlide) => ({
   ...slide,
   photoUrl: resolveImageUrl(photoImageKey),
+  galleryUrls: galleryImageKeys.flatMap((imageKey) => {
+    const imageUrl = resolveImageUrl(imageKey)
+    return imageUrl ? [imageUrl] : []
+  }),
   avatar: toClientAvatar(avatar),
   entries: entries.map((entry) => ({ ...entry, avatar: toClientAvatar(entry.avatar) })),
 })

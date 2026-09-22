@@ -1,9 +1,14 @@
 import { eq, inArray } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
-import { loadStoryImageDataUrl } from '@/lib/share/loadStoryImage'
+import { normalizeImage } from '@/lib/images/normalizeImage'
+import { resolveImageStorage } from '@/lib/images/resolveImageStorage'
+import { loadStoryImageAccentColor, loadStoryImageDataUrl } from '@/lib/share/loadStoryImage'
 import type { VisitStoryData } from '@/lib/share/VisitStory'
 import { formatLongDayInAppTimeZone } from '@/lib/utilities/appTimeZone'
+import { listDishPhotoKeysByVisit } from './dishPhotoService'
 import { loadRevealedVisit } from './ratingService'
+
+const maximumStoryPolaroidCount = 3
 
 type VisitStoryOutcome =
   | { status: 'missing' }
@@ -38,8 +43,18 @@ export const loadVisitStory = async (visitId: string): Promise<VisitStoryOutcome
     .where(inArray(schema.members.id, memberIds))
   const avatarKeyByMemberId = new Map(avatarRows.map((row) => [row.id, row.avatarImageKey]))
 
-  const [photoDataUrl, avatarDataUrls] = await Promise.all([
+  const dishPhotoKeys = (await listDishPhotoKeysByVisit([visitId])).get(visitId) ?? []
+  const [backgroundDishPhotoKey, ...polaroidDishPhotoKeys] = dishPhotoKeys
+
+  const [photoDataUrl, logoAccentColor, backgroundDishPhotoDataUrl, dishPolaroidDataUrls, avatarDataUrls] = await Promise.all([
     loadStoryImageDataUrl(visit.photoImageKey, 'storyBackground'),
+    loadStoryImageAccentColor(visit.photoImageKey),
+    loadStoryImageDataUrl(backgroundDishPhotoKey ?? null, 'storyBackground'),
+    Promise.all(
+      polaroidDishPhotoKeys
+        .slice(0, maximumStoryPolaroidCount)
+        .map((imageKey) => loadStoryImageDataUrl(imageKey, 'storyPolaroid')),
+    ),
     Promise.all(
       memberIds.map((memberId) => loadStoryImageDataUrl(avatarKeyByMemberId.get(memberId) ?? null, 'storyAvatar')),
     ),
@@ -55,6 +70,9 @@ export const loadVisitStory = async (visitId: string): Promise<VisitStoryOutcome
       neighborhood: visit.neighborhood,
       visitDayLabel: formatLongDayInAppTimeZone(visit.visitedAt),
       photoDataUrl,
+      backgroundPhotoDataUrl: backgroundDishPhotoDataUrl ?? photoDataUrl,
+      dishPolaroidDataUrls: dishPolaroidDataUrls.flatMap((dataUrl) => (dataUrl ? [dataUrl] : [])),
+      logoAccentColor,
       finalScore: reveal.finalScore,
       criteriaAverages: reveal.criteriaAverages,
       ratings: [...reveal.ratings]
@@ -63,8 +81,23 @@ export const loadVisitStory = async (visitId: string): Promise<VisitStoryOutcome
           memberId: rating.memberId,
           displayName: rating.displayName,
           score: rating.score,
+          comment: rating.comment,
           avatarDataUrl: avatarDataUrlByMemberId.get(rating.memberId) ?? null,
         })),
     },
   }
+}
+
+const maximumStoryVideoPhotoCount = 6
+
+const loadStoryVideoPhoto = async (imageKey: string) => {
+  const storedImage = await resolveImageStorage().readImage(imageKey)
+  if (!storedImage) return null
+  return (await normalizeImage(storedImage.bytes, 'storyBackground')).bytes
+}
+
+export const loadVisitStoryVideoPhotos = async (visitId: string) => {
+  const dishPhotoKeys = (await listDishPhotoKeysByVisit([visitId])).get(visitId) ?? []
+  const photos = await Promise.all(dishPhotoKeys.slice(0, maximumStoryVideoPhotoCount).map(loadStoryVideoPhoto))
+  return photos.flatMap((photo) => (photo ? [photo] : []))
 }

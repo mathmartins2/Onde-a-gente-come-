@@ -113,6 +113,13 @@
       "when": 1790100030805,
       "tag": "0015_restaurant_public_share_token",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790102453790,
+      "tag": "0016_visit_dish_photos",
+      "breakpoints": true
     }
   ]
 }

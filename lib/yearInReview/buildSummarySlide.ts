@@ -50,5 +50,6 @@ export const buildSummarySlide = (year: number, visits: YearVisit[]): YearSlide 
     photoImageKey: null,
     avatar: null,
     restaurantId: null,
+    galleryImageKeys: [],
   }
 }

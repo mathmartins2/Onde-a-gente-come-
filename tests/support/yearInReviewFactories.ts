@@ -26,6 +26,7 @@ export const buildYearVisit = (overrides: Partial<YearVisit> = {}): YearVisit =>
   legacyScore: null,
   isFirstVisitEver: false,
   billAmount: null,
+  dishPhotoKeys: [],
   ratings: [],
   ...overrides,
 })

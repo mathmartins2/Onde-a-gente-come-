@@ -6,14 +6,32 @@ const buildImage = (width: number, height: number) =>
   sharp({ create: { width, height, channels: 3, background: '#ff6b35' } })
 
 describe('image normalization', () => {
-  it('shrinks a large restaurant photo to fit 1280 pixels and outputs jpeg', async () => {
+  it('shrinks a large restaurant photo to fit 1280 pixels and stores it as webp', async () => {
     const original = await buildImage(4000, 3000).png().toBuffer()
 
     const normalized = await normalizeImage(original, 'restaurantPhoto')
 
-    expect(normalized.contentType).toBe('image/jpeg')
+    expect(normalized.contentType).toBe('image/webp')
     expect(normalized.width).toBe(1280)
     expect(normalized.height).toBe(960)
+    expect(detectImageFormat(normalized.bytes)).toBe('webp')
+  })
+
+  it('stores dish photos as webp no larger than 1280 pixels', async () => {
+    const original = await buildImage(3000, 4000).jpeg().toBuffer()
+
+    const normalized = await normalizeImage(original, 'dishPhoto')
+
+    expect(normalized.contentType).toBe('image/webp')
+    expect([normalized.width, normalized.height]).toEqual([960, 1280])
+  })
+
+  it('keeps story renders in jpeg so the story renderer can draw them', async () => {
+    const original = await buildImage(2000, 1500).webp().toBuffer()
+
+    const normalized = await normalizeImage(original, 'storyBackground')
+
+    expect(normalized.contentType).toBe('image/jpeg')
     expect(detectImageFormat(normalized.bytes)).toBe('jpeg')
   })
 
