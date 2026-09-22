@@ -112,7 +112,7 @@ export const ScoreReveal = ({
       <AnimatePresence mode="wait">
         {stage === 'tallying' ? (
           <motion.div key="tallying" exit={{ opacity: 0, y: -12 }}>
-            <Card className="board-grain py-12 text-center">
+            <Card className="scheme-dark board-grain py-12 text-center">
               <p className="text-micro-cap text-accent">apurando as notas</p>
               <p className="text-numeric mt-4 text-6xl font-bold text-accent-hover">
                 {scrambledScore}

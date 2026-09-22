@@ -23,7 +23,7 @@ export const YearSlideView = ({ slide }: { slide: ClientYearSlide }) => {
         }
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="scheme-dark relative flex h-full flex-col text-ink">
       {slide.photoUrl ? (
         <div className="absolute inset-x-0 top-0 h-[55%]">
           <img src={slide.photoUrl} alt="" className="h-full w-full object-cover" />

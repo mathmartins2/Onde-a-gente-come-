@@ -18,7 +18,7 @@ const Step = ({
   children: React.ReactNode
 }) => (
   <div className="flex gap-3">
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-xs font-bold text-black">
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-xs font-bold text-on-accent">
       {number}
     </span>
     <div className="min-w-0 flex-1">

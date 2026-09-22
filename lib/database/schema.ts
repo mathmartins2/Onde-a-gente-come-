@@ -37,6 +37,7 @@ export const members = pgTable('members', {
   mustChangePassword: boolean('must_change_password').notNull().default(true),
   isAdmin: boolean('is_admin').notNull().default(false),
   avatarImageKey: text('avatar_image_key'),
+  themePreference: text('theme_preference').notNull().default('dark'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

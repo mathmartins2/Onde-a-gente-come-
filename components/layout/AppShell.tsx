@@ -6,6 +6,8 @@ import { Dices, History, LogOut, User, UtensilsCrossed } from 'lucide-react'
 import { apiClient } from '@/lib/http/apiClient'
 import { Avatar } from '@/components/ui/Avatar'
 import { BrandMark } from '@/components/ui/BrandMark'
+import { ThemeSwitcher } from '@/components/ui/ThemeSwitcher'
+import type { ThemePreference } from '@/lib/theme/themePreference'
 import { classNames } from '@/lib/utilities/classNames'
 
 const homeHref = '/'
@@ -38,10 +40,11 @@ const isDestinationActive = (pathname: string, routes: readonly string[]) =>
 type AppShellProps = {
   displayName: string
   avatarUrl: string | null
+  themePreference: ThemePreference
   children: React.ReactNode
 }
 
-export const AppShell = ({ displayName, avatarUrl, children }: AppShellProps) => {
+export const AppShell = ({ displayName, avatarUrl, themePreference, children }: AppShellProps) => {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -91,13 +94,17 @@ export const AppShell = ({ displayName, avatarUrl, children }: AppShellProps) =>
           )
         })}
 
-        <button
-          onClick={signOut}
-          className="mt-auto flex min-h-11 items-center gap-3 rounded-lg px-3 text-body-md text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
-        >
-          <Avatar name={displayName} imageUrl={avatarUrl} size="small" />
-          Sair
-        </button>
+        <div className="mt-auto flex items-center gap-1 rounded-xl border border-hairline bg-surface-1 p-1">
+          <button
+            onClick={signOut}
+            className="flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-body-md text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+          >
+            <Avatar name={displayName} imageUrl={avatarUrl} size="small" />
+            Sair
+          </button>
+          <span aria-hidden className="h-6 w-px shrink-0 bg-hairline" />
+          <ThemeSwitcher initialPreference={themePreference} className="border-0 bg-transparent p-0" />
+        </div>
       </nav>
 
       <div className="min-w-0 flex-1">
@@ -113,18 +120,22 @@ export const AppShell = ({ displayName, avatarUrl, children }: AppShellProps) =>
               </span>
             </Link>
 
-            <button
-              onClick={signOut}
-              aria-label={`Sair da conta de ${displayName}`}
-              className="group flex h-11 shrink-0 items-center gap-2 rounded-pill border border-hairline bg-surface-1 py-1 pl-1 pr-3 transition-colors hover:border-accent"
-            >
-              <Avatar name={displayName} imageUrl={avatarUrl} size="small" className="h-8 w-8" />
-              <LogOut
-                size={14}
-                strokeWidth={2.2}
-                className="text-ink-muted transition-colors group-hover:text-accent"
-              />
-            </button>
+            <div className="flex h-11 shrink-0 items-center gap-1 rounded-pill border border-hairline bg-surface-1 p-1">
+              <ThemeSwitcher initialPreference={themePreference} isCompact />
+              <span aria-hidden className="h-5 w-px shrink-0 bg-hairline" />
+              <button
+                onClick={signOut}
+                aria-label={`Sair da conta de ${displayName}`}
+                className="group flex h-9 shrink-0 items-center gap-1.5 rounded-pill pl-0.5 pr-2.5 transition-colors hover:bg-surface-2"
+              >
+                <Avatar name={displayName} imageUrl={avatarUrl} size="small" className="h-8 w-8" />
+                <LogOut
+                  size={14}
+                  strokeWidth={2.2}
+                  className="text-ink-muted transition-colors group-hover:text-accent"
+                />
+              </button>
+            </div>
           </div>
         </header>
 

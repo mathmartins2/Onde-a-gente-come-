@@ -88,7 +88,7 @@ export const YearInReviewStories = ({
       role="dialog"
       aria-modal="true"
       aria-label={`Retrospectiva ${yearInReview.year}`}
-      className="fixed inset-0 z-[70] flex justify-center bg-canvas-deep"
+      className="scheme-dark fixed inset-0 z-[70] flex justify-center bg-canvas-deep text-ink"
     >
       <div className="relative flex h-dvh w-full max-w-md flex-col overflow-hidden bg-canvas">
         <div className="absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">

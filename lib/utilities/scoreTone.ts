@@ -1,3 +1,5 @@
+import type { ResolvedTheme } from '@/lib/theme/themePreference'
+
 export type ScoreTone = 'great' | 'good' | 'fair' | 'poor'
 
 const greatThreshold = 4
@@ -25,6 +27,16 @@ export const scoreToneHex: Record<ScoreTone, string> = {
   poor: '#ff6b6b',
 }
 
+const lightScoreToneHex: Record<ScoreTone, string> = {
+  great: '#15794a',
+  good: '#3f7410',
+  fair: '#8f5a06',
+  poor: '#d12f2f',
+}
+
+export const scoreToneHexFor = (theme: ResolvedTheme) => (theme === 'light' ? lightScoreToneHex : scoreToneHex)
+
 export const scoreTextClassFor = (score: number) => scoreToneTextClass[resolveScoreTone(score)]
 
-export const scoreHexFor = (score: number) => scoreToneHex[resolveScoreTone(score)]
+export const scoreHexFor = (score: number, theme: ResolvedTheme = 'dark') =>
+  scoreToneHexFor(theme)[resolveScoreTone(score)]

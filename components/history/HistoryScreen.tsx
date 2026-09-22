@@ -104,7 +104,7 @@ const BallotLog = ({ round }: { round: HistoryRound }) => (
     className="relative mt-1 flex flex-col gap-5 rounded-xl border border-dashed border-hairline-strong bg-surface-sunken px-4 py-5"
     style={{
       backgroundImage:
-        'repeating-linear-gradient(180deg, transparent 0px, transparent 27px, rgba(255,255,255,0.025) 27px, rgba(255,255,255,0.025) 28px)',
+        'repeating-linear-gradient(180deg, transparent 0px, transparent 27px, color-mix(in srgb, var(--ink) 3%, transparent) 27px, color-mix(in srgb, var(--ink) 3%, transparent) 28px)',
     }}
   >
     <span className="absolute -left-2 top-8 h-4 w-4 rounded-full bg-surface-1" />

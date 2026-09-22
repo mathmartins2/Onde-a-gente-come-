@@ -41,30 +41,47 @@
 }
 
 :root {
-  --canvas: #0b0c10;
-  --canvas-deep: #06070a;
-  --surface-1: #14151b;
-  --surface-2: #1c1e26;
-  --surface-3: #262833;
-  --surface-sunken: #0f1015;
-  --hairline: #2a2c37;
-  --hairline-strong: #3a3d4b;
+  color-scheme: dark;
+}
 
-  --ink: #f2f2f5;
-  --ink-muted: #a3a4b3;
-  --ink-faint: #80818f;
+:root[data-theme='light'] {
+  color-scheme: light;
+}
 
-  --accent: #ff4d6d;
-  --accent-hover: #ff7189;
-  --accent-press: #c9184a;
+:root[data-theme='system'] {
+  color-scheme: light dark;
+}
+
+.scheme-dark {
+  color-scheme: dark;
+}
+
+:root,
+.scheme-dark {
+  --canvas: light-dark(#f6f6f8, #0b0c10);
+  --canvas-deep: light-dark(#ecedf1, #06070a);
+  --surface-1: light-dark(#ffffff, #14151b);
+  --surface-2: light-dark(#f1f2f5, #1c1e26);
+  --surface-3: light-dark(#e7e8ed, #262833);
+  --surface-sunken: light-dark(#eceef2, #0f1015);
+  --hairline: light-dark(#e0e1e7, #2a2c37);
+  --hairline-strong: light-dark(#c9cbd4, #3a3d4b);
+
+  --ink: light-dark(#14151b, #f2f2f5);
+  --ink-muted: light-dark(#555766, #a3a4b3);
+  --ink-faint: light-dark(#636573, #80818f);
+
+  --accent: light-dark(#d81b47, #ff4d6d);
+  --accent-hover: light-dark(#c4153f, #ff7189);
+  --accent-press: light-dark(#b0103a, #c9184a);
   --accent-tint: color-mix(in srgb, var(--accent) 14%, transparent);
-  --on-accent: #1f0508;
+  --on-accent: light-dark(#ffffff, #1f0508);
 
-  --herb: #a8dd52;
-  --berry: #b98cff;
-  --success: #5fd68f;
-  --warning: #fbbf24;
-  --danger: #ff6b6b;
+  --herb: light-dark(#3f7410, #a8dd52);
+  --berry: light-dark(#7c4dd6, #b98cff);
+  --success: light-dark(#15794a, #5fd68f);
+  --warning: light-dark(#8f5a06, #fbbf24);
+  --danger: light-dark(#d12f2f, #ff6b6b);
 
   --background: var(--canvas);
   --background-deep: var(--canvas-deep);
@@ -102,9 +119,10 @@
   --radius-medium: var(--radius-xl);
   --radius-large: var(--radius-2xl);
 
-  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.35);
-  --elevation-2: 0 10px 24px -12px rgba(0, 0, 0, 0.75);
-  --elevation-3: 0 24px 60px -28px rgba(0, 0, 0, 0.95);
+  --elevation-1: 0 2px 8px light-dark(rgba(20, 21, 27, 0.08), rgba(0, 0, 0, 0.35));
+  --elevation-2: 0 10px 24px -12px light-dark(rgba(20, 21, 27, 0.18), rgba(0, 0, 0, 0.75));
+  --elevation-3: 0 24px 60px -28px light-dark(rgba(20, 21, 27, 0.22), rgba(0, 0, 0, 0.95));
+  --inset-shadow: inset 0 1px 2px light-dark(rgba(20, 21, 27, 0.08), rgba(0, 0, 0, 0.45));
 
   --shadow-raised: var(--elevation-2);
   --shadow-lifted: var(--elevation-3);

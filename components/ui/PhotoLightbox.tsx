@@ -99,7 +99,7 @@ export const PhotoLightbox = ({
           initial={shouldReduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-          className="fixed inset-0 z-50 flex flex-col bg-[color-mix(in_srgb,var(--canvas-deep)_94%,transparent)] backdrop-blur-sm"
+          className="scheme-dark fixed inset-0 z-50 flex flex-col text-ink bg-[color-mix(in_srgb,var(--canvas-deep)_94%,transparent)] backdrop-blur-sm"
           onClick={onClose}
         >
           <div className="flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">

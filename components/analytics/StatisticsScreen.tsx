@@ -7,7 +7,9 @@ import { ptBR } from 'date-fns/locale'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient } from '@/lib/http/apiClient'
-import { palette } from '@/lib/theme/palette'
+import { paletteFor, withAlpha } from '@/lib/theme/palette'
+import { useResolvedTheme } from '@/lib/theme/themeDocument'
+import type { ResolvedTheme } from '@/lib/theme/themePreference'
 
 type FrequencyBucket = { period: string; visitCount: number }
 
@@ -47,12 +49,6 @@ type StatisticsResponse = {
   worstRestaurant: { name: string; bayesianScore: number; visitCount: number } | null
 }
 
-const tooltipStyle = {
-  background: palette.surfaceRaised,
-  border: `1px solid ${palette.hairlineStrong}`,
-  borderRadius: 12,
-  fontSize: 12,
-}
 
 const formatMonthLabel = (period: string) => {
   const [year, month] = period.split('-')
@@ -62,7 +58,27 @@ const formatMonthLabel = (period: string) => {
 const formatFullDate = (value: string) =>
   format(new Date(value), "d 'de' MMM 'de' yyyy", { locale: ptBR })
 
-const chartColors = [palette.accent, palette.accentHover, '#ff9aab', '#ffc0cb', '#ffe0e5']
+const cuisineScaleByTheme: Record<ResolvedTheme, string[]> = {
+  dark: ['#ff4d6d', '#ff7189', '#ff9aab', '#ffc0cb', '#ffe0e5'],
+  light: ['#d81b47', '#e2446a', '#ea6f8b', '#f199ad', '#f7c2ce'],
+}
+
+const buildChartTheme = (theme: ResolvedTheme) => {
+  const themePalette = paletteFor(theme)
+  return {
+    palette: themePalette,
+    cuisineScale: cuisineScaleByTheme[theme],
+    cursorFill: withAlpha(themePalette.ink, 0.04),
+    tooltipStyle: {
+      background: themePalette.surface,
+      border: `1px solid ${themePalette.hairlineStrong}`,
+      borderRadius: 12,
+      fontSize: 12,
+    },
+  }
+}
+
+const useChartTheme = () => buildChartTheme(useResolvedTheme())
 
 type CuisineChartProps = {
   cuisines: Array<{ cuisine: string; visitCount: number }>
@@ -72,30 +88,34 @@ const CuisineChart = dynamic<CuisineChartProps>(
   async () => {
     const { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } = await import('recharts')
 
-    const CuisineBarChart = ({ cuisines }: CuisineChartProps) => (
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={cuisines} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-          <XAxis
-            dataKey="cuisine"
-            tick={{ fill: palette.inkMuted, fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip
-            cursor={{ fill: '#ffffff08' }}
-            formatter={(value) => [`${value} rolê(s)`, '']}
-            contentStyle={tooltipStyle}
-            labelStyle={{ color: palette.ink, fontWeight: 600 }}
-            itemStyle={{ color: palette.accent }}
-          />
-          <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} maxBarSize={64}>
-            {cuisines.map((entry, index) => (
-              <Cell key={entry.cuisine} fill={chartColors[index % chartColors.length]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    )
+    const CuisineBarChart = ({ cuisines }: CuisineChartProps) => {
+      const chartTheme = useChartTheme()
+
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={cuisines} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            <XAxis
+              dataKey="cuisine"
+              tick={{ fill: chartTheme.palette.inkMuted, fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: chartTheme.cursorFill }}
+              formatter={(value) => [`${value} rolê(s)`, '']}
+              contentStyle={chartTheme.tooltipStyle}
+              labelStyle={{ color: chartTheme.palette.ink, fontWeight: 600 }}
+              itemStyle={{ color: chartTheme.palette.accent }}
+            />
+            <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} maxBarSize={64}>
+              {cuisines.map((entry, index) => (
+                <Cell key={entry.cuisine} fill={chartTheme.cuisineScale[index % chartTheme.cuisineScale.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    }
 
     return CuisineBarChart
   },
@@ -117,6 +137,7 @@ const SpendingChart = dynamic<SpendingChartProps>(
     const { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } = await import('recharts')
 
     const SpendingBarChart = ({ buckets }: SpendingChartProps) => {
+      const chartTheme = useChartTheme()
       const highestTotal = Math.max(...buckets.map((bucket) => bucket.total))
 
       return (
@@ -125,23 +146,23 @@ const SpendingChart = dynamic<SpendingChartProps>(
             <XAxis
               dataKey="period"
               tickFormatter={formatMonthLabel}
-              tick={{ fill: palette.inkMuted, fontSize: 10 }}
+              tick={{ fill: chartTheme.palette.inkMuted, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
-              cursor={{ fill: '#ffffff08' }}
+              cursor={{ fill: chartTheme.cursorFill }}
               labelFormatter={(label) => formatMonthLabel(String(label))}
               formatter={(value) => [currencyFormatter.format(Number(value)), '']}
-              contentStyle={tooltipStyle}
-              labelStyle={{ color: palette.ink, fontWeight: 600 }}
-              itemStyle={{ color: palette.herb }}
+              contentStyle={chartTheme.tooltipStyle}
+              labelStyle={{ color: chartTheme.palette.ink, fontWeight: 600 }}
+              itemStyle={{ color: chartTheme.palette.herb }}
             />
             <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={48}>
               {buckets.map((bucket) => (
                 <Cell
                   key={bucket.period}
-                  fill={bucket.total === highestTotal ? palette.accent : palette.herb}
+                  fill={bucket.total === highestTotal ? chartTheme.palette.accent : chartTheme.palette.herb}
                 />
               ))}
             </Bar>
@@ -163,27 +184,31 @@ const MonthlyChart = dynamic<MonthlyChartProps>(
   async () => {
     const { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } = await import('recharts')
 
-    const MonthlyBarChart = ({ buckets }: MonthlyChartProps) => (
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={buckets} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-          <XAxis
-            dataKey="period"
-            tickFormatter={formatMonthLabel}
-            tick={{ fill: palette.inkMuted, fontSize: 10 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip
-            cursor={{ fill: '#ffffff08' }}
-            labelFormatter={(label) => formatMonthLabel(String(label))}
-            formatter={(value) => [`${value} rolê(s)`, '']}
-            contentStyle={tooltipStyle}
-            labelStyle={{ color: palette.ink }}
-          />
-          <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} fill={palette.accent} maxBarSize={48} />
-        </BarChart>
-      </ResponsiveContainer>
-    )
+    const MonthlyBarChart = ({ buckets }: MonthlyChartProps) => {
+      const chartTheme = useChartTheme()
+
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={buckets} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            <XAxis
+              dataKey="period"
+              tickFormatter={formatMonthLabel}
+              tick={{ fill: chartTheme.palette.inkMuted, fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: chartTheme.cursorFill }}
+              labelFormatter={(label) => formatMonthLabel(String(label))}
+              formatter={(value) => [`${value} rolê(s)`, '']}
+              contentStyle={chartTheme.tooltipStyle}
+              labelStyle={{ color: chartTheme.palette.ink }}
+            />
+            <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} fill={chartTheme.palette.accent} maxBarSize={48} />
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    }
 
     return MonthlyBarChart
   },

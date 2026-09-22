@@ -60,7 +60,7 @@ export const YearInReviewTeaser = () => {
         type="button"
         onClick={dismissTeaser}
         aria-label="Dispensar aviso da retrospectiva"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-white/10"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
       >
         <X size={16} />
       </button>

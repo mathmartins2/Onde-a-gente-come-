@@ -1,4 +1,4 @@
-import { UtensilsCrossed } from 'lucide-react'
+import { UtensilsGlyph } from '@/components/ui/UtensilsGlyph'
 import { classNames } from '@/lib/utilities/classNames'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
 
@@ -26,17 +26,13 @@ export const ScoreRating = ({ score, size = 15, className }: ScoreRatingProps) =
 
         return (
           <span key={position} className="relative inline-flex shrink-0">
-            <UtensilsCrossed size={size} strokeWidth={2.2} className="text-ink-faint opacity-45" />
+            <UtensilsGlyph size={size} className="text-ink-faint opacity-45" />
             <span
               aria-hidden
               style={{ width: `${fillRatio * 100}%` }}
               className="absolute inset-y-0 left-0 overflow-hidden"
             >
-              <UtensilsCrossed
-                size={size}
-                strokeWidth={2.4}
-                className={classNames('shrink-0', filledTone)}
-              />
+              <UtensilsGlyph size={size} className={filledTone} />
             </span>
           </span>
         )

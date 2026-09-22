@@ -2,14 +2,23 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Map as MapLibreMap, Marker, NavigationControl, Popup, type StyleSpecification } from 'maplibre-gl'
-import { palette, withAlpha } from '@/lib/theme/palette'
+import { paletteFor, withAlpha } from '@/lib/theme/palette'
+import type { ResolvedTheme } from '@/lib/theme/themePreference'
 import { colorForScore, type MapPoint } from './VisitedMap'
 
-const vectorStyleUrl = 'https://tiles.openfreemap.org/styles/dark'
+const vectorStyleUrlByTheme: Record<ResolvedTheme, string> = {
+  dark: 'https://tiles.openfreemap.org/styles/dark',
+  light: 'https://tiles.openfreemap.org/styles/positron',
+}
+
+const rasterPaintByTheme: Record<ResolvedTheme, Record<string, number>> = {
+  dark: { 'raster-saturation': -0.7, 'raster-brightness-max': 0.7 },
+  light: { 'raster-saturation': -0.5 },
+}
 const recifeCenter: [number, number] = [-34.89, -8.06]
 const initialZoom = 11.5
 
-const rasterFallbackStyle: StyleSpecification = {
+const buildRasterFallbackStyle = (theme: ResolvedTheme): StyleSpecification => ({
   version: 8,
   sources: {
     openstreetmap: {
@@ -24,13 +33,14 @@ const rasterFallbackStyle: StyleSpecification = {
       id: 'openstreetmap',
       type: 'raster',
       source: 'openstreetmap',
-      paint: { 'raster-saturation': -0.7, 'raster-brightness-max': 0.7 },
+      paint: rasterPaintByTheme[theme],
     },
   ],
-}
+})
 
-const buildPinElement = (point: MapPoint) => {
-  const color = colorForScore(point.averageScore)
+const buildPinElement = (point: MapPoint, theme: ResolvedTheme) => {
+  const color = colorForScore(point.averageScore, theme)
+  const themePalette = paletteFor(theme)
   const label = point.averageScore === null ? '—' : point.averageScore.toFixed(1)
 
   const wrapper = document.createElement('div')
@@ -38,7 +48,7 @@ const buildPinElement = (point: MapPoint) => {
     'display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;cursor:pointer'
 
   const chip = document.createElement('span')
-  chip.style.cssText = `font-family:ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:0.02em;color:${palette.ink};background:${withAlpha(palette.surface, 0.94)};border:1px solid ${color};border-radius:999px;padding:2px 7px`
+  chip.style.cssText = `font-family:ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:0.02em;color:${themePalette.ink};background:${withAlpha(themePalette.surface, 0.94)};border:1px solid ${color};border-radius:999px;padding:2px 7px`
   chip.textContent = point.name
 
   const score = document.createElement('span')
@@ -47,13 +57,13 @@ const buildPinElement = (point: MapPoint) => {
   chip.appendChild(score)
 
   const dot = document.createElement('span')
-  dot.style.cssText = `width:11px;height:11px;border-radius:999px;background:${color};border:2px solid ${withAlpha(palette.surface, 0.94)};box-shadow:0 0 0 2px ${color}44`
+  dot.style.cssText = `width:11px;height:11px;border-radius:999px;background:${color};border:2px solid ${withAlpha(themePalette.surface, 0.94)};box-shadow:0 0 0 2px ${color}44`
 
   wrapper.append(chip, dot)
   return wrapper
 }
 
-export const MapCanvas = ({ points }: { points: MapPoint[] }) => {
+export const MapCanvas = ({ points, theme }: { points: MapPoint[]; theme: ResolvedTheme }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [hasFailed, setHasFailed] = useState(false)
   const [isUsingFallback, setIsUsingFallback] = useState(false)
@@ -64,7 +74,7 @@ export const MapCanvas = ({ points }: { points: MapPoint[] }) => {
 
     const map = new MapLibreMap({
       container,
-      style: vectorStyleUrl,
+      style: vectorStyleUrlByTheme[theme],
       center: recifeCenter,
       zoom: initialZoom,
       attributionControl: { compact: true },
@@ -73,7 +83,7 @@ export const MapCanvas = ({ points }: { points: MapPoint[] }) => {
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
 
     const markers = points.map((point) =>
-      new Marker({ element: buildPinElement(point), anchor: 'bottom' })
+      new Marker({ element: buildPinElement(point, theme), anchor: 'bottom' })
         .setLngLat([point.longitude, point.latitude])
         .setPopup(
           new Popup({ offset: 18, closeButton: false }).setText(
@@ -91,7 +101,7 @@ export const MapCanvas = ({ points }: { points: MapPoint[] }) => {
           setHasFailed(true)
           return alreadyFallenBack
         }
-        map.setStyle(rasterFallbackStyle)
+        map.setStyle(buildRasterFallbackStyle(theme))
         return true
       })
     }
@@ -107,7 +117,7 @@ export const MapCanvas = ({ points }: { points: MapPoint[] }) => {
       markers.forEach((marker) => marker.remove())
       map.remove()
     }
-  }, [points])
+  }, [points, theme])
 
   return (
     <div className="relative h-full w-full">

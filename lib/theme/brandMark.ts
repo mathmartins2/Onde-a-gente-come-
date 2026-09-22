@@ -4,6 +4,8 @@ export const brandMarkPinPath = 'M24 46c-1.4 0-15.5-13.2-15.5-26a15.5 15.5 0 0 1
 
 export const brandMarkStrokeWidth = 2.6
 
+export const brandUtensilsViewBox = '12 8 25 25'
+
 export const brandMarkUtensilPaths = [
   { key: 'fork-tines', path: 'M17 10.5v5.5M20 10.5v5.5M23 10.5v5.5', isFilled: false },
   { key: 'fork-head', path: 'M17 16c0 2.2 1.3 3.4 3 3.4s3-1.2 3-3.4', isFilled: false },

@@ -12,8 +12,8 @@ export const BrandMark = ({ size, className }: BrandMarkProps) => (
       <path
         key={utensil.key}
         d={utensil.path}
-        fill={utensil.isFilled ? 'var(--canvas)' : 'none'}
-        stroke="var(--canvas)"
+        fill={utensil.isFilled ? 'var(--on-accent)' : 'none'}
+        stroke="var(--on-accent)"
         strokeWidth={brandMarkStrokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"

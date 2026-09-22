@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ratingConfiguration } from '@/lib/scoring/configuration'
+import { themePreferences } from '@/lib/theme/themePreference'
 
 const criterionScore = z.coerce
   .number()
@@ -145,3 +146,7 @@ export type RestaurantInput = z.output<typeof restaurantSchema>
 export type RatingInput = z.infer<typeof ratingSchema>
 export type ChangePasswordValues = z.infer<typeof changePasswordSchema>
 export type SetPinValues = z.infer<typeof setPinSchema>
+
+export const themePreferenceSchema = z.object({
+  themePreference: z.enum(themePreferences),
+})

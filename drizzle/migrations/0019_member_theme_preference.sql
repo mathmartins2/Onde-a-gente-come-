@@ -1,0 +1,1 @@
+ALTER TABLE "members" ADD COLUMN "theme_preference" text DEFAULT 'dark' NOT NULL;

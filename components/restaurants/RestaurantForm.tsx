@@ -294,7 +294,7 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
                   }
                   className={
                     isSelected
-                      ? 'rounded-pill border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-black'
+                      ? 'rounded-pill border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-on-accent'
                       : 'rounded-pill border border-hairline-strong bg-surface-2 px-3 py-1.5 text-caption transition-colors hover:border-[var(--accent)] hover:text-ink'
                   }
                 >

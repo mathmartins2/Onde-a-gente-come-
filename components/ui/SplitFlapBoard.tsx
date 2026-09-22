@@ -13,7 +13,7 @@ type SplitFlapBoardProps = {
 }
 
 export const SplitFlapBoard = ({ rows, isSettled, size = 'medium', className }: SplitFlapBoardProps) => (
-  <div className={classNames('flex flex-col items-center gap-[3px]', className)}>
+  <div className={classNames('scheme-dark flex flex-col items-center gap-[3px]', className)}>
     {rows.map((row, rowIndex) => (
       <div key={rowIndex} className="flex justify-center gap-[3px]">
         {row.map((character, columnIndex) => (

@@ -6,7 +6,15 @@ const AuthenticatedLayout = async ({ children }: { children: React.ReactNode }) 
   const member = await getCurrentMember()
   if (!member) redirect('/login')
 
-  return <AppShell displayName={member.displayName} avatarUrl={member.avatarUrl}>{children}</AppShell>
+  return (
+    <AppShell
+      displayName={member.displayName}
+      avatarUrl={member.avatarUrl}
+      themePreference={member.themePreference}
+    >
+      {children}
+    </AppShell>
+  )
 }
 
 export default AuthenticatedLayout

@@ -6,8 +6,10 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient } from '@/lib/http/apiClient'
-import { scoreHexFor, scoreToneHex } from '@/lib/utilities/scoreTone'
-import { palette } from '@/lib/theme/palette'
+import { scoreHexFor, scoreToneHexFor } from '@/lib/utilities/scoreTone'
+import { paletteFor } from '@/lib/theme/palette'
+import { useResolvedTheme } from '@/lib/theme/themeDocument'
+import type { ResolvedTheme } from '@/lib/theme/themePreference'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 export type MapPoint = {
@@ -21,10 +23,8 @@ export type MapPoint = {
   visitCount: number
 }
 
-const unratedColor = palette.inkMuted
-
-export const colorForScore = (score: number | null) =>
-  score === null ? unratedColor : scoreHexFor(score)
+export const colorForScore = (score: number | null, theme: ResolvedTheme) =>
+  score === null ? paletteFor(theme).inkMuted : scoreHexFor(score, theme)
 
 const MapCanvas = dynamic(() => import('./MapCanvas').then((module) => module.MapCanvas), {
   ssr: false,
@@ -39,6 +39,8 @@ const LegendDot = ({ color, label }: { color: string; label: string }) => (
 )
 
 export const VisitedMap = () => {
+  const theme = useResolvedTheme()
+  const toneColors = scoreToneHexFor(theme)
   const mapQuery = useQuery({
     queryKey: ['map-points'],
     queryFn: async () => {
@@ -57,11 +59,11 @@ export const VisitedMap = () => {
       <div>
         <h1 className="text-heading-xl">Mapa dos rolês</h1>
         <div className="mt-2 flex flex-wrap gap-3">
-          <LegendDot color={scoreToneHex.great} label="4 ou mais" />
-          <LegendDot color={scoreToneHex.good} label="3 a 4" />
-          <LegendDot color={scoreToneHex.fair} label="2 a 3" />
-          <LegendDot color={scoreToneHex.poor} label="abaixo de 2" />
-          <LegendDot color={unratedColor} label="sem nota" />
+          <LegendDot color={toneColors.great} label="4 ou mais" />
+          <LegendDot color={toneColors.good} label="3 a 4" />
+          <LegendDot color={toneColors.fair} label="2 a 3" />
+          <LegendDot color={toneColors.poor} label="abaixo de 2" />
+          <LegendDot color={colorForScore(null, theme)} label="sem nota" />
         </div>
       </div>
 
@@ -75,7 +77,7 @@ export const VisitedMap = () => {
         </Card>
       ) : (
         <div className="h-[430px] overflow-hidden rounded-xl border border-hairline-strong lg:h-[560px]">
-          <MapCanvas points={points} />
+          <MapCanvas points={points} theme={theme} />
         </div>
       )}
 
@@ -91,7 +93,7 @@ export const VisitedMap = () => {
               </span>
               <span
                 className="text-numeric shrink-0 text-body-sm"
-                style={{ color: colorForScore(point.averageScore) }}
+                style={{ color: colorForScore(point.averageScore, theme) }}
               >
                 {point.averageScore === null ? 'sem nota' : point.averageScore.toFixed(2)}
               </span>
