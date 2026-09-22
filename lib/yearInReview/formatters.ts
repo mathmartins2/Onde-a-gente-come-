@@ -1,3 +1,4 @@
+import { formatHalfStarScore, roundToHalfStar } from '@/lib/scoring/roundToHalfStar'
 import { formatLongDayInAppTimeZone } from '@/lib/utilities/appTimeZone'
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
@@ -6,7 +7,9 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0,
 })
 
-export const formatScore = (score: number) => score.toFixed(2)
+export const formatScore = formatHalfStarScore
+
+export const roundScore = roundToHalfStar
 
 export const formatCurrency = (amount: number) => currencyFormatter.format(amount)
 

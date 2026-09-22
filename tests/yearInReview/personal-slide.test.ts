@@ -21,11 +21,11 @@ describe('personal slide', () => {
 
     const slide = buildPersonalSlide(2026, viewer.memberId, visits, [buildYearDraw(1, viewer)], [viewer, friend])
 
-    expect(slide?.heroValue).toBe('3.50')
+    expect(slide?.heroValue).toBe('3.5')
     expect(slide?.title).toBe('Você deu 3 notas em 2026')
     expect(slide?.entries.map((entry) => [entry.label, entry.value])).toEqual([
       ['no ranking de carrasco', '1º de 2'],
-      ['seu lugar favorito', '4.50'],
+      ['seu lugar favorito', '4.5'],
       ['sorteios que você ganhou', '1'],
     ])
     expect(slide?.entries[1].detail).toBe('Favorite')

@@ -21,7 +21,7 @@ describe('best and worst slide', () => {
 
     expect(slide?.title).toBe('Imported Place levou o ano')
     expect(slide?.entries[1].detail).toContain('Rated Place')
-    expect(slide?.heroScore).toBe(4.8)
+    expect(slide?.heroScore).toBe(5)
   })
 
   it('quotes the harshest comment left on the worst visit', () => {

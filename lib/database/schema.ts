@@ -57,6 +57,7 @@ export const restaurants = pgTable(
     placeSource: text('place_source'),
     placeReference: text('place_reference'),
     photoImageKey: text('photo_image_key'),
+    publicShareToken: text('public_share_token').unique(),
     createdBy: uuid('created_by').references(() => members.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

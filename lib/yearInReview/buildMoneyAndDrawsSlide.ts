@@ -112,5 +112,6 @@ export const buildMoneyAndDrawsSlide = (
     quote: null,
     photoImageKey: null,
     avatar: null,
+    restaurantId: null,
   }
 }

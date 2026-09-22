@@ -1,5 +1,5 @@
 import { yearInReviewConfiguration } from './configuration'
-import { formatScore, pluralize } from './formatters'
+import { formatScore, pluralize, roundScore } from './formatters'
 import { rankMembersByStrictness } from './rankMembersByStrictness'
 import { buildSlideEntry } from './slideEntry'
 import type { YearMember, YearSlide, YearVisit } from './types'
@@ -23,13 +23,13 @@ export const buildStrictnessSlide = (visits: YearVisit[], members: YearMember[])
     title: `${strictest.member.displayName} é o carrasco da mesa`,
     heroValue: formatScore(strictest.averageScore),
     heroCaption: `média das notas de ${strictest.member.displayName}`,
-    heroScore: strictest.averageScore,
+    heroScore: roundScore(strictest.averageScore),
     entries: ranking.map((profile, index) =>
       buildSlideEntry({
         label: profile.member.displayName,
         value: formatScore(profile.averageScore),
         detail: describePosition(index, ranking.length - 1) ?? pluralize(profile.ratingCount, 'nota', 'notas'),
-        valueScore: profile.averageScore,
+        valueScore: roundScore(profile.averageScore),
         avatar: { name: profile.member.displayName, imageKey: profile.member.avatarImageKey },
       }),
     ),
@@ -39,5 +39,6 @@ export const buildStrictnessSlide = (visits: YearVisit[], members: YearMember[])
     },
     photoImageKey: null,
     avatar: { name: strictest.member.displayName, imageKey: strictest.member.avatarImageKey },
+    restaurantId: null,
   }
 }

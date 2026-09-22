@@ -1,5 +1,5 @@
 import { yearInReviewConfiguration } from './configuration'
-import { formatScore, formatShortDay } from './formatters'
+import { formatScore, formatShortDay, roundScore } from './formatters'
 import { listScoredVisits } from './resolveVisitScore'
 import { buildSlideEntry } from './slideEntry'
 import type { YearMember, YearSlide, YearVisit } from './types'
@@ -31,23 +31,24 @@ export const buildBestAndWorstSlide = (visits: YearVisit[], members: YearMember[
     title: `${best.visit.restaurantName} levou o ano`,
     heroValue: formatScore(best.score),
     heroCaption: `melhor nota · ${formatShortDay(best.visit.visitedAt)}`,
-    heroScore: best.score,
+    heroScore: roundScore(best.score),
     entries: [
       buildSlideEntry({
         label: 'melhor nota',
         value: formatScore(best.score),
         detail: best.visit.restaurantName,
-        valueScore: best.score,
+        valueScore: roundScore(best.score),
       }),
       buildSlideEntry({
         label: 'pior nota',
         value: formatScore(worst.score),
         detail: `${worst.visit.restaurantName} · ${formatShortDay(worst.visit.visitedAt)}`,
-        valueScore: worst.score,
+        valueScore: roundScore(worst.score),
       }),
     ],
     quote: findExtremeQuote(worst.visit, members, false) ?? findExtremeQuote(best.visit, members, true),
     photoImageKey: best.visit.photoImageKey,
     avatar: null,
+    restaurantId: best.visit.restaurantId,
   }
 }

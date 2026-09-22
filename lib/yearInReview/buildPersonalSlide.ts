@@ -1,4 +1,4 @@
-import { formatScore, pluralize } from './formatters'
+import { formatScore, pluralize, roundScore } from './formatters'
 import { rankMembersByStrictness } from './rankMembersByStrictness'
 import { buildSlideEntry } from './slideEntry'
 import type { YearDraw, YearMember, YearSlide, YearVisit } from './types'
@@ -32,7 +32,7 @@ export const buildPersonalSlide = (
     title: `Você deu ${pluralize(ownRatings.length, 'nota', 'notas')} em ${year}`,
     heroValue: formatScore(averageScore),
     heroCaption: 'sua média',
-    heroScore: averageScore,
+    heroScore: roundScore(averageScore),
     entries: [
       ...(strictnessPosition >= 0
         ? [
@@ -47,12 +47,13 @@ export const buildPersonalSlide = (
         label: 'seu lugar favorito',
         value: formatScore(favorite.score),
         detail: favorite.visit.restaurantName,
-        valueScore: favorite.score,
+        valueScore: roundScore(favorite.score),
       }),
       buildSlideEntry({ label: 'sorteios que você ganhou', value: String(drawWinCount) }),
     ],
     quote: null,
     photoImageKey: favorite.visit.photoImageKey,
     avatar: { name: member.displayName, imageKey: member.avatarImageKey },
+    restaurantId: favorite.visit.restaurantId,
   }
 }

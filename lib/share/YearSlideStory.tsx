@@ -10,6 +10,31 @@ export type YearSlideStoryImages = {
   entryAvatarDataUrls: Array<string | null>
 }
 
+const LearnMorePrompt = () => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 16,
+      marginTop: 'auto',
+      marginBottom: 44,
+      padding: '18px 32px',
+      borderRadius: 999,
+      backgroundColor: storyColors.accent,
+      color: storyColors.canvas,
+      fontSize: 32,
+      fontWeight: 600,
+    }}
+  >
+    saiba mais no link
+    <svg width={30} height={30} viewBox="0 0 24 24" fill="none" stroke={storyColors.canvas} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 17 17 7" />
+      <path d="M8 7h9v9" />
+    </svg>
+  </div>
+)
+
 const titleFontSize = (title: string) => {
   if (title.length > 48) return 72
   if (title.length > 32) return 84
@@ -100,6 +125,8 @@ export const YearSlideStory = ({ year, slide, images }: { year: number; slide: Y
           <div style={{ display: 'flex', marginTop: 10, fontSize: 26, color: storyColors.inkFaint }}>— {slide.quote.author}</div>
         </div>
       ) : null}
+
+      {slide.restaurantId ? <LearnMorePrompt /> : null}
     </StoryFrame>
   )
 }

@@ -56,6 +56,7 @@ export type YearSlide = {
   quote: { text: string; author: string } | null
   photoImageKey: string | null
   avatar: YearSlideAvatar | null
+  restaurantId: string | null
 }
 
 export type YearInReviewInput = {
