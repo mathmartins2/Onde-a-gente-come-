@@ -8,7 +8,7 @@ const minimumVideoSeconds = 4.5
 const crossfadeSeconds = 0.6
 const maximumZoom = 1.12
 const zoomStepPerFrame = 0.0009
-const oversampledPhotoSize = 1296
+const oversampledPhotoSize = 1400
 
 const cardLeadInSeconds = 0.3
 const cardVisibleSeconds = 2.4
@@ -63,8 +63,12 @@ export const buildCardHorizontalExpression = ({ startSeconds, endSeconds }: Stor
   return `if(lt(${localTime},${cardEnterSeconds}),${entering},if(lt(${localTime},${formatSeconds(visibleSeconds - cardExitSeconds)}),${drifting},${exiting}))`
 }
 
-export const resolveCardBaseY = (scoreCardBounds: OpaqueBounds | null) =>
-  scoreCardBounds ? scoreCardBounds.y - memberCardCanvasSize.height - cardGapAboveScoreCard : fallbackCardBaseY
+export const resolveCardBaseY = (scoreCardBounds: OpaqueBounds | null, headerBounds: OpaqueBounds | null = null) => {
+  if (!scoreCardBounds) return fallbackCardBaseY
+  if (!headerBounds) return scoreCardBounds.y - memberCardCanvasSize.height - cardGapAboveScoreCard
+  const freeSpaceCenter = (headerBounds.y + headerBounds.height + scoreCardBounds.y) / 2
+  return Math.round(freeSpaceCenter - memberCardCanvasSize.height / 2)
+}
 
 export const buildCardVerticalExpression = ({ startSeconds }: StoryVideoCardWindow, cardBaseY: number) =>
   `${cardBaseY}+${cardBobPixels}*sin(2*PI*(t-${formatSeconds(startSeconds)})/${cardBobPeriodSeconds})`
@@ -174,6 +178,7 @@ export const buildStoryVideoFilterGraph = (
   photoCount: number,
   cardCount: number,
   borderLightBounds: OpaqueBounds | null = null,
+  headerBounds: OpaqueBounds | null = null,
 ) => {
   const { clipSeconds, cardWindows, totalSeconds } = planStoryVideoTimeline(photoCount, cardCount)
   const foregroundInputIndex = photoCount
@@ -193,7 +198,7 @@ export const buildStoryVideoFilterGraph = (
   return [
     ...buildBackground(photoCount, clipSeconds, totalSeconds),
     `[background][${foregroundInputIndex}:v]overlay=0:0:format=auto[layered]`,
-    ...buildCardOverlays(cardWindows, foregroundInputIndex + 1, resolveCardBaseY(borderLightBounds)),
+    ...buildCardOverlays(cardWindows, foregroundInputIndex + 1, resolveCardBaseY(borderLightBounds, headerBounds)),
     ...borderLightFilters,
     `${finalLabel}format=yuv420p[story]`,
   ].join(';')

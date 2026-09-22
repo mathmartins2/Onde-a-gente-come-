@@ -244,6 +244,22 @@ export const visitDishPhotos = pgTable(
   (table) => [index('visit_dish_photos_visit_index').on(table.visitId)],
 )
 
+export const storyRenders = pgTable(
+  'story_renders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    visitId: uuid('visit_id')
+      .notNull()
+      .references(() => visits.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    fingerprint: text('fingerprint').notNull(),
+    status: text('status').notNull(),
+    imageKey: text('image_key'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('story_renders_visit_kind_unique').on(table.visitId, table.kind)],
+)
+
 export const drawSessions = pgTable('draw_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   roundNumber: integer('round_number').notNull().unique(),

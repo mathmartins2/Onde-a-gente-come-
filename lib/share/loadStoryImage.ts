@@ -1,5 +1,6 @@
 import { extractImageAccentColor } from '@/lib/images/extractImageAccentColor'
 import { normalizeImage, type ImagePresetName } from '@/lib/images/normalizeImage'
+import { prepareLogoForStory } from '@/lib/images/prepareLogoForStory'
 import { resolveImageStorage } from '@/lib/images/resolveImageStorage'
 import { storyColors } from './storyTheme'
 
@@ -10,6 +11,18 @@ export const loadStoryImageDataUrl = async (imageKey: string | null, presetName:
     if (!storedImage) return null
     const resizedImage = await normalizeImage(storedImage.bytes, presetName)
     return `data:${resizedImage.contentType};base64,${resizedImage.bytes.toString('base64')}`
+  } catch {
+    return null
+  }
+}
+
+export const loadStoryLogoDataUrl = async (imageKey: string | null) => {
+  if (!imageKey) return null
+  try {
+    const storedImage = await resolveImageStorage().readImage(imageKey)
+    if (!storedImage) return null
+    const logo = await prepareLogoForStory(storedImage.bytes)
+    return `data:image/png;base64,${logo.toString('base64')}`
   } catch {
     return null
   }

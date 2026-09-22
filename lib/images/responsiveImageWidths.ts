@@ -1,4 +1,4 @@
-export const responsiveImageWidths = [160, 320, 480, 640, 960, 1280] as const
+export const responsiveImageWidths = [160, 320, 480, 640, 960, 1280, 1600] as const
 
 export type ResponsiveImageWidth = (typeof responsiveImageWidths)[number]
 

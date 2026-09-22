@@ -17,13 +17,13 @@ describe('image normalization', () => {
     expect(detectImageFormat(normalized.bytes)).toBe('webp')
   })
 
-  it('stores dish photos as webp no larger than 1280 pixels', async () => {
+  it('stores dish photos as webp no larger than 1600 pixels', async () => {
     const original = await buildImage(3000, 4000).jpeg().toBuffer()
 
     const normalized = await normalizeImage(original, 'dishPhoto')
 
     expect(normalized.contentType).toBe('image/webp')
-    expect([normalized.width, normalized.height]).toEqual([960, 1280])
+    expect([normalized.width, normalized.height]).toEqual([1200, 1600])
   })
 
   it('keeps story renders in jpeg so the story renderer can draw them', async () => {

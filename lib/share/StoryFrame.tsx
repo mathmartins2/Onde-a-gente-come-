@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { AppMark } from './StoryGlyphs'
-import { storyColors, storyFontFamilies, storyPhotoAreaHeight, storySize } from './storyTheme'
+import { storyColors, storyFontFamilies, storyPhotoAreaHeight, storySize, withAlpha } from './storyTheme'
 
 const photoHeight = storyPhotoAreaHeight
 
@@ -9,12 +9,14 @@ export const StoryFrame = ({
   backgroundPhotoDataUrl,
   leavesPhotoAreaTransparent = false,
   isLayoutMask = false,
+  glowColor = storyColors.accent,
   children,
 }: {
   eyebrow: string
   backgroundPhotoDataUrl?: string | null
   leavesPhotoAreaTransparent?: boolean
   isLayoutMask?: boolean
+  glowColor?: string
   children: ReactNode
 }) => (
   <div
@@ -61,7 +63,7 @@ export const StoryFrame = ({
         height: photoHeight,
         backgroundImage: backgroundPhotoDataUrl || leavesPhotoAreaTransparent
           ? `linear-gradient(180deg, rgba(13, 10, 9, 0.35) 0%, rgba(13, 10, 9, 0.3) 28%, rgba(13, 10, 9, 0.82) 58%, ${storyColors.canvas} 84%)`
-          : `radial-gradient(circle at 78% 18%, rgba(255, 107, 53, 0.42) 0%, rgba(214, 74, 23, 0.14) 38%, ${storyColors.canvas} 72%)`,
+          : `radial-gradient(circle at 78% 18%, ${withAlpha(glowColor, 0.4)} 0%, ${withAlpha(glowColor, 0.13)} 38%, ${storyColors.canvas} 72%)`,
       }}
     />
 

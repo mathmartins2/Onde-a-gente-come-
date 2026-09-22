@@ -9,7 +9,7 @@ describe('responsive image widths', () => {
   })
 
   it('never serves more than the largest allowed width', () => {
-    expect(pickResponsiveWidth(4000)).toBe(1280)
+    expect(pickResponsiveWidth(4000)).toBe(1600)
   })
 
   it('only accepts widths from the allowlist when parsing a request', () => {

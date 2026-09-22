@@ -35,7 +35,7 @@ describe('best and worst slide', () => {
     expect(slide?.quote).toEqual({ text: 'Cold food', author: 'Caio' })
   })
 
-  it('carries the best restaurant photo as the slide background', () => {
+  it('falls back to the best restaurant photo when nobody photographed a dish', () => {
     const best = buildYearVisit({ legacyScore: 5, photoImageKey: 'best-photo' })
     const worst = buildYearVisit({ legacyScore: 2, photoImageKey: 'worst-photo' })
 

@@ -1,8 +1,9 @@
+import { createHash } from 'node:crypto'
 import { eq, inArray } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { normalizeImage } from '@/lib/images/normalizeImage'
 import { resolveImageStorage } from '@/lib/images/resolveImageStorage'
-import { loadStoryImageAccentColor, loadStoryImageDataUrl } from '@/lib/share/loadStoryImage'
+import { loadStoryImageAccentColor, loadStoryImageDataUrl, loadStoryLogoDataUrl } from '@/lib/share/loadStoryImage'
 import type { VisitStoryData } from '@/lib/share/VisitStory'
 import { formatLongDayInAppTimeZone } from '@/lib/utilities/appTimeZone'
 import { listDishPhotoKeysByVisit } from './dishPhotoService'
@@ -46,7 +47,8 @@ export const loadVisitStory = async (visitId: string): Promise<VisitStoryOutcome
   const dishPhotoKeys = (await listDishPhotoKeysByVisit([visitId])).get(visitId) ?? []
   const [backgroundDishPhotoKey, ...polaroidDishPhotoKeys] = dishPhotoKeys
 
-  const [photoDataUrl, logoAccentColor, backgroundDishPhotoDataUrl, dishPolaroidDataUrls, avatarDataUrls] = await Promise.all([
+  const [photoDataUrl, restaurantBackgroundDataUrl, logoAccentColor, backgroundDishPhotoDataUrl, dishPolaroidDataUrls, avatarDataUrls] = await Promise.all([
+    loadStoryLogoDataUrl(visit.photoImageKey),
     loadStoryImageDataUrl(visit.photoImageKey, 'storyBackground'),
     loadStoryImageAccentColor(visit.photoImageKey),
     loadStoryImageDataUrl(backgroundDishPhotoKey ?? null, 'storyBackground'),
@@ -70,7 +72,7 @@ export const loadVisitStory = async (visitId: string): Promise<VisitStoryOutcome
       neighborhood: visit.neighborhood,
       visitDayLabel: formatLongDayInAppTimeZone(visit.visitedAt),
       photoDataUrl,
-      backgroundPhotoDataUrl: backgroundDishPhotoDataUrl ?? photoDataUrl,
+      backgroundPhotoDataUrl: backgroundDishPhotoDataUrl ?? restaurantBackgroundDataUrl,
       dishPolaroidDataUrls: dishPolaroidDataUrls.flatMap((dataUrl) => (dataUrl ? [dataUrl] : [])),
       logoAccentColor,
       finalScore: reveal.finalScore,
@@ -93,7 +95,7 @@ const maximumStoryVideoPhotoCount = 6
 const loadStoryVideoPhoto = async (imageKey: string) => {
   const storedImage = await resolveImageStorage().readImage(imageKey)
   if (!storedImage) return null
-  return (await normalizeImage(storedImage.bytes, 'storyBackground')).bytes
+  return (await normalizeImage(storedImage.bytes, 'storyVideoPhoto')).bytes
 }
 
 const loadRestaurantPhotoKey = async (visitId: string) => {
@@ -112,4 +114,42 @@ export const loadVisitStoryVideoPhotos = async (visitId: string) => {
   const backgroundKeys = restaurantPhotoKey ? [restaurantPhotoKey] : dishPhotoKeys
   const photos = await Promise.all(backgroundKeys.slice(0, maximumStoryVideoPhotoCount).map(loadStoryVideoPhoto))
   return photos.flatMap((photo) => (photo ? [photo] : []))
+}
+
+export const loadVisitStoryFingerprint = async (visitId: string, renderRevision: string) => {
+  const [visitRows, reveal, dishPhotoKeysByVisit] = await Promise.all([
+    database
+      .select({
+        restaurantName: schema.restaurants.name,
+        neighborhood: schema.restaurants.neighborhood,
+        photoImageKey: schema.restaurants.photoImageKey,
+        visitedAt: schema.visits.visitedAt,
+      })
+      .from(schema.visits)
+      .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
+      .where(eq(schema.visits.id, visitId))
+      .limit(1),
+    loadRevealedVisit(visitId),
+    listDishPhotoKeysByVisit([visitId]),
+  ])
+  const memberIds = reveal?.revealed ? reveal.ratings.map((rating) => rating.memberId) : []
+  const avatarRows =
+    memberIds.length > 0
+      ? await database
+          .select({ id: schema.members.id, avatarImageKey: schema.members.avatarImageKey })
+          .from(schema.members)
+          .where(inArray(schema.members.id, memberIds))
+      : []
+
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        renderRevision,
+        visit: visitRows.at(0) ?? null,
+        reveal,
+        dishPhotoKeys: dishPhotoKeysByVisit.get(visitId) ?? [],
+        avatars: [...avatarRows].sort((first, second) => first.id.localeCompare(second.id)),
+      }),
+    )
+    .digest('hex')
 }

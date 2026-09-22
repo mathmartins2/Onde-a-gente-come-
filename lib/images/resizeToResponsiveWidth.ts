@@ -2,7 +2,7 @@ import sharp from 'sharp'
 import type { StoredImage } from './imageStorage'
 import type { ResponsiveImageWidth } from './responsiveImageWidths'
 
-const responsiveQuality = 76
+const responsiveQuality = 84
 
 export const resizeToResponsiveWidth = async (image: StoredImage, width: ResponsiveImageWidth | null): Promise<StoredImage> => {
   if (!width) return image

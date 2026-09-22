@@ -236,7 +236,7 @@ const DishPolaroids = ({ photoDataUrls }: { photoDataUrls: string[] }) => (
 
 const RestaurantLogoFace = ({ restaurantName, photoDataUrl }: { restaurantName: string; photoDataUrl: string | null }) => {
   if (photoDataUrl) {
-    return <img src={photoDataUrl} width={restaurantLogoSize} height={restaurantLogoSize} style={{ objectFit: 'cover' }} alt="" />
+    return <img src={photoDataUrl} width={restaurantLogoSize} height={restaurantLogoSize} style={{ objectFit: 'contain' }} alt="" />
   }
 
   return (
@@ -317,11 +317,12 @@ const resolveScoreCardAppearance = (variant: VisitStoryVariant) => {
   return 'staticAccent' as const
 }
 
-export type VisitStoryVariant = 'image' | 'videoForeground' | 'scoreCardOutline'
+export type VisitStoryVariant = 'image' | 'videoForeground' | 'scoreCardOutline' | 'headerOutline'
 
 export const VisitStory = ({ data, variant = 'image' }: { data: VisitStoryData; variant?: VisitStoryVariant }) => {
   const isVideoForeground = variant !== 'image'
   const isOutlineMask = variant === 'scoreCardOutline'
+  const isHeaderMask = variant === 'headerOutline'
   const polaroidDataUrls = isVideoForeground ? [] : data.dishPolaroidDataUrls
   const roundedFinalScore = roundToHalfStar(data.finalScore)
   const finalScoreColor = scoreHexFor(roundedFinalScore)
@@ -337,7 +338,8 @@ export const VisitStory = ({ data, variant = 'image' }: { data: VisitStoryData; 
       eyebrow="nota da mesa"
       backgroundPhotoDataUrl={isVideoForeground ? null : data.backgroundPhotoDataUrl}
       leavesPhotoAreaTransparent={isVideoForeground && data.backgroundPhotoDataUrl !== null}
-      isLayoutMask={isOutlineMask}
+      isLayoutMask={isOutlineMask || isHeaderMask}
+      glowColor={data.logoAccentColor ?? storyColors.accent}
     >
       {polaroidDataUrls.length > 0 ? <DishPolaroids photoDataUrls={polaroidDataUrls} /> : null}
       <div
@@ -345,9 +347,11 @@ export const VisitStory = ({ data, variant = 'image' }: { data: VisitStoryData; 
           display: 'flex',
           flexDirection: 'column',
           opacity: isOutlineMask ? 0 : 1,
+          backgroundColor: isHeaderMask ? storyColors.ink : 'transparent',
           marginTop: polaroidDataUrls.length > 0 ? 196 : data.backgroundPhotoDataUrl ? 130 : 40,
         }}
       >
+        <div style={{ display: 'flex', flexDirection: 'column', opacity: isHeaderMask ? 0 : 1 }}>
         <div style={{ display: 'flex', marginBottom: 34 }}>
           <RestaurantLogo
             restaurantName={data.restaurantName}
@@ -370,11 +374,12 @@ export const VisitStory = ({ data, variant = 'image' }: { data: VisitStoryData; 
         <div style={{ display: 'flex', marginTop: 20, fontSize: 32, color: storyColors.inkMuted }}>
           {[data.neighborhood, data.visitDayLabel].filter(Boolean).join('  ·  ')}
         </div>
+        </div>
       </div>
 
       {isVideoForeground ? null : <MemberReceipt ratings={data.ratings} />}
 
-      <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', marginBottom: 44 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', marginBottom: 44, opacity: isHeaderMask ? 0 : 1 }}>
         <ScoreCard
           roundedFinalScore={roundedFinalScore}
           finalScoreColor={finalScoreColor}

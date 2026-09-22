@@ -52,7 +52,7 @@ export const buildPersonalSlide = (
       buildSlideEntry({ label: 'sorteios que você ganhou', value: String(drawWinCount) }),
     ],
     quote: null,
-    photoImageKey: favorite.visit.photoImageKey,
+    photoImageKey: favorite.visit.dishPhotoKeys.at(0) ?? favorite.visit.photoImageKey,
     avatar: { name: member.displayName, imageKey: member.avatarImageKey },
     restaurantId: favorite.visit.restaurantId,
     galleryImageKeys: [],

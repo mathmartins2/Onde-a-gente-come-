@@ -57,6 +57,7 @@ export const renderStoryVideo = async (input: {
   photoJpegs: Buffer[]
   cardPngs: Buffer[]
   borderLight: { outlinePng: Buffer; colorHex: string } | null
+  headerOutlinePng: Buffer | null
 }) => {
   const workingDirectory = await mkdtemp(join(tmpdir(), 'story-video-'))
   try {
@@ -66,6 +67,7 @@ export const renderStoryVideo = async (input: {
     const outlinePath = join(workingDirectory, 'outline.png')
     const spotPath = join(workingDirectory, 'spot.png')
     const borderLightBounds = input.borderLight ? await measureOutline(input.borderLight.outlinePng) : null
+    const headerBounds = input.headerOutlinePng ? await measureOutline(input.headerOutlinePng) : null
     const borderLightFiles =
       input.borderLight && borderLightBounds
         ? [
@@ -89,11 +91,11 @@ export const renderStoryVideo = async (input: {
       ...loopedStill(foregroundPath),
       ...cardPaths.flatMap(loopedStill),
       ...(borderLightBounds ? [...loopedStill(outlinePath), ...loopedStill(spotPath)] : []),
-      '-filter_complex', buildStoryVideoFilterGraph(input.photoJpegs.length, input.cardPngs.length, borderLightBounds),
+      '-filter_complex', buildStoryVideoFilterGraph(input.photoJpegs.length, input.cardPngs.length, borderLightBounds, headerBounds),
       '-map', '[story]',
       '-t', durationSeconds,
       '-r', String(storyVideoFramesPerSecond),
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '19', '-pix_fmt', 'yuv420p',
       '-movflags', '+faststart',
       outputPath,
     ])

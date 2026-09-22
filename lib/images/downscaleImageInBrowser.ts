@@ -1,5 +1,5 @@
-const maximumUploadDimension = 1600
-const uploadQuality = 0.88
+const maximumUploadDimension = 2048
+const uploadQuality = 0.92
 
 const canvasToJpegBlob = (canvas: HTMLCanvasElement) =>
   new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', uploadQuality))
