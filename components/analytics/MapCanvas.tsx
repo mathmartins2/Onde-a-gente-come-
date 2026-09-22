@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Map as MapLibreMap, Marker, NavigationControl, Popup, type StyleSpecification } from 'maplibre-gl'
+import { palette, withAlpha } from '@/lib/theme/palette'
 import { colorForScore, type MapPoint } from './VisitedMap'
 
 const vectorStyleUrl = 'https://tiles.openfreemap.org/styles/dark'
@@ -37,7 +38,7 @@ const buildPinElement = (point: MapPoint) => {
     'display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;cursor:pointer'
 
   const chip = document.createElement('span')
-  chip.style.cssText = `font-family:ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:0.02em;color:#f8f0e7;background:rgba(23,17,14,0.94);border:1px solid ${color};border-radius:999px;padding:2px 7px`
+  chip.style.cssText = `font-family:ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:0.02em;color:${palette.ink};background:${withAlpha(palette.surface, 0.94)};border:1px solid ${color};border-radius:999px;padding:2px 7px`
   chip.textContent = point.name
 
   const score = document.createElement('span')
@@ -46,7 +47,7 @@ const buildPinElement = (point: MapPoint) => {
   chip.appendChild(score)
 
   const dot = document.createElement('span')
-  dot.style.cssText = `width:11px;height:11px;border-radius:999px;background:${color};border:2px solid rgba(23,17,14,0.94);box-shadow:0 0 0 2px ${color}44`
+  dot.style.cssText = `width:11px;height:11px;border-radius:999px;background:${color};border:2px solid ${withAlpha(palette.surface, 0.94)};box-shadow:0 0 0 2px ${color}44`
 
   wrapper.append(chip, dot)
   return wrapper

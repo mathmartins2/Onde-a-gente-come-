@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { QueryProvider } from '@/components/providers/QueryProvider'
+import { palette } from '@/lib/theme/palette'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0d0a09',
+  themeColor: palette.canvas,
   width: 'device-width',
   initialScale: 1,
 }

@@ -27,10 +27,10 @@ export const YearSlideView = ({ slide }: { slide: ClientYearSlide }) => {
       {slide.photoUrl ? (
         <div className="absolute inset-x-0 top-0 h-[55%]">
           <img src={slide.photoUrl} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(13,10,9,0.35)_0%,rgba(13,10,9,0.3)_30%,rgba(13,10,9,0.85)_70%,var(--canvas)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--canvas)_35%,transparent)_0%,color-mix(in_srgb,var(--canvas)_30%,transparent)_30%,color-mix(in_srgb,var(--canvas)_85%,transparent)_70%,var(--canvas)_100%)]" />
         </div>
       ) : (
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_14%,rgba(255,107,53,0.38)_0%,rgba(214,74,23,0.12)_38%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_14%,color-mix(in_srgb,var(--accent)_38%,transparent)_0%,color-mix(in_srgb,var(--accent-press)_12%,transparent)_38%,transparent_70%)]" />
       )}
 
       <div className={classNames('relative flex flex-1 flex-col px-6 pb-6', slide.photoUrl ? 'pt-[28vh]' : 'pt-20')}>

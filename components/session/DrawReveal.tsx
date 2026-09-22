@@ -3,6 +3,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useMemo, useState } from 'react'
 import { Ban } from 'lucide-react'
+import { SparkBurst } from '@/components/ui/SparkBurst'
+import { SplitFlapBoard } from '@/components/ui/SplitFlapBoard'
+import { minimumBoardColumns, toBoardRows } from '@/lib/utilities/splitFlapRows'
 
 export type DrawRevealData = {
   restaurantId: string | null
@@ -16,49 +19,14 @@ export type DrawRevealData = {
 type Stage = 'spinning' | 'tiebreak' | 'banned' | 'fallback' | 'winner'
 
 const scrambleAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-const minimumBoardColumns = 6
-const maximumBoardColumns = 16
 const scrambleTickInMilliseconds = 55
 const spinDurationInMilliseconds = 2500
 const tiebreakDurationInMilliseconds = 2600
 const bannedDurationInMilliseconds = 2400
 const fallbackDurationInMilliseconds = 2600
 
-const toBoardCells = (value: string) => {
-  const normalized = value.toUpperCase().trim().slice(0, maximumBoardColumns)
-  const width = Math.max(normalized.length, minimumBoardColumns)
-  return normalized.padEnd(width, ' ').split('')
-}
-
 const randomCharacter = () =>
   scrambleAlphabet[Math.floor(Math.random() * scrambleAlphabet.length)]
-
-const FlapBoard = ({ cells, isSettled }: { cells: string[]; isSettled: boolean }) => (
-  <div className="flex flex-wrap justify-center gap-[3px]">
-    {cells.map((character, index) => (
-      <span
-        key={`${index}-${character}`}
-        className={`board-grain relative flex h-9 w-[18px] items-center justify-center rounded-[3px] border border-hairline-strong bg-surface-sunken font-mono text-[15px] font-bold leading-none text-accent-hover shadow-[inset_0_-6px_10px_-8px_rgba(0,0,0,0.9)] ${isSettled ? 'flap-cell' : ''}`}
-        style={isSettled ? { animationDelay: `${index * 42}ms` } : undefined}
-      >
-        <span className="absolute inset-x-0 top-1/2 h-px bg-black/50" />
-        {character === ' ' ? ' ' : character}
-      </span>
-    ))}
-  </div>
-)
-
-const Embers = () => (
-  <>
-    {[12, 34, 58, 76, 88].map((leftPercentage, index) => (
-      <span
-        key={leftPercentage}
-        className="ember pointer-events-none absolute bottom-6 h-1 w-1 rounded-full bg-[var(--accent)]"
-        style={{ left: `${leftPercentage}%`, animationDelay: `${index * 380}ms` }}
-      />
-    ))}
-  </>
-)
 
 export const DrawReveal = ({
   data,
@@ -76,18 +44,18 @@ export const DrawReveal = ({
   const wasBanDecidedByTiebreak = data.wasBanDecidedByTiebreak
 
   const [stage, setStage] = useState<Stage>('spinning')
-  const winnerCells = useMemo(() => toBoardCells(winner?.name ?? 'RESTAURANTE'), [winner?.name])
-  const boardColumnCount = winnerCells.length
+  const winnerRows = useMemo(() => toBoardRows(winner?.name ?? 'RESTAURANTE'), [winner?.name])
+  const boardCellCount = winnerRows.flat().length
 
-  const [scrambledCells, setScrambledCells] = useState<string[]>(() =>
+  const [scrambledRows, setScrambledRows] = useState<string[][]>(() => [
     Array.from({ length: minimumBoardColumns }, randomCharacter),
-  )
+  ])
 
   useEffect(() => {
     if (stage !== 'spinning' && stage !== 'tiebreak') return
 
     const ticker = setInterval(() => {
-      setScrambledCells(Array.from({ length: boardColumnCount }, randomCharacter))
+      setScrambledRows(winnerRows.map((row) => row.map(randomCharacter)))
     }, scrambleTickInMilliseconds)
 
     if (stage === 'tiebreak') return () => clearInterval(ticker)
@@ -103,7 +71,7 @@ export const DrawReveal = ({
       clearInterval(ticker)
       clearTimeout(advance)
     }
-  }, [stage, boardColumnCount, hasBan, wasBanDecidedByTiebreak, hasFallback])
+  }, [stage, winnerRows, hasBan, wasBanDecidedByTiebreak, hasFallback])
 
   useEffect(() => {
     if (stage === 'tiebreak') {
@@ -142,7 +110,7 @@ export const DrawReveal = ({
               destino de hoje
             </p>
             <div className="board-shake mt-6">
-              <FlapBoard cells={scrambledCells} isSettled={false} />
+              <SplitFlapBoard rows={scrambledRows} isSettled={false} />
             </div>
             <div className="mx-auto mt-7 h-[3px] w-40 overflow-hidden rounded-full bg-surface-2">
               <motion.div
@@ -170,7 +138,7 @@ export const DrawReveal = ({
               {data.tiedRestaurantNames.join(' · ')}
             </p>
             <div className="board-shake mt-6">
-              <FlapBoard cells={scrambledCells} isSettled={false} />
+              <SplitFlapBoard rows={scrambledRows} isSettled={false} />
             </div>
             <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">
               sorteando quem cai
@@ -239,13 +207,14 @@ export const DrawReveal = ({
             className="relative px-5 py-14 text-center"
           >
             <span className="spotlight-bloom pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)]" />
-            <Embers />
+            <SparkBurst className="left-[9%] top-[30%] z-10" />
+            <SparkBurst className="right-[9%] top-[30%] z-10" />
 
             <div
               className="pointer-events-none absolute inset-0 opacity-70"
               style={{
                 background:
-                  'radial-gradient(120% 70% at 50% 0%, rgba(255,107,53,0.22) 0%, transparent 62%)',
+                  'radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 62%)',
               }}
             />
 
@@ -254,13 +223,13 @@ export const DrawReveal = ({
             </p>
 
             <div className="relative mt-6">
-              <FlapBoard cells={winnerCells} isSettled />
+              <SplitFlapBoard rows={winnerRows} isSettled />
             </div>
 
             <motion.p
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: boardColumnCount * 0.042 + 0.15 }}
+              transition={{ delay: boardCellCount * 0.042 + 0.15 }}
               className="font-display relative mt-6 px-2 text-3xl font-semibold leading-[1.05] tracking-tight"
             >
               {winner?.name ?? 'Restaurante'}
@@ -269,7 +238,7 @@ export const DrawReveal = ({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: boardColumnCount * 0.042 + 0.45 }}
+              transition={{ delay: boardCellCount * 0.042 + 0.45 }}
               className="relative mt-3 flex flex-col items-center gap-1.5"
             >
               <p className="text-sm text-ink-muted">

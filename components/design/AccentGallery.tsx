@@ -21,19 +21,9 @@ type AccentCandidate = {
 
 const accentCandidates: AccentCandidate[] = [
   {
-    key: 'brasa',
-    name: 'Brasa',
-    rationale: 'A identidade de hoje, com os degraus arrumados. Continuidade total.',
-    accent: '#ff6b35',
-    accentHover: '#ff8352',
-    accentPress: '#d64a17',
-    onAccent: '#1d0c04',
-    contrastOnCanvas: '7.4:1',
-  },
-  {
     key: 'pimenta',
     name: 'Pimenta',
-    rationale: 'Mais festivo e menos comum que laranja. Puxa pro clima de rolê.',
+    rationale: 'A identidade de hoje. Quente e festivo sem cair no laranja de forno a lenha.',
     accent: '#ff4d6d',
     accentHover: '#ff7189',
     accentPress: '#c9184a',
@@ -43,12 +33,32 @@ const accentCandidates: AccentCandidate[] = [
   {
     key: 'limao',
     name: 'Limão',
-    rationale: 'O maior contraste dos três no escuro. Lê como comida fresca.',
+    rationale: 'O maior contraste no grafite. Lê como comida fresca.',
     accent: '#a8dd52',
     accentHover: '#c2ea7d',
     accentPress: '#7fb02f',
     onAccent: '#101806',
-    contrastOnCanvas: '12.8:1',
+    contrastOnCanvas: '12.2:1',
+  },
+  {
+    key: 'ciano',
+    name: 'Ciano',
+    rationale: 'Frio e elétrico. Afasta de vez o clima de pizzaria.',
+    accent: '#3ddbd9',
+    accentHover: '#6fe6e4',
+    accentPress: '#1fa9a7',
+    onAccent: '#031716',
+    contrastOnCanvas: '11.5:1',
+  },
+  {
+    key: 'brasa',
+    name: 'Brasa (antiga)',
+    rationale: 'A identidade anterior, só pra comparação.',
+    accent: '#ff6b35',
+    accentHover: '#ff8352',
+    accentPress: '#d64a17',
+    onAccent: '#1d0c04',
+    contrastOnCanvas: '6.9:1',
   },
 ]
 
@@ -78,11 +88,11 @@ const AccentPreview = ({ candidate }: { candidate: AccentCandidate }) => (
         <span className="text-caption text-ink-faint">sorteio 18 set às 13:58 · fomos 19 set</span>
       </div>
 
-      <p className="text-heading-md">Forneria1121</p>
+      <p className="text-heading-md">Cantina da Esquina</p>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between">
-          <span className="text-body-sm">Forneria1121</span>
+          <span className="text-body-sm">Cantina da Esquina</span>
           <span className="text-numeric text-body-sm text-accent">82.4%</span>
         </div>
         <Meter value={0.824} />
@@ -147,7 +157,7 @@ export const AccentGallery = () => {
           size="small"
           onClick={() => setFocusedKey(null)}
         >
-          Ver os três
+          Ver todos
         </Button>
         {accentCandidates.map((candidate) => (
           <Button
@@ -163,7 +173,7 @@ export const AccentGallery = () => {
 
       <SectionHeading title="Candidatos" hint={`${visibleCandidates.length} em tela`} />
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-2">
         {visibleCandidates.map((candidate) => (
           <AccentPreview key={candidate.key} candidate={candidate} />
         ))}

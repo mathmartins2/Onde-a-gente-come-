@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient } from '@/lib/http/apiClient'
 import { scoreHexFor, scoreToneHex } from '@/lib/utilities/scoreTone'
+import { palette } from '@/lib/theme/palette'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 export type MapPoint = {
@@ -20,7 +21,7 @@ export type MapPoint = {
   visitCount: number
 }
 
-const unratedColor = '#b0a094'
+const unratedColor = palette.inkMuted
 
 export const colorForScore = (score: number | null) =>
   score === null ? unratedColor : scoreHexFor(score)

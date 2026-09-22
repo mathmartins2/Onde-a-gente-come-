@@ -48,7 +48,7 @@ export const YearInReviewScreen = () => {
   return (
     <div className="flex flex-col gap-4">
       <Card className="relative flex flex-col gap-5 overflow-hidden py-8">
-        <span className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[radial-gradient(circle,rgba(255,107,53,0.45),transparent_68%)]" />
+        <span className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_45%,transparent),transparent_68%)]" />
         <div className="relative">
           <p className="text-micro-cap text-accent">retrospectiva</p>
           <h1 className="font-display mt-1 text-display-hero">{yearInReview.year}</h1>

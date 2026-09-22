@@ -10,6 +10,7 @@ import { ScoreRating } from '@/components/ui/ScoreRating'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { hasSeenScoreReveal, rememberScoreReveal } from '@/lib/utilities/scoreRevealMemory'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
+import { SparkBurst } from '@/components/ui/SparkBurst'
 
 export type RevealedRating = {
   memberId: string
@@ -137,13 +138,8 @@ export const ScoreReveal = ({
         >
           <Card className="relative overflow-hidden border-accent/50 py-10 text-center">
             <span className="spotlight-bloom pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
-            {[14, 38, 62, 86].map((leftPercentage, index) => (
-              <span
-                key={leftPercentage}
-                className="ember pointer-events-none absolute bottom-6 h-1 w-1 rounded-full bg-accent"
-                style={{ left: `${leftPercentage}%`, animationDelay: `${index * 400}ms` }}
-              />
-            ))}
+            <SparkBurst className="left-[22%] top-24 z-10" />
+            <SparkBurst className="right-[22%] top-24 z-10" />
 
             <p className="relative text-micro-cap text-accent">nota final</p>
             <p

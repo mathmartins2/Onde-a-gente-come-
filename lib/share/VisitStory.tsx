@@ -27,7 +27,7 @@ const restaurantNameFontSize = (restaurantName: string) => {
 const restaurantLogoSize = 164
 const restaurantLogoFrameSize = 214
 const receiptNotchSize = 36
-const translucentSurface = 'rgba(23, 17, 14, 0.9)'
+const translucentSurface = withAlpha(storyColors.surface, 0.9)
 const scoreCardBorderWidth = 2
 const outlineMaskBorderWidth = 5
 const scoreCardRadius = 36
@@ -74,7 +74,7 @@ const ScoreCard = ({
         opacity: appearance === 'outlineMask' ? 0 : 1,
       }}
     >
-      <div style={{ display: 'flex', fontSize: 24, fontWeight: 600, letterSpacing: 5, textTransform: 'uppercase', color: storyColors.accent }}>
+      <div style={{ display: 'flex', fontSize: 24, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: storyColors.accent }}>
         nota final
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 6 }}>
@@ -157,7 +157,7 @@ const MemberReceipt = ({ ratings }: { ratings: VisitStoryData['ratings'] }) => (
         marginBottom: 14,
         borderBottom: `3px dashed ${storyColors.hairline}`,
         fontSize: 24,
-        letterSpacing: 5,
+        letterSpacing: 1.5,
         textTransform: 'uppercase',
         color: storyColors.inkFaint,
       }}

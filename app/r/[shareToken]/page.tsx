@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { UtensilsCrossed } from 'lucide-react'
 import { PublicDishGallery } from '@/components/restaurants/PublicDishGallery'
+import { BrandMark } from '@/components/ui/BrandMark'
 import { Card } from '@/components/ui/Card'
 import { Meter } from '@/components/ui/Meter'
 import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
@@ -45,7 +45,7 @@ const PublicRestaurantPage = async (props: PageProps<'/r/[shareToken]'>) => {
 
       <div className="relative mx-auto flex w-full max-w-md flex-col gap-5">
         <span className="inline-flex items-center gap-2 self-start rounded-pill border border-hairline-strong bg-surface-1 px-3 py-1.5 text-micro-cap text-ink-muted">
-          <UtensilsCrossed size={12} strokeWidth={2.6} className="text-accent" />
+          <BrandMark size={14} />
           Onde a gente come
         </span>
 

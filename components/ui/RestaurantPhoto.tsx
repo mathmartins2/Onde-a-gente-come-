@@ -12,7 +12,7 @@ export const RestaurantPhoto = ({
   <span
     aria-hidden
     className={classNames(
-      'relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-hairline bg-[linear-gradient(145deg,var(--accent-hover),var(--accent-press))]',
+      'relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-hairline bg-accent',
       className,
     )}
   >

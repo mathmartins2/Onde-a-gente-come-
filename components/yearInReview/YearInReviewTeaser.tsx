@@ -50,7 +50,7 @@ export const YearInReviewTeaser = () => {
   const year = resolveYearInAppTimeZone(new Date())
 
   return (
-    <div className="relative mb-4 flex items-center gap-3 overflow-hidden rounded-xl border border-accent/40 bg-[linear-gradient(120deg,rgba(255,107,53,0.2),rgba(255,61,120,0.12))] p-4">
+    <div className="relative mb-4 flex items-center gap-3 overflow-hidden rounded-xl border border-accent/40 bg-[linear-gradient(120deg,color-mix(in_srgb,var(--accent)_20%,transparent),color-mix(in_srgb,var(--berry)_12%,transparent))] p-4">
       <Sparkles size={22} className="shrink-0 text-accent" />
       <Link href="/retrospective" className="min-w-0 flex-1">
         <p className="text-heading-sm">Sua retrospectiva {year} tá pronta</p>

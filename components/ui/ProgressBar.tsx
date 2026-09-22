@@ -16,7 +16,7 @@ export const ProgressBar = ({ percentage, label, className }: { percentage: numb
     >
       <div
         style={{ width: `${visiblePercentage}%` }}
-        className="relative h-full overflow-hidden rounded-pill bg-[linear-gradient(90deg,var(--accent-press),var(--accent),var(--accent-hover))] shadow-[0_0_12px_color-mix(in_srgb,var(--accent)_45%,transparent)] transition-[width] duration-700 ease-out"
+        className="relative h-full overflow-hidden rounded-pill bg-accent transition-[width] duration-700 ease-out"
       >
         <span
           aria-hidden
@@ -26,7 +26,7 @@ export const ProgressBar = ({ percentage, label, className }: { percentage: numb
       <span
         aria-hidden
         style={{ left: `calc(${visiblePercentage}% - 5px)` }}
-        className="progress-tip pointer-events-none absolute top-1/2 h-2.5 w-2.5 rounded-full bg-[var(--accent-hover)] shadow-[0_0_10px_var(--accent)] transition-[left] duration-700 ease-out"
+        className="progress-tip pointer-events-none absolute top-1/2 h-2.5 w-2.5 rounded-full bg-[var(--accent-hover)] ring-2 ring-surface-sunken transition-[left] duration-700 ease-out"
       />
     </div>
   )

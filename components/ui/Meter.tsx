@@ -22,7 +22,7 @@ export const Meter = ({ value, tone = 'accent', className }: MeterProps) => {
         className={classNames(
           'h-full rounded-pill transition-[width] duration-500 ease-out',
           tone === 'accent'
-            ? 'bg-[linear-gradient(90deg,var(--accent-press),var(--accent))]'
+            ? 'bg-accent'
             : 'bg-hairline-strong',
         )}
       />

@@ -51,7 +51,7 @@ export const YearSlideStory = ({ year, slide, images }: { year: number; slide: Y
             <StoryAvatar name={slide.avatar.name} imageDataUrl={images.avatarDataUrl} size={150} />
           </div>
         ) : null}
-        <div style={{ display: 'flex', fontSize: 30, letterSpacing: 5, textTransform: 'uppercase', color: storyColors.accent, fontWeight: 600 }}>
+        <div style={{ display: 'flex', fontSize: 30, letterSpacing: 1.5, textTransform: 'uppercase', color: storyColors.accent, fontWeight: 600 }}>
           {slide.eyebrow}
         </div>
         <div

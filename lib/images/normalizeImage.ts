@@ -1,5 +1,6 @@
 import sharp, { type Sharp } from 'sharp'
 import type { StoredImageInput } from './imageStorage'
+import { palette } from '@/lib/theme/palette'
 
 export const maximumUploadByteSize = 8 * 1024 * 1024
 
@@ -54,7 +55,7 @@ const decodeAndResize = async (bytes: Buffer, presetName: ImagePresetName) => {
         fit: preset.fit,
         withoutEnlargement: preset.fit === 'inside',
       })
-      .flatten({ background: '#0d0a09' })
+      .flatten({ background: palette.canvas })
     return await encodeByFormat[preset.format](resizedPipeline, preset.quality).toBuffer({ resolveWithObject: true })
   } catch {
     throw new UnsupportedImageError('Não consegui ler essa imagem. Tenta um JPG ou PNG.')

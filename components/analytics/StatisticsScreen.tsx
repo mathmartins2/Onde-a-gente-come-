@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { apiClient } from '@/lib/http/apiClient'
+import { palette } from '@/lib/theme/palette'
 
 type FrequencyBucket = { period: string; visitCount: number }
 
@@ -47,8 +48,8 @@ type StatisticsResponse = {
 }
 
 const tooltipStyle = {
-  background: '#1d1d28',
-  border: '1px solid #2a2a38',
+  background: palette.surfaceRaised,
+  border: `1px solid ${palette.hairlineStrong}`,
   borderRadius: 12,
   fontSize: 12,
 }
@@ -61,7 +62,7 @@ const formatMonthLabel = (period: string) => {
 const formatFullDate = (value: string) =>
   format(new Date(value), "d 'de' MMM 'de' yyyy", { locale: ptBR })
 
-const chartColors = ['#ff6b35', '#ff8f5e', '#ffb08a', '#ffc9ae', '#ffe0d2']
+const chartColors = [palette.accent, palette.accentHover, '#ff9aab', '#ffc0cb', '#ffe0e5']
 
 type CuisineChartProps = {
   cuisines: Array<{ cuisine: string; visitCount: number }>
@@ -76,7 +77,7 @@ const CuisineChart = dynamic<CuisineChartProps>(
         <BarChart data={cuisines} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
           <XAxis
             dataKey="cuisine"
-            tick={{ fill: '#9a9aae', fontSize: 11 }}
+            tick={{ fill: palette.inkMuted, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
           />
@@ -84,8 +85,8 @@ const CuisineChart = dynamic<CuisineChartProps>(
             cursor={{ fill: '#ffffff08' }}
             formatter={(value) => [`${value} rolê(s)`, '']}
             contentStyle={tooltipStyle}
-            labelStyle={{ color: '#f2f2f5', fontWeight: 600 }}
-            itemStyle={{ color: '#ff6b35' }}
+            labelStyle={{ color: palette.ink, fontWeight: 600 }}
+            itemStyle={{ color: palette.accent }}
           />
           <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} maxBarSize={64}>
             {cuisines.map((entry, index) => (
@@ -124,7 +125,7 @@ const SpendingChart = dynamic<SpendingChartProps>(
             <XAxis
               dataKey="period"
               tickFormatter={formatMonthLabel}
-              tick={{ fill: '#9a9aae', fontSize: 10 }}
+              tick={{ fill: palette.inkMuted, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
@@ -133,14 +134,14 @@ const SpendingChart = dynamic<SpendingChartProps>(
               labelFormatter={(label) => formatMonthLabel(String(label))}
               formatter={(value) => [currencyFormatter.format(Number(value)), '']}
               contentStyle={tooltipStyle}
-              labelStyle={{ color: '#f2f2f5', fontWeight: 600 }}
-              itemStyle={{ color: '#a8dd52' }}
+              labelStyle={{ color: palette.ink, fontWeight: 600 }}
+              itemStyle={{ color: palette.herb }}
             />
             <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={48}>
               {buckets.map((bucket) => (
                 <Cell
                   key={bucket.period}
-                  fill={bucket.total === highestTotal ? '#ff6b35' : '#a8dd52'}
+                  fill={bucket.total === highestTotal ? palette.accent : palette.herb}
                 />
               ))}
             </Bar>
@@ -168,7 +169,7 @@ const MonthlyChart = dynamic<MonthlyChartProps>(
           <XAxis
             dataKey="period"
             tickFormatter={formatMonthLabel}
-            tick={{ fill: '#9a9aae', fontSize: 10 }}
+            tick={{ fill: palette.inkMuted, fontSize: 10 }}
             axisLine={false}
             tickLine={false}
           />
@@ -177,9 +178,9 @@ const MonthlyChart = dynamic<MonthlyChartProps>(
             labelFormatter={(label) => formatMonthLabel(String(label))}
             formatter={(value) => [`${value} rolê(s)`, '']}
             contentStyle={tooltipStyle}
-            labelStyle={{ color: '#f2f2f5' }}
+            labelStyle={{ color: palette.ink }}
           />
-          <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} fill="#ff6b35" maxBarSize={48} />
+          <Bar dataKey="visitCount" radius={[6, 6, 0, 0]} fill={palette.accent} maxBarSize={48} />
         </BarChart>
       </ResponsiveContainer>
     )

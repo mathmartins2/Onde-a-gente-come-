@@ -102,7 +102,7 @@ export const DishPhotos = ({ visitId, currentMemberId }: { visitId: string; curr
                   className="object-cover transition-transform duration-300 hover:scale-105"
                 />
               </button>
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-[linear-gradient(0deg,rgba(13,10,9,0.85),transparent)] px-1.5 pb-1 pt-3 text-[0.6875rem] text-ink">
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-[linear-gradient(0deg,color-mix(in_srgb,var(--canvas)_85%,transparent),transparent)] px-1.5 pb-1 pt-3 text-[0.6875rem] text-ink">
                 {photo.addedByName}
               </span>
               {photo.addedByMemberId === currentMemberId ? (
@@ -111,7 +111,7 @@ export const DishPhotos = ({ visitId, currentMemberId }: { visitId: string; curr
                   aria-label="Apagar foto"
                   disabled={removeMutation.isPending}
                   onClick={() => removeMutation.mutate(photo.id)}
-                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(13,10,9,0.75)] text-ink hover:text-accent"
+                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--canvas)_75%,transparent)] text-ink hover:text-accent"
                 >
                   <X size={13} />
                 </button>

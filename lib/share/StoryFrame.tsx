@@ -62,7 +62,7 @@ export const StoryFrame = ({
         width: storySize.width,
         height: photoHeight,
         backgroundImage: backgroundPhotoDataUrl || leavesPhotoAreaTransparent
-          ? `linear-gradient(180deg, rgba(13, 10, 9, 0.35) 0%, rgba(13, 10, 9, 0.3) 28%, rgba(13, 10, 9, 0.82) 58%, ${storyColors.canvas} 84%)`
+          ? `linear-gradient(180deg, ${withAlpha(storyColors.canvas, 0.35)} 0%, ${withAlpha(storyColors.canvas, 0.3)} 28%, ${withAlpha(storyColors.canvas, 0.82)} 58%, ${storyColors.canvas} 84%)`
           : `radial-gradient(circle at 78% 18%, ${withAlpha(glowColor, 0.4)} 0%, ${withAlpha(glowColor, 0.13)} 38%, ${storyColors.canvas} 72%)`,
       }}
     />
@@ -83,12 +83,12 @@ export const StoryFrame = ({
           opacity: isLayoutMask ? 0 : 1,
           padding: '12px 26px',
           borderRadius: 999,
-          backgroundColor: 'rgba(13, 10, 9, 0.72)',
+          backgroundColor: withAlpha(storyColors.canvas, 0.72),
           border: `2px solid ${storyColors.hairline}`,
           color: storyColors.accentHover,
           fontSize: 28,
           fontWeight: 600,
-          letterSpacing: 5,
+          letterSpacing: 1.5,
           textTransform: 'uppercase',
         }}
       >
@@ -109,10 +109,33 @@ export const StoryFrame = ({
       >
         <AppMark size={84} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', fontFamily: storyFontFamilies.display, fontSize: 50, fontWeight: 900 }}>
-            Onde a gente&nbsp;<span style={{ color: storyColors.accent }}>come</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: 14,
+              fontFamily: storyFontFamilies.display,
+              fontSize: 50,
+              fontWeight: 800,
+              lineHeight: 1.1,
+            }}
+          >
+            Onde a gente
+            <span
+              style={{
+                display: 'flex',
+                marginLeft: 14,
+                padding: '0 12px 2px',
+                borderRadius: 10,
+                color: storyColors.onAccent,
+                backgroundColor: storyColors.accent,
+                transform: 'rotate(-2deg)',
+              }}
+            >
+              come
+            </span>
           </div>
-          <div style={{ display: 'flex', fontSize: 26, color: storyColors.inkFaint, letterSpacing: 4, textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', fontSize: 26, color: storyColors.inkFaint, letterSpacing: 1.5, textTransform: 'uppercase' }}>
             Recife · sorteio e nota da mesa
           </div>
         </div>

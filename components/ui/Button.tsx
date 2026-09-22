@@ -5,12 +5,12 @@ import type { ButtonHTMLAttributes } from 'react'
 import { classNames } from '@/lib/utilities/classNames'
 
 const buttonVariants = cva(
-  'relative inline-flex items-center justify-center gap-2 rounded-pill text-button-cap transition-[transform,background-color,border-color,color,box-shadow] duration-200 ease-out disabled:opacity-45 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:scale-[0.97]',
+  'relative inline-flex items-center justify-center gap-2 rounded-lg text-button-cap transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out disabled:opacity-45 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px',
   {
     variants: {
       variant: {
         primary:
-          'bg-[linear-gradient(140deg,var(--accent-hover),var(--accent)_58%,var(--accent-press))] text-on-accent shadow-[var(--elevation-accent)] hover:brightness-110 hover:-translate-y-px',
+          'bg-accent text-on-accent shadow-[0_3px_0_var(--accent-press)] hover:bg-accent-hover active:translate-y-[2px] active:shadow-[0_1px_0_var(--accent-press)]',
         secondary:
           'border border-hairline-strong bg-surface-2 text-ink hover:border-accent hover:text-accent-hover',
         ghost:

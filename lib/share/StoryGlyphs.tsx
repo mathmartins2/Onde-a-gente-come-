@@ -1,4 +1,5 @@
-import { storyColors } from './storyTheme'
+import { brandMarkPinPath, brandMarkStrokeWidth, brandMarkUtensilPaths, brandMarkViewBox } from '@/lib/theme/brandMark'
+import { storyColors, withAlpha } from './storyTheme'
 
 const utensilsPaths = [
   'm16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8',
@@ -16,20 +17,20 @@ export const UtensilsGlyph = ({ size, color, strokeWidth = 2.2 }: { size: number
 )
 
 export const AppMark = ({ size }: { size: number }) => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: size,
-      height: size,
-      borderRadius: size * 0.25,
-      transform: 'rotate(-6deg)',
-      backgroundImage: `linear-gradient(140deg, #ff9c63, ${storyColors.accent} 58%, ${storyColors.accentPress})`,
-    }}
-  >
-    <UtensilsGlyph size={size * 0.56} color={storyColors.onAccent} strokeWidth={2.4} />
-  </div>
+  <svg width={size} height={size} viewBox={brandMarkViewBox}>
+    <path d={brandMarkPinPath} fill={storyColors.accent} />
+    {brandMarkUtensilPaths.map((utensil) => (
+      <path
+        key={utensil.key}
+        d={utensil.path}
+        fill={utensil.isFilled ? storyColors.canvas : 'none'}
+        stroke={storyColors.canvas}
+        strokeWidth={brandMarkStrokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ))}
+  </svg>
 )
 
 const forkPositions = [0, 1, 2, 3, 4]
@@ -73,7 +74,7 @@ export const StoryAvatar = ({ name, imageDataUrl, size }: { name: string; imageD
       borderRadius: size,
       overflow: 'hidden',
       border: `3px solid ${storyColors.hairline}`,
-      backgroundColor: 'rgba(255, 107, 53, 0.16)',
+      backgroundColor: withAlpha(storyColors.accent, 0.16),
       color: storyColors.accentHover,
       fontSize: size * 0.4,
       fontWeight: 600,

@@ -2,7 +2,7 @@ import { formatHalfStarScore, roundToHalfStar } from '@/lib/scoring/roundToHalfS
 import { scoreHexFor } from '@/lib/utilities/scoreTone'
 import { memberCardCanvasSize } from './buildStoryVideoFilterGraph'
 import { StoryAvatar } from './StoryGlyphs'
-import { storyColors, storyFontFamilies } from './storyTheme'
+import { storyColors, storyFontFamilies, withAlpha } from './storyTheme'
 
 export type MemberScoreCardData = {
   displayName: string
@@ -86,7 +86,7 @@ export const MemberScoreCard = ({ card }: { card: MemberScoreCardData }) => {
             right: 30,
             padding: '6px 22px',
             borderRadius: 999,
-            backgroundColor: 'rgba(13, 10, 9, 0.88)',
+            backgroundColor: withAlpha(storyColors.canvas, 0.88),
             border: `3px solid ${scoreHexFor(roundedScore)}`,
             color: scoreHexFor(roundedScore),
             fontSize: 56,
@@ -101,7 +101,7 @@ export const MemberScoreCard = ({ card }: { card: MemberScoreCardData }) => {
           <div style={{ display: 'flex', fontSize: 30, fontWeight: 600, color: storyColors.canvas }}>{card.displayName}</div>
         </div>
         {card.comment ? (
-          <div style={{ display: 'flex', maxWidth: cardPhotoWidth, marginTop: 8, fontSize: 22, color: '#5b4d44' }}>
+          <div style={{ display: 'flex', maxWidth: cardPhotoWidth, marginTop: 8, fontSize: 22, color: withAlpha(storyColors.canvas, 0.68) }}>
             “{shortenComment(card.comment)}”
           </div>
         ) : null}

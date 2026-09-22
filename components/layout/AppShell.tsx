@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Dices, History, LogOut, User, UtensilsCrossed } from 'lucide-react'
 import { apiClient } from '@/lib/http/apiClient'
 import { Avatar } from '@/components/ui/Avatar'
+import { BrandMark } from '@/components/ui/BrandMark'
 import { classNames } from '@/lib/utilities/classNames'
 
 const homeHref = '/'
@@ -57,14 +58,12 @@ export const AppShell = ({ displayName, avatarUrl, children }: AppShellProps) =>
         className="hidden shrink-0 border-r border-hairline lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:flex-col lg:gap-1 lg:p-4"
       >
         <Link href={homeHref} className="mb-6 flex flex-col gap-2 px-2">
-          <span className="flex h-10 w-10 shrink-0 -rotate-6 items-center justify-center rounded-xl bg-[linear-gradient(140deg,var(--accent-hover),var(--accent-press))] text-on-accent shadow-[var(--elevation-accent)]">
-            <UtensilsCrossed size={19} strokeWidth={2.4} />
-          </span>
+          <BrandMark size={40} className="shrink-0" />
           <span>
             <span className="font-display block text-heading-lg leading-tight">
               Onde a gente
               <br />
-              <span className="text-accent">come</span>
+              <span className="highlighter-stroke">come</span>
             </span>
             <span className="mt-1 block text-micro-cap text-ink-faint">Recife · mesa pra seis</span>
           </span>
@@ -105,12 +104,10 @@ export const AppShell = ({ displayName, avatarUrl, children }: AppShellProps) =>
         <header className="sticky top-0 z-30 border-b border-hairline bg-[color-mix(in_srgb,var(--canvas)_82%,transparent)] backdrop-blur-xl lg:hidden">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
             <Link href={homeHref} className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 -rotate-6 items-center justify-center rounded-lg bg-[linear-gradient(140deg,var(--accent-hover),var(--accent-press))] text-on-accent">
-                <UtensilsCrossed size={17} strokeWidth={2.4} />
-              </span>
+              <BrandMark size={34} className="shrink-0" />
               <span className="min-w-0">
                 <span className="font-display block truncate text-heading-md">
-                  Onde a gente <span className="text-accent">come</span>
+                  Onde a gente <span className="highlighter-stroke">come</span>
                 </span>
                 <span className="block text-micro-cap text-ink-faint">Recife · mesa pra seis</span>
               </span>

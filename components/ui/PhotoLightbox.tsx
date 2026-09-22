@@ -99,7 +99,7 @@ export const PhotoLightbox = ({
           initial={shouldReduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-          className="fixed inset-0 z-50 flex flex-col bg-[rgba(7,5,5,0.94)] backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex flex-col bg-[color-mix(in_srgb,var(--canvas-deep)_94%,transparent)] backdrop-blur-sm"
           onClick={onClose}
         >
           <div className="flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
@@ -164,7 +164,7 @@ export const PhotoLightbox = ({
                     event.stopPropagation()
                     showPrevious()
                   }}
-                  className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(13,10,9,0.7)] text-ink hover:text-accent"
+                  className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--canvas)_70%,transparent)] text-ink hover:text-accent"
                 >
                   <ChevronLeft size={22} />
                 </button>
@@ -175,7 +175,7 @@ export const PhotoLightbox = ({
                     event.stopPropagation()
                     showNext()
                   }}
-                  className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(13,10,9,0.7)] text-ink hover:text-accent"
+                  className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--canvas)_70%,transparent)] text-ink hover:text-accent"
                 >
                   <ChevronRight size={22} />
                 </button>
