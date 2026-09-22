@@ -1,10 +1,14 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { asc, eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { restaurantSchema } from '@/lib/validation/schemas'
 import { regionConfiguration } from '@/lib/scoring/configuration'
 import { findOpenSession } from '@/lib/services/sessionService'
+import { importMissingRestaurantPhoto } from '@/lib/services/imageService'
+import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
+
+export const runtime = 'nodejs'
 
 export const GET = async () =>
   withMember(async (member) => {
@@ -23,6 +27,7 @@ export const GET = async () =>
         cuisines: schema.restaurants.cuisines,
         phone: schema.restaurants.phone,
         website: schema.restaurants.website,
+        photoImageKey: schema.restaurants.photoImageKey,
         createdBy: schema.restaurants.createdBy,
         createdByName: schema.members.displayName,
       })
@@ -31,8 +36,9 @@ export const GET = async () =>
       .orderBy(asc(schema.restaurants.name))
 
     return NextResponse.json({
-      restaurants: rows.map((restaurant) => ({
+      restaurants: rows.map(({ photoImageKey, ...restaurant }) => ({
         ...restaurant,
+        photoUrl: resolveImageUrl(photoImageKey),
         isMine: restaurant.createdBy === member.id,
         createdBy: shouldHideAuthorship ? null : restaurant.createdBy,
         createdByName: shouldHideAuthorship ? null : restaurant.createdByName,
@@ -78,6 +84,8 @@ export const POST = async (request: Request) =>
         createdBy: member.id,
       })
       .returning()
+
+    after(() => importMissingRestaurantPhoto(restaurant.id))
 
     return NextResponse.json({ restaurant, isOutsideRegion })
   })

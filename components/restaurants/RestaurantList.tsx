@@ -2,21 +2,24 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { ExternalLink, MapPin, Pencil, UtensilsCrossed, X } from 'lucide-react'
+import { ExternalLink, MapPin, Pencil, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
 import { apiClient } from '@/lib/http/apiClient'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
 import { RestaurantForm, type EditableRestaurant } from './RestaurantForm'
+import { RestaurantPhotoEditor } from './RestaurantPhotoEditor'
 
 type Restaurant = EditableRestaurant & {
   createdBy: string | null
   createdByName: string | null
   isMine: boolean
+  photoUrl: string | null
 }
 
 export const RestaurantList = () => {
@@ -89,6 +92,7 @@ export const RestaurantList = () => {
                     <X size={14} />
                   </Button>
                 </div>
+                <RestaurantPhotoEditor restaurant={restaurant} />
                 <RestaurantForm restaurant={restaurant} onCreated={closeEditor} />
               </div>
             )
@@ -97,9 +101,11 @@ export const RestaurantList = () => {
           return (
             <Card key={restaurant.id} className="flex flex-col gap-3">
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
-                  <UtensilsCrossed size={17} className="text-accent" />
-                </span>
+                <RestaurantPhoto
+                  name={restaurant.name}
+                  photoUrl={restaurant.photoUrl}
+                  className="h-14 w-14"
+                />
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-heading-sm">{restaurant.name}</p>

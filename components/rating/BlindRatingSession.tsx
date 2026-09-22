@@ -326,7 +326,11 @@ export const BlindRatingSession = ({ visitId }: { visitId: string }) => {
 
         {stage === 'revealed' && reveal ? (
           <motion.div key="revealed" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <ScoreReveal data={reveal} footnote="quem não indicou pesou mais nessa conta" />
+            <ScoreReveal
+              data={reveal}
+              footnote="quem não indicou pesou mais nessa conta"
+              shareImagePath={`/api/visits/${visitId}/story`}
+            />
           </motion.div>
         ) : null}
       </AnimatePresence>

@@ -6,6 +6,7 @@ import {
   type RestaurantRatingSummary,
 } from '@/lib/scoring/calculateRestaurantRanking'
 import { rankingConfiguration } from '@/lib/scoring/configuration'
+import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 
 const loadVisitScoreRows = async () => {
   const ratingRows = await database
@@ -93,6 +94,7 @@ export const loadRestaurantRanking = async () => {
     lastVisitedAt: lastVisitByRestaurant.get(entry.restaurantId) ?? null,
     neighborhood: restaurantById.get(entry.restaurantId)?.neighborhood ?? null,
     cuisines: restaurantById.get(entry.restaurantId)?.cuisines ?? [],
+    photoUrl: resolveImageUrl(restaurantById.get(entry.restaurantId)?.photoImageKey ?? null),
     ratingCount: summaries.find((summary) => summary.restaurantId === entry.restaurantId)?.weightTotal ?? 0,
   }))
 }
@@ -102,6 +104,7 @@ export const loadNominatorRanking = async () => {
     .select({
       memberId: schema.members.id,
       displayName: schema.members.displayName,
+      avatarImageKey: schema.members.avatarImageKey,
       restaurantId: schema.visits.restaurantId,
       score: schema.ratings.score,
       appliedWeight: schema.ratings.appliedWeight,
@@ -113,12 +116,19 @@ export const loadNominatorRanking = async () => {
 
   const accumulator = new Map<
     string,
-    { displayName: string; scoreSum: number; ratingCount: number; restaurantIds: Set<string> }
+    {
+      displayName: string
+      avatarImageKey: string | null
+      scoreSum: number
+      ratingCount: number
+      restaurantIds: Set<string>
+    }
   >()
 
   rows.forEach((row) => {
     const current = accumulator.get(row.memberId) ?? {
       displayName: row.displayName,
+      avatarImageKey: row.avatarImageKey,
       scoreSum: 0,
       ratingCount: 0,
       restaurantIds: new Set<string>(),
@@ -133,6 +143,7 @@ export const loadNominatorRanking = async () => {
     .map(([memberId, value]) => ({
       memberId,
       displayName: value.displayName,
+      avatarUrl: resolveImageUrl(value.avatarImageKey),
       averageScore: value.ratingCount === 0 ? null : value.scoreSum / value.ratingCount,
       restaurantCount: value.restaurantIds.size,
     }))
@@ -144,6 +155,7 @@ export const loadStrictnessProfile = async () => {
     .select({
       memberId: schema.members.id,
       displayName: schema.members.displayName,
+      avatarImageKey: schema.members.avatarImageKey,
       averageScore: sql<string | null>`avg(${schema.ratings.score})`,
       ratingCount: sql<number>`count(${schema.ratings.id})::int`,
     })
@@ -162,12 +174,13 @@ export const loadStrictnessProfile = async () => {
         ),
       ),
     )
-    .groupBy(schema.members.id, schema.members.displayName)
+    .groupBy(schema.members.id, schema.members.displayName, schema.members.avatarImageKey)
 
   return rows
     .map((row) => ({
       memberId: row.memberId,
       displayName: row.displayName,
+      avatarUrl: resolveImageUrl(row.avatarImageKey),
       averageScore: row.averageScore === null ? null : Number(row.averageScore),
       ratingCount: row.ratingCount,
     }))

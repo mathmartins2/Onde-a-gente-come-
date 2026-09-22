@@ -9,7 +9,11 @@ const ProfilePage = async () => {
   return (
     <>
       <SubTabs tabs={profileTabs} />
-      <ProfileScreen displayName={member.displayName} hasRatingPin={member.hasRatingPin} />
+      <ProfileScreen
+        displayName={member.displayName}
+        avatarUrl={member.avatarUrl}
+        hasRatingPin={member.hasRatingPin}
+      />
     </>
   )
 }

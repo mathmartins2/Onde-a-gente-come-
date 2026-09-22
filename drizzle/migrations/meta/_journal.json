@@ -99,6 +99,13 @@
       "when": 1789756475497,
       "tag": "0013_confirm_past_visit_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790043615302,
+      "tag": "0014_stored_images",
+      "breakpoints": true
     }
   ]
 }

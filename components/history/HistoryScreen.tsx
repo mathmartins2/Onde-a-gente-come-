@@ -2,7 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Ban, ChevronDown, ChevronUp, Trophy } from 'lucide-react'
+import { Ban, ChevronDown, ChevronUp } from 'lucide-react'
+import { Avatar } from '@/components/ui/Avatar'
+import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
 import { Card } from '@/components/ui/Card'
 import { ScoreRating } from '@/components/ui/ScoreRating'
 import { fetchHistory, type HistoryRating, type HistoryRound } from '@/lib/http/historyQueries'
@@ -29,15 +31,16 @@ const RatingRow = ({ rating }: { rating: HistoryRating }) => {
       <button
         onClick={() => setIsOpen((open) => !open)}
         disabled={!hasCriteria}
-        className="flex items-baseline justify-between gap-3 py-1 text-left text-sm disabled:cursor-default"
+        className="flex items-center justify-between gap-3 py-1 text-left text-sm disabled:cursor-default"
       >
-        <span className="min-w-0 truncate">
+        <span className="flex min-w-0 items-center gap-2 truncate">
           {hasCriteria ? (
             <ChevronDown
               size={11}
               className={`mr-1 inline-block text-ink-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
             />
           ) : null}
+          <Avatar name={rating.displayName} imageUrl={rating.avatarUrl} size="small" />
           {rating.displayName}
           {rating.isRecommender ? (
             <span className="ml-2 text-micro-cap text-ink-faint">indicou</span>
@@ -211,9 +214,11 @@ const RoundCard = ({ round }: { round: HistoryRound }) => {
     </div>
 
     <div className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
-        <Trophy size={17} className="text-accent" />
-      </span>
+      <RestaurantPhoto
+        name={round.winnerRestaurantName}
+        photoUrl={round.winnerRestaurantPhotoUrl}
+        className="mt-0.5 h-12 w-12"
+      />
       <div className="min-w-0">
         <p className="text-heading-md leading-tight">{round.winnerRestaurantName}</p>
         <p className="mt-0.5 text-caption">indicação de {round.winnerNominatedByName}</p>

@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionBar } from '@/components/ui/ActionBar'
+import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Collapsible } from '@/components/ui/Collapsible'
 import { Meter } from '@/components/ui/Meter'
@@ -679,6 +680,7 @@ export const SessionScreen = () => {
                     >
                       {participant.isReady ? '✓' : '·'}
                     </span>
+                    <Avatar name={participant.displayName} imageUrl={participant.avatarUrl} size="small" />
                     <span className="truncate">{participant.displayName}</span>
                     {participant.memberId === state.currentMemberId ? (
                       <Badge tone="accent" size="small">

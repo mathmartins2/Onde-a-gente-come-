@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto'
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { database, schema } from '@/lib/database/client'
+import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 import { calculateNominationWeight } from '@/lib/draw/calculateNominationWeight'
 import { calculateQualityMultiplier } from '@/lib/draw/calculateQualityMultiplier'
 import {
@@ -291,6 +292,7 @@ export const loadSessionState = async (sessionId: string, banTiebreakFraction?: 
     .select({
       memberId: schema.sessionParticipants.memberId,
       displayName: schema.members.displayName,
+      avatarImageKey: schema.members.avatarImageKey,
       isReady: schema.sessionParticipants.isReady,
       roundsSinceLastWin: schema.members.roundsSinceLastWin,
     })
@@ -426,6 +428,7 @@ export const loadSessionState = async (sessionId: string, banTiebreakFraction?: 
     participants: participantRows.map((row) => ({
       memberId: row.memberId,
       displayName: row.displayName,
+      avatarUrl: resolveImageUrl(row.avatarImageKey),
       isReady: row.isReady,
       rankedCount: preferencesByMember.get(row.memberId)?.length ?? 0,
     })),

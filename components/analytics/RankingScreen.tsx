@@ -1,7 +1,9 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
+import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
 import { ScoreRating } from '@/components/ui/ScoreRating'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeading } from '@/components/ui/SectionHeading'
@@ -21,16 +23,19 @@ type RankingResponse = {
     cuisines: string[]
     ratingCount: number
     lastVisitedAt: string | null
+    photoUrl: string | null
   }>
   nominators: Array<{
     memberId: string
     displayName: string
+    avatarUrl: string | null
     averageScore: number | null
     restaurantCount: number
   }>
   strictness: Array<{
     memberId: string
     displayName: string
+    avatarUrl: string | null
     averageScore: number | null
     ratingCount: number
     lastVisitedAt: string | null
@@ -41,15 +46,18 @@ const medals = ['🥇', '🥈', '🥉']
 
 const PersonRow = ({
   displayName,
+  avatarUrl,
   detail,
   score,
 }: {
   displayName: string
+  avatarUrl: string | null
   detail: string
   score: number | null
 }) => (
-  <div className="flex items-baseline justify-between gap-3">
-    <span className="min-w-0 truncate text-body-md">
+  <div className="flex items-center justify-between gap-3">
+    <span className="flex min-w-0 items-center gap-2.5 truncate text-body-md">
+      <Avatar name={displayName} imageUrl={avatarUrl} size="small" />
       {displayName}
       <span className="ml-2 text-caption">{detail}</span>
     </span>
@@ -111,6 +119,7 @@ export const RankingScreen = () => {
                 <span className="w-7 shrink-0 text-center text-heading-sm">
                   {medals[index] ?? <span className="text-numeric text-ink-faint">{index + 1}</span>}
                 </span>
+                <RestaurantPhoto name={restaurant.name} photoUrl={restaurant.photoUrl} className="h-12 w-12" />
                 <div className="min-w-0">
                   <p className="truncate text-body-md font-medium">{restaurant.name}</p>
                   <p className="truncate text-caption">
@@ -164,6 +173,7 @@ export const RankingScreen = () => {
               <PersonRow
                 key={nominator.memberId}
                 displayName={nominator.displayName}
+                avatarUrl={nominator.avatarUrl}
                 detail={`${nominator.restaurantCount} lugar(es)`}
                 score={nominator.averageScore}
               />
@@ -180,6 +190,7 @@ export const RankingScreen = () => {
               <PersonRow
                 key={member.memberId}
                 displayName={member.displayName}
+                avatarUrl={member.avatarUrl}
                 detail={`${member.ratingCount} nota(s)`}
                 score={member.averageScore}
               />

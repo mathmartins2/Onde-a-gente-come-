@@ -1,5 +1,11 @@
 import { SessionScreen } from '@/components/session/SessionScreen'
+import { YearInReviewTeaser } from '@/components/yearInReview/YearInReviewTeaser'
 
-const HomePage = () => <SessionScreen />
+const HomePage = () => (
+  <>
+    <YearInReviewTeaser />
+    <SessionScreen />
+  </>
+)
 
 export default HomePage

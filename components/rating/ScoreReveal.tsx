@@ -3,8 +3,10 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/Card'
+import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Meter } from '@/components/ui/Meter'
+import { ShareStoryButton } from '@/components/share/ShareStoryButton'
 import { ScoreRating } from '@/components/ui/ScoreRating'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
@@ -12,6 +14,7 @@ import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
 export type RevealedRating = {
   memberId: string
   displayName: string
+  avatarUrl?: string | null
   score: number
   comment: string | null
   isRecommender: boolean
@@ -32,7 +35,15 @@ const countUpDurationInMilliseconds = 1400
 
 const randomScore = () => (Math.random() * 5).toFixed(2)
 
-export const ScoreReveal = ({ data, footnote }: { data: ScoreRevealData; footnote?: string }) => {
+export const ScoreReveal = ({
+  data,
+  footnote,
+  shareImagePath,
+}: {
+  data: ScoreRevealData
+  footnote?: string
+  shareImagePath?: string
+}) => {
   const [stage, setStage] = useState<Stage>('tallying')
   const [scrambledScore, setScrambledScore] = useState(randomScore)
   const [visibleBallotCount, setVisibleBallotCount] = useState(0)
@@ -121,7 +132,8 @@ export const ScoreReveal = ({ data, footnote }: { data: ScoreRevealData; footnot
               transition={{ type: 'spring', stiffness: 220, damping: 22 }}
             >
               <Card className="flex items-center justify-between gap-3 py-3.5">
-                <div className="min-w-0">
+                <Avatar name={rating.displayName} imageUrl={rating.avatarUrl} />
+                <div className="min-w-0 flex-1">
                   <p className="text-body-md">
                     {rating.displayName}
                     {rating.isRecommender ? (
@@ -191,6 +203,16 @@ export const ScoreReveal = ({ data, footnote }: { data: ScoreRevealData; footnot
 
             {footnote ? <p className="relative mt-4 text-caption">{footnote}</p> : null}
           </Card>
+        </motion.div>
+      ) : null}
+
+      {stage === 'final' && shareImagePath && finalScore !== null ? (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: countUpDurationInMilliseconds / 1000 }}
+        >
+          <ShareStoryButton imagePath={shareImagePath} fileName="nota-da-mesa.png" className="w-full" />
         </motion.div>
       ) : null}
     </div>

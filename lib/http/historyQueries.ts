@@ -19,6 +19,7 @@ export type HistoryParticipant = {
 export type HistoryRating = {
   memberId: string
   displayName: string
+  avatarUrl: string | null
   score: number
   criteria: Record<string, number | null>
   comment: string | null
@@ -40,6 +41,7 @@ export type HistoryRound = {
   visitDateConfirmedAt: string | null
   winnerRestaurantId: string
   winnerRestaurantName: string
+  winnerRestaurantPhotoUrl: string | null
   winnerNominatedByName: string
   contenders: HistoryContender[]
   participants: HistoryParticipant[]

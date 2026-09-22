@@ -1,6 +1,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { calculateVisitScore } from '@/lib/scoring/calculateVisitScore'
+import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 
 type SnapshotContender = {
   restaurantId: string
@@ -71,6 +72,7 @@ export const loadHistory = async () => {
       weightSnapshot: schema.draws.weightSnapshot,
       winnerRestaurantId: schema.draws.restaurantId,
       winnerRestaurantName: schema.restaurants.name,
+      winnerRestaurantPhotoImageKey: schema.restaurants.photoImageKey,
       winnerNominatedByName: schema.members.displayName,
     })
     .from(schema.draws)
@@ -112,6 +114,7 @@ export const loadHistory = async () => {
       visitId: schema.ratings.visitId,
       memberId: schema.ratings.memberId,
       displayName: schema.members.displayName,
+      avatarImageKey: schema.members.avatarImageKey,
       score: schema.ratings.score,
       flavorScore: schema.ratings.flavorScore,
       priceScore: schema.ratings.priceScore,
@@ -140,6 +143,7 @@ export const loadHistory = async () => {
       ? visitRatings.map((rating) => ({
           memberId: rating.memberId,
           displayName: rating.displayName,
+          avatarUrl: resolveImageUrl(rating.avatarImageKey),
           score: Number(rating.score),
           criteria: {
             flavor: toOptionalNumber(rating.flavorScore),
@@ -172,6 +176,7 @@ export const loadHistory = async () => {
       visitDateConfirmedAt: visit?.visitDateConfirmedAt ?? null,
       winnerRestaurantId: draw.winnerRestaurantId,
       winnerRestaurantName: draw.winnerRestaurantName,
+      winnerRestaurantPhotoUrl: resolveImageUrl(draw.winnerRestaurantPhotoImageKey),
       winnerNominatedByName: draw.winnerNominatedByName,
       contenders: snapshot.contenders.map((contender) => ({
         restaurantId: contender.restaurantId,

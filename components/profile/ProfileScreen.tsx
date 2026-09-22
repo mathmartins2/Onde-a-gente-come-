@@ -4,7 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { ImagePicker } from '@/components/share/ImagePicker'
+import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, TextInput } from '@/components/ui/Field'
@@ -107,11 +110,50 @@ const PinCard = ({ hasRatingPin }: { hasRatingPin: boolean }) => {
   )
 }
 
+const AvatarCard = ({ displayName, avatarUrl }: { displayName: string; avatarUrl: string | null }) => {
+  const router = useRouter()
+
+  const removalMutation = useMutation({
+    mutationFn: () => apiClient.delete('/members/me/avatar'),
+    onSuccess: () => router.refresh(),
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível remover a foto')),
+  })
+
+  return (
+    <div className="flex items-center gap-4">
+      <Avatar name={displayName} imageUrl={avatarUrl} size="large" />
+      <div className="flex min-w-0 flex-col gap-2">
+        <h1 className="truncate text-heading-xl">{displayName}</h1>
+        <div className="flex flex-wrap gap-2">
+          <ImagePicker
+            uploadPath="/members/me/avatar"
+            label={avatarUrl ? 'Trocar foto' : 'Colocar foto'}
+            onUploaded={() => router.refresh()}
+          />
+          {avatarUrl ? (
+            <Button
+              variant="ghost"
+              size="small"
+              title="Remover foto"
+              disabled={removalMutation.isPending}
+              onClick={() => removalMutation.mutate()}
+            >
+              <Trash2 size={14} />
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export const ProfileScreen = ({
   displayName,
+  avatarUrl,
   hasRatingPin,
 }: {
   displayName: string
+  avatarUrl: string | null
   hasRatingPin: boolean
 }) => {
   const queryClient = useQueryClient()
@@ -136,7 +178,7 @@ export const ProfileScreen = ({
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-heading-xl">{displayName}</h1>
+      <AvatarCard displayName={displayName} avatarUrl={avatarUrl} />
 
       <Card className="flex flex-col gap-2">
         <h2 className="text-heading-sm">Minhas indicações</h2>

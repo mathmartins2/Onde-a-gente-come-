@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Dices, History, LogOut, User, UtensilsCrossed } from 'lucide-react'
 import { apiClient } from '@/lib/http/apiClient'
+import { Avatar } from '@/components/ui/Avatar'
 import { classNames } from '@/lib/utilities/classNames'
 
 const homeHref = '/'
@@ -20,7 +21,7 @@ const destinations = [
     href: '/history',
     label: 'Histórico',
     icon: History,
-    routes: ['/history', '/ranking', '/statistics', '/map'],
+    routes: ['/history', '/ranking', '/statistics', '/map', '/retrospective'],
   },
   { href: '/profile', label: 'Perfil', icon: User, routes: ['/profile', '/rules'] },
 ]
@@ -33,14 +34,13 @@ const matchesRoute = (pathname: string, route: string) => {
 const isDestinationActive = (pathname: string, routes: readonly string[]) =>
   routes.some((route) => matchesRoute(pathname, route))
 
-const initialLetterOf = (displayName: string) => displayName.trim().charAt(0).toUpperCase() || '?'
-
 type AppShellProps = {
   displayName: string
+  avatarUrl: string | null
   children: React.ReactNode
 }
 
-export const AppShell = ({ displayName, children }: AppShellProps) => {
+export const AppShell = ({ displayName, avatarUrl, children }: AppShellProps) => {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -96,9 +96,7 @@ export const AppShell = ({ displayName, children }: AppShellProps) => {
           onClick={signOut}
           className="mt-auto flex min-h-11 items-center gap-3 rounded-lg px-3 text-body-md text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-[11px] font-bold text-accent-hover">
-            {initialLetterOf(displayName)}
-          </span>
+          <Avatar name={displayName} imageUrl={avatarUrl} size="small" />
           Sair
         </button>
       </nav>
@@ -123,9 +121,7 @@ export const AppShell = ({ displayName, children }: AppShellProps) => {
               aria-label={`Sair da conta de ${displayName}`}
               className="group flex h-11 shrink-0 items-center gap-2 rounded-pill border border-hairline bg-surface-1 py-1 pl-1 pr-3 transition-colors hover:border-accent"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-[11px] font-bold text-accent-hover">
-                {initialLetterOf(displayName)}
-              </span>
+              <Avatar name={displayName} imageUrl={avatarUrl} size="small" className="h-8 w-8" />
               <LogOut
                 size={14}
                 strokeWidth={2.2}

@@ -3,6 +3,7 @@ import { apiClient } from './apiClient'
 export type SessionParticipantView = {
   memberId: string
   displayName: string
+  avatarUrl: string | null
   isReady: boolean
   rankedCount: number
 }

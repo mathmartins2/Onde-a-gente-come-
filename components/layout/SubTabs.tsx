@@ -47,6 +47,7 @@ export const historyTabs = [
   { href: '/ranking', label: 'Ranking' },
   { href: '/statistics', label: 'Números' },
   { href: '/map', label: 'Mapa' },
+  { href: '/retrospective', label: 'Retrospectiva' },
 ] as const
 
 export const profileTabs = [

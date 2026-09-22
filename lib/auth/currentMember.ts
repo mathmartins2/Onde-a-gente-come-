@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
+import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 import { buildCredentialFingerprint, getCurrentSession } from './session'
 
 export const getCurrentMember = cache(async () => {
@@ -16,6 +17,7 @@ export const getCurrentMember = cache(async () => {
       isAdmin: schema.members.isAdmin,
       passwordHash: schema.members.passwordHash,
       ratingPinHash: schema.members.ratingPinHash,
+      avatarImageKey: schema.members.avatarImageKey,
     })
     .from(schema.members)
     .where(eq(schema.members.id, claims.memberId))
@@ -32,6 +34,7 @@ export const getCurrentMember = cache(async () => {
     mustChangePassword: member.mustChangePassword,
     isAdmin: member.isAdmin,
     hasRatingPin: Boolean(member.ratingPinHash),
+    avatarUrl: resolveImageUrl(member.avatarImageKey),
   }
 })
 

@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -12,6 +13,20 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
+const binary = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => 'bytea',
+})
+
+export const storedImages = pgTable('stored_images', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  bytes: binary('bytes').notNull(),
+  contentType: text('content_type').notNull(),
+  width: integer('width').notNull(),
+  height: integer('height').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const members = pgTable('members', {
   id: uuid('id').primaryKey().defaultRandom(),
   username: text('username').notNull().unique(),
@@ -21,6 +36,7 @@ export const members = pgTable('members', {
   roundsSinceLastWin: integer('rounds_since_last_win').notNull().default(0),
   mustChangePassword: boolean('must_change_password').notNull().default(true),
   isAdmin: boolean('is_admin').notNull().default(false),
+  avatarImageKey: text('avatar_image_key'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -40,6 +56,7 @@ export const restaurants = pgTable(
     website: text('website'),
     placeSource: text('place_source'),
     placeReference: text('place_reference'),
+    photoImageKey: text('photo_image_key'),
     createdBy: uuid('created_by').references(() => members.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

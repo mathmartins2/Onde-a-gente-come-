@@ -4,6 +4,7 @@ import { verifySecret } from '@/lib/auth/password'
 import { assertNotLocked, clearFailures, registerFailure } from '@/lib/auth/rateLimit'
 import { resolveRatingWeight, calculateVisitScore } from '@/lib/scoring/calculateVisitScore'
 import { securityConfiguration } from '@/lib/scoring/configuration'
+import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 
 const pinPolicy = {
   maximumFailures: securityConfiguration.maximumPinAttemptsPerVisit,
@@ -215,6 +216,7 @@ export const loadRevealedVisit = async (visitId: string) => {
     .select({
       memberId: schema.ratings.memberId,
       displayName: schema.members.displayName,
+      avatarImageKey: schema.members.avatarImageKey,
       score: schema.ratings.score,
       flavorScore: schema.ratings.flavorScore,
       priceScore: schema.ratings.priceScore,
@@ -251,6 +253,7 @@ export const loadRevealedVisit = async (visitId: string) => {
     ratings: ratingRows.map((rating) => ({
       memberId: rating.memberId,
       displayName: rating.displayName,
+      avatarUrl: resolveImageUrl(rating.avatarImageKey),
       score: Number(rating.score),
       flavor: rating.flavorScore === null ? null : Number(rating.flavorScore),
       price: rating.priceScore === null ? null : Number(rating.priceScore),

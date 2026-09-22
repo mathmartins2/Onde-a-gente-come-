@@ -148,7 +148,7 @@ export const OwnRatingPanel = ({ visitId, currentMemberId, allMembers }: OwnRati
   const reveal = session?.reveal?.revealed ? session.reveal : null
 
   if (reveal) {
-    return <ScoreReveal data={reveal} />
+    return <ScoreReveal data={reveal} shareImagePath={`/api/visits/${visitId}/story`} />
   }
 
   return (
