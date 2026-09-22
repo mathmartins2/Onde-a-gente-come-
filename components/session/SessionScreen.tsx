@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ActionBar } from '@/components/ui/ActionBar'
 import { Avatar } from '@/components/ui/Avatar'
@@ -35,7 +36,9 @@ import {
 } from '@/lib/http/sessionQueries'
 import { sessionQueryKey, useSessionStream } from '@/lib/http/useSessionStream'
 import { DrawReveal } from './DrawReveal'
-import { PendingRatings } from './PendingRatings'
+import { CurrentRoundHero } from './CurrentRoundHero'
+import { PendingRatings, usePendingRatings } from './PendingRatings'
+import { pickCurrentRound } from '@/lib/session/pickCurrentRound'
 import { fetchHistory } from '@/lib/http/historyQueries'
 import { formatDrawMoment, formatVisitDay } from '@/lib/utilities/formatDate'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
@@ -140,8 +143,11 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
   isOpening: boolean
 }) => {
   const historyQuery = useQuery({ queryKey: ['history'], queryFn: fetchHistory })
+  const pendingQuery = usePendingRatings()
   const rounds = historyQuery.data ?? []
-  const lastRound = rounds.at(0)
+  const { currentRound, lastRevealedRound } = pickCurrentRound(rounds)
+  const lastRound = lastRevealedRound
+  const currentPendingVisit = pendingQuery.data?.find((visit) => visit.visitId === currentRound?.visitId) ?? null
   const ratedRounds = rounds.filter((round) => round.finalScore !== null)
   const averageScore =
     ratedRounds.length === 0
@@ -150,6 +156,19 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
 
   return (
     <div className="flex flex-col gap-4">
+      <PendingRatings excludedVisitId={currentRound?.visitId ?? null} />
+
+      {currentRound?.visitId ? (
+        <>
+          <CurrentRoundHero round={{ ...currentRound, visitId: currentRound.visitId }} pendingVisit={currentPendingVisit} />
+          {isAdmin ? (
+            <Button variant="secondary" onClick={onOpen} disabled={isOpening} className="self-center">
+              <Dices size={17} />
+              {isOpening ? 'Abrindo...' : 'Abrir próximo sorteio'}
+            </Button>
+          ) : null}
+        </>
+      ) : (
       <section className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-8 text-center">
         <span
           aria-hidden
@@ -172,6 +191,7 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
           </Button>
         ) : null}
       </section>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         <StatTile label="rodadas" value={String(rounds.length)} />
@@ -186,8 +206,15 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
       {lastRound ? (
         <Link href="/history" className="block">
           <Card className="flex items-center gap-3 transition-colors hover:border-accent">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-tint">
-              <Trophy size={18} className="text-accent" />
+            <span className="relative shrink-0">
+              <RestaurantPhoto
+                name={lastRound.winnerRestaurantName}
+                photoUrl={lastRound.winnerRestaurantPhotoUrl}
+                className="h-12 w-12 rounded-xl"
+              />
+              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-hairline-strong bg-surface-2">
+                <Trophy size={11} className="text-accent" />
+              </span>
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-micro-cap text-ink-faint">último rolê · rodada {lastRound.roundNumber}</p>
@@ -342,7 +369,6 @@ export const SessionScreen = () => {
   if (!state.session) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col justify-center gap-4 lg:min-h-[calc(100dvh-6rem)]">
-        <PendingRatings />
         <ClosedSession
           isAdmin={state.isAdmin}
           onOpen={() => openMutation.mutate()}

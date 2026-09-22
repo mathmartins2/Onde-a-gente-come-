@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ChevronRight, Star } from 'lucide-react'
 import { apiClient } from '@/lib/http/apiClient'
 
-type PendingVisit = {
+export type PendingVisit = {
   visitId: string
   restaurantName: string
   visitedAt: string
@@ -14,8 +14,8 @@ type PendingVisit = {
   hasMyRating: boolean
 }
 
-export const PendingRatings = () => {
-  const pendingQuery = useQuery({
+export const usePendingRatings = () =>
+  useQuery({
     queryKey: ['pending-ratings'],
     queryFn: async () => {
       const response = await apiClient.get<{ visits: PendingVisit[] }>('/visits/pending')
@@ -24,7 +24,10 @@ export const PendingRatings = () => {
     refetchInterval: 15000,
   })
 
-  const visits = pendingQuery.data ?? []
+export const PendingRatings = ({ excludedVisitId = null }: { excludedVisitId?: string | null }) => {
+  const pendingQuery = usePendingRatings()
+
+  const visits = (pendingQuery.data ?? []).filter((visit) => visit.visitId !== excludedVisitId)
   const awaitingMyRating = visits.filter((visit) => !visit.hasMyRating)
   const highlighted = awaitingMyRating.at(0) ?? visits.at(0)
   if (!highlighted) return null
