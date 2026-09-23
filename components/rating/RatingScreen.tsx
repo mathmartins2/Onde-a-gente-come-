@@ -26,6 +26,8 @@ type VisitSummary = {
   visitedAt: string
   usedFallback: boolean
   hasFallbackOption: boolean
+  drawnRestaurantName: string | null
+  fallbackRestaurantName: string | null
   ratedMemberIds: string[]
   isRevealed: boolean
 }
@@ -41,9 +43,11 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
     },
   })
 
+  const isRevealed = visitQuery.data?.isRevealed ?? false
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
-      {visitQuery.data?.isRevealed ? <StoryShareBar visitId={visitId} /> : null}
+      {isRevealed ? <StoryShareBar visitId={visitId} /> : null}
 
       <header className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-6 text-center">
         <span
@@ -69,31 +73,38 @@ export const RatingScreen = ({ visitId, currentMemberId }: RatingScreenProps) =>
         </div>
       </header>
 
-      <div className="flex gap-1 rounded-pill border border-hairline bg-surface-1 p-1">
-        <button
-          onClick={() => setIsPassAroundMode(false)}
-          className={classNames(
-            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill text-body-sm transition-colors',
-            isPassAroundMode ? 'text-ink-muted hover:text-ink' : 'bg-accent-tint font-semibold text-accent',
-          )}
-        >
-          <Smartphone size={15} />
-          No meu celular
-        </button>
-        <button
-          onClick={() => setIsPassAroundMode(true)}
-          className={classNames(
-            'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill text-body-sm transition-colors',
-            isPassAroundMode ? 'bg-accent-tint font-semibold text-accent' : 'text-ink-muted hover:text-ink',
-          )}
-        >
-          <Users size={15} />
-          Passando um só
-        </button>
-      </div>
+      {isRevealed ? null : (
+        <div className="flex gap-1 rounded-pill border border-hairline bg-surface-1 p-1">
+          <button
+            onClick={() => setIsPassAroundMode(false)}
+            className={classNames(
+              'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill text-body-sm transition-colors',
+              isPassAroundMode ? 'text-ink-muted hover:text-ink' : 'bg-accent-tint font-semibold text-accent',
+            )}
+          >
+            <Smartphone size={15} />
+            No meu celular
+          </button>
+          <button
+            onClick={() => setIsPassAroundMode(true)}
+            className={classNames(
+              'flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill text-body-sm transition-colors',
+              isPassAroundMode ? 'bg-accent-tint font-semibold text-accent' : 'text-ink-muted hover:text-ink',
+            )}
+          >
+            <Users size={15} />
+            Passando um só
+          </button>
+        </div>
+      )}
 
-      {visitQuery.data?.hasFallbackOption ? (
-        <FallbackToggle visitId={visitId} usedFallback={visitQuery.data.usedFallback} />
+      {!isRevealed && visitQuery.data?.fallbackRestaurantName ? (
+        <FallbackToggle
+          visitId={visitId}
+          usedFallback={visitQuery.data.usedFallback}
+          drawnRestaurantName={visitQuery.data.drawnRestaurantName}
+          fallbackRestaurantName={visitQuery.data.fallbackRestaurantName}
+        />
       ) : null}
 
       <PriceHistory visitId={visitId} />

@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { verifySecret } from '@/lib/auth/password'
 import { assertNotLocked, clearFailures, registerFailure } from '@/lib/auth/rateLimit'
@@ -19,9 +19,36 @@ export type RatingSessionState = {
   visitedAt: Date
   usedFallback: boolean
   hasFallbackOption: boolean
+  drawnRestaurantName: string | null
+  fallbackRestaurantName: string | null
   pendingMembers: Array<{ id: string; displayName: string; hasRatingPin: boolean }>
   ratedMemberIds: string[]
   reveal: Awaited<ReturnType<typeof loadRevealedVisit>>
+}
+
+const loadDrawRestaurantNames = async (drawId: string | null) => {
+  if (!drawId) return { drawnRestaurantName: null, fallbackRestaurantName: null }
+
+  const drawRows = await database
+    .select({ restaurantId: schema.draws.restaurantId, fallbackRestaurantId: schema.draws.fallbackRestaurantId })
+    .from(schema.draws)
+    .where(eq(schema.draws.id, drawId))
+    .limit(1)
+
+  const draw = drawRows.at(0)
+  if (!draw) return { drawnRestaurantName: null, fallbackRestaurantName: null }
+
+  const restaurantIds = [draw.restaurantId, draw.fallbackRestaurantId].filter((restaurantId) => restaurantId !== null)
+  const nameRows = await database
+    .select({ id: schema.restaurants.id, name: schema.restaurants.name })
+    .from(schema.restaurants)
+    .where(inArray(schema.restaurants.id, restaurantIds))
+  const nameById = new Map(nameRows.map((row) => [row.id, row.name]))
+
+  return {
+    drawnRestaurantName: nameById.get(draw.restaurantId) ?? null,
+    fallbackRestaurantName: draw.fallbackRestaurantId ? (nameById.get(draw.fallbackRestaurantId) ?? null) : null,
+  }
 }
 
 export const loadRatingSession = async (visitId: string): Promise<RatingSessionState | null> => {
@@ -70,13 +97,15 @@ export const loadRatingSession = async (visitId: string): Promise<RatingSessionS
     .where(eq(schema.ratings.visitId, visitId))
 
   const ratedMemberIds = existingRatings.map((rating) => rating.memberId)
+  const drawRestaurantNames = await loadDrawRestaurantNames(visit.drawId)
 
   return {
     visitId: visit.id,
     restaurantName: visit.restaurantName,
     visitedAt: visit.visitedAt,
     usedFallback: visit.usedFallback,
-    hasFallbackOption: Boolean(visit.drawId),
+    hasFallbackOption: drawRestaurantNames.fallbackRestaurantName !== null,
+    ...drawRestaurantNames,
     recommendedByMemberId: visit.recommendedByMemberId,
     isRevealed: Boolean(visit.revealedAt),
     reveal: visit.revealedAt ? await loadRevealedVisit(visitId) : null,

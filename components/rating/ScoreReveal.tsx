@@ -10,7 +10,9 @@ import { ScoreRating } from '@/components/ui/ScoreRating'
 import { ratingCriteria } from '@/lib/scoring/configuration'
 import { hasSeenScoreReveal, rememberScoreReveal } from '@/lib/utilities/scoreRevealMemory'
 import { scoreTextClassFor } from '@/lib/utilities/scoreTone'
-import { SparkBurst } from '@/components/ui/SparkBurst'
+import { resolveRevealMood, type RevealMood } from '@/lib/scoring/revealMood'
+import { classNames } from '@/lib/utilities/classNames'
+import { moodScoreAnimation, moodStamps, ScoreCelebration } from './ScoreCelebration'
 
 export type RevealedRating = {
   memberId: string
@@ -36,6 +38,12 @@ const countUpDurationInMilliseconds = 1400
 
 const randomScore = () => (Math.random() * 5).toFixed(2)
 
+const moodCardBorders: Record<RevealMood, string> = {
+  flop: 'border-[color-mix(in_srgb,var(--danger)_45%,transparent)]',
+  approved: 'border-accent/50',
+  legendary: 'border-[color-mix(in_srgb,var(--success)_60%,transparent)] shadow-[0_0_48px_-12px_var(--success)]',
+}
+
 export const ScoreReveal = ({
   data,
   footnote,
@@ -50,10 +58,12 @@ export const ScoreReveal = ({
   const [scrambledScore, setScrambledScore] = useState(randomScore)
   const [visibleBallotCount, setVisibleBallotCount] = useState(0)
   const [countedScore, setCountedScore] = useState(shouldAnimate ? 0 : (data.finalScore ?? 0))
-
+  const [hasCountFinished, setHasCountFinished] = useState(!shouldAnimate)
 
   const ballotCount = data.ratings.length
   const finalScore = data.finalScore
+  const mood = finalScore === null ? null : resolveRevealMood(finalScore)
+  const isCelebrating = mood !== null && hasCountFinished
 
   useEffect(() => {
     if (stage !== 'tallying') return
@@ -101,7 +111,9 @@ export const ScoreReveal = ({
       const progress = Math.min((Date.now() - startedAt) / countUpDurationInMilliseconds, 1)
       const eased = 1 - Math.pow(1 - progress, 3)
       setCountedScore(finalScore * eased)
-      if (progress === 1) clearInterval(ticker)
+      if (progress < 1) return
+      clearInterval(ticker)
+      setHasCountFinished(true)
     }, 30)
 
     return () => clearInterval(ticker)
@@ -136,16 +148,34 @@ export const ScoreReveal = ({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 180, damping: 18 }}
         >
-          <Card className="relative overflow-hidden border-accent/50 py-10 text-center">
-            <span className="spotlight-bloom pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
-            <SparkBurst className="left-[22%] top-24 z-10" />
-            <SparkBurst className="right-[22%] top-24 z-10" />
+          <Card
+            className={classNames(
+              'relative overflow-hidden py-10 text-center transition-[border-color,box-shadow] duration-500',
+              isCelebrating ? moodCardBorders[mood] : 'border-accent/50',
+            )}
+          >
+            {mood === 'flop' ? null : (
+              <span className="spotlight-bloom pointer-events-none absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent" />
+            )}
+            {isCelebrating ? <ScoreCelebration mood={mood} isFirstReveal={shouldAnimate} /> : null}
+            {isCelebrating ? (
+              <span
+                className={classNames(
+                  'stamp-in absolute right-4 top-4 z-20 rounded-md border-2 bg-surface-1 px-2 py-1 text-micro-cap',
+                  moodStamps[mood].className,
+                )}
+              >
+                {moodStamps[mood].label}
+              </span>
+            ) : null}
 
             <p className="relative text-micro-cap text-accent">nota final</p>
             <p
-              className={`text-numeric relative mt-2 text-6xl font-bold ${
-                finalScore === null ? 'text-ink-muted' : scoreTextClassFor(finalScore)
-              }`}
+              className={classNames(
+                'text-numeric relative mt-2 text-6xl font-bold',
+                finalScore === null ? 'text-ink-muted' : scoreTextClassFor(finalScore),
+                isCelebrating && shouldAnimate && moodScoreAnimation[mood],
+              )}
             >
               {finalScore === null ? '—' : countedScore.toFixed(2)}
             </p>

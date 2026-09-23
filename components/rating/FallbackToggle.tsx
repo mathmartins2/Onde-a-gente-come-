@@ -9,9 +9,23 @@ import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 type FallbackToggleProps = {
   visitId: string
   usedFallback: boolean
+  drawnRestaurantName: string | null
+  fallbackRestaurantName: string
 }
 
-export const FallbackToggle = ({ visitId, usedFallback }: FallbackToggleProps) => {
+const OptionLabel = ({ caption, restaurantName }: { caption: string; restaurantName: string | null }) => (
+  <span className="flex min-w-0 flex-col items-center leading-tight">
+    <span className="text-[0.6875rem] font-medium opacity-80">{caption}</span>
+    <span className="max-w-full truncate">{restaurantName ?? caption}</span>
+  </span>
+)
+
+export const FallbackToggle = ({
+  visitId,
+  usedFallback,
+  drawnRestaurantName,
+  fallbackRestaurantName,
+}: FallbackToggleProps) => {
   const queryClient = useQueryClient()
 
   const switchMutation = useMutation({
@@ -30,21 +44,19 @@ export const FallbackToggle = ({ visitId, usedFallback }: FallbackToggleProps) =
       <div className="flex gap-2">
         <Button
           variant={usedFallback ? 'secondary' : 'primary'}
-          size="small"
-          className="flex-1"
+          className="h-auto min-h-14 min-w-0 flex-1 py-2"
           onClick={() => switchMutation.mutate(false)}
           disabled={switchMutation.isPending}
         >
-          No sorteado
+          <OptionLabel caption="No sorteado" restaurantName={drawnRestaurantName} />
         </Button>
         <Button
           variant={usedFallback ? 'primary' : 'secondary'}
-          size="small"
-          className="flex-1"
+          className="h-auto min-h-14 min-w-0 flex-1 py-2"
           onClick={() => switchMutation.mutate(true)}
           disabled={switchMutation.isPending}
         >
-          No segundo lugar
+          <OptionLabel caption="No segundo lugar" restaurantName={fallbackRestaurantName} />
         </Button>
       </div>
       <p className="text-caption">
