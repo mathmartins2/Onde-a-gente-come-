@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { ratingConfiguration } from '@/lib/scoring/configuration'
+import { isCompletePostalCode } from '@/lib/places/postalCode'
+import { parseLocalizedDecimal } from '@/lib/utilities/localizedDecimal'
 import { themePreferences } from '@/lib/theme/themePreference'
 
 const criterionScore = z.coerce
@@ -68,6 +70,13 @@ export const placeSearchSchema = z.object({
   term: z.string().trim().min(3, 'Digite pelo menos 3 letras').max(120, 'Busca muito longa'),
 })
 
+export const postalCodeLookupSchema = z.object({
+  postalCode: z
+    .string()
+    .trim()
+    .refine(isCompletePostalCode, 'CEP precisa ter 8 dígitos'),
+})
+
 export const placeLinkSchema = z.object({
   link: z.string().trim().url('Link inválido').max(2000, 'Link muito longo'),
 })
@@ -122,10 +131,13 @@ export const ratingDraftSchema = z.object({
 })
 
 export const priceEntrySchema = z.object({
-  amount: z.coerce
-    .number()
-    .positive('O valor precisa ser maior que zero')
-    .max(100000, 'Valor muito alto'),
+  amount: z.preprocess(
+    parseLocalizedDecimal,
+    z
+      .number({ error: 'Digite um valor como 89,90' })
+      .positive('O valor precisa ser maior que zero')
+      .max(100000, 'Valor muito alto'),
+  ),
 })
 
 export const sessionPreferencesSchema = z.object({

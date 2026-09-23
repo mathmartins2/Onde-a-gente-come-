@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { ExternalLink, Link2, Search } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,6 +11,8 @@ import { Card } from '@/components/ui/Card'
 import { Field, TextInput } from '@/components/ui/Field'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import { buildGoogleMapsUrl } from '@/lib/places/buildGoogleMapsUrl'
+import type { PostalCodeAddress } from '@/lib/places/lookupPostalCode'
+import { buildAddressFromStreet, formatPostalCode, isCompletePostalCode } from '@/lib/places/postalCode'
 import { canonicalCuisines } from '@/lib/places/normalizeCuisines'
 import {
   restaurantSchema,
@@ -73,6 +75,8 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
     handleSubmit,
     reset,
     setValue,
+    getValues,
+    setFocus,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<RestaurantFormValues, unknown, RestaurantInput>({
@@ -148,6 +152,44 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
     const link = readFieldValue(event.currentTarget, 'mapsLink')
     if (link.length < minimumMapsLinkLength) return
     linkMutation.mutate(link)
+  }
+
+  const applyPostalCodeAddress = (postalCodeAddress: PostalCodeAddress) => {
+    setValue('postalCode', postalCodeAddress.postalCode)
+    if (postalCodeAddress.neighborhood) setValue('neighborhood', postalCodeAddress.neighborhood)
+    if (postalCodeAddress.city) setValue('city', postalCodeAddress.city)
+
+    const hasCoordinates = getValues('latitude') !== null && getValues('latitude') !== undefined
+    if (!hasCoordinates && postalCodeAddress.latitude !== null && postalCodeAddress.longitude !== null) {
+      setValue('latitude', postalCodeAddress.latitude)
+      setValue('longitude', postalCodeAddress.longitude)
+    }
+
+    if (!postalCodeAddress.street) return toast.success('Bairro e cidade preenchidos pelo CEP')
+    const address = buildAddressFromStreet(postalCodeAddress.street, getValues('address') ?? '')
+    setValue('address', address)
+    toast.success('Endereço preenchido pelo CEP')
+    if (address.endsWith(', ')) setFocus('address')
+  }
+
+  const postalCodeMutation = useMutation({
+    mutationFn: async (postalCode: string) => {
+      const response = await apiClient.get<{ address: PostalCodeAddress }>('/places/postal-code', {
+        params: { code: postalCode },
+      })
+      return response.data.address
+    },
+    onSuccess: applyPostalCodeAddress,
+    onError: (error) => toast.error(extractErrorMessage(error, 'Não consegui buscar esse CEP')),
+  })
+
+  const postalCodeField = register('postalCode')
+
+  const handlePostalCodeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const formattedPostalCode = formatPostalCode(event.target.value)
+    event.target.value = formattedPostalCode
+    postalCodeField.onChange(event)
+    if (isCompletePostalCode(formattedPostalCode)) postalCodeMutation.mutate(formattedPostalCode)
   }
 
   const createMutation = useMutation({
@@ -244,6 +286,20 @@ export const RestaurantForm = ({ onCreated, restaurant }: RestaurantFormProps) =
       >
         <Field label="Nome" error={errors.name?.message}>
           <TextInput placeholder="Ruffo Recife" {...register('name')} />
+        </Field>
+
+        <Field
+          label="CEP"
+          hint={postalCodeMutation.isPending ? 'Buscando endereço…' : 'Preenche rua, bairro e cidade sozinho.'}
+        >
+          <TextInput
+            placeholder="00000-000"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            maxLength={9}
+            {...postalCodeField}
+            onChange={handlePostalCodeChange}
+          />
         </Field>
 
         <Field label="Endereço" error={errors.address?.message}>

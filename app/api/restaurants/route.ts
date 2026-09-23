@@ -6,6 +6,7 @@ import { restaurantSchema } from '@/lib/validation/schemas'
 import { regionConfiguration } from '@/lib/scoring/configuration'
 import { findOpenSession } from '@/lib/services/sessionService'
 import { importMissingRestaurantPhoto } from '@/lib/services/imageService'
+import { fillMissingRestaurantCoordinates } from '@/lib/services/restaurantLocationService'
 import { resolveImageUrl } from '@/lib/images/resolveImageStorage'
 
 export const runtime = 'nodejs'
@@ -86,6 +87,7 @@ export const POST = async (request: Request) =>
       .returning()
 
     after(() => importMissingRestaurantPhoto(restaurant.id))
+    after(() => fillMissingRestaurantCoordinates(restaurant.id))
 
     return NextResponse.json({ restaurant, isOutsideRegion })
   })

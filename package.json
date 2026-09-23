@@ -17,6 +17,7 @@
     "database:demo-year": "bash scripts/reset-rounds.sh && tsx scripts/seed-demo.ts && tsx scripts/seed-demo-year.ts",
     "database:reset-rounds": "bash scripts/reset-rounds.sh",
     "database:reset-password": "tsx scripts/reset-password.ts",
+    "database:fill-coordinates": "tsx scripts/fill-missing-coordinates.ts",
     "database:check": "tsx scripts/check-migrations.ts"
   },
   "dependencies": {

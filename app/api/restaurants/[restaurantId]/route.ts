@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
 import { withMember, validationErrorResponse } from '@/lib/http/routeHelpers'
 import { restaurantSchema } from '@/lib/validation/schemas'
 import { regionConfiguration } from '@/lib/scoring/configuration'
+import { fillMissingRestaurantCoordinates } from '@/lib/services/restaurantLocationService'
 
 const emptyToNull = (value: string | undefined) => {
   if (!value || value.trim().length === 0) return null
@@ -63,6 +64,8 @@ export const PUT = async (
       })
       .where(eq(schema.restaurants.id, restaurantId))
       .returning()
+
+    after(() => fillMissingRestaurantCoordinates(restaurantId))
 
     return NextResponse.json({ restaurant, isOutsideRegion })
   })

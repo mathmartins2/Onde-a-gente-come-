@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { TextInput } from '@/components/ui/Field'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
+import { formatBrazilianDecimal, parseLocalizedDecimal } from '@/lib/utilities/localizedDecimal'
 
 type PriceEntry = {
   id: string
@@ -36,7 +37,7 @@ export const PriceHistory = ({ visitId }: { visitId: string }) => {
   })
 
   const saveMutation = useMutation({
-    mutationFn: (amount: string) => apiClient.post(`/visits/${visitId}/prices`, { amount }),
+    mutationFn: (amount: number) => apiClient.post(`/visits/${visitId}/prices`, { amount }),
     onSuccess: () => {
       setIsEditing(false)
       toast.success('Total da conta guardado')
@@ -48,8 +49,10 @@ export const PriceHistory = ({ visitId }: { visitId: string }) => {
   const entry = entriesQuery.data?.at(0) ?? null
 
   const submit = () => {
-    const amount = amountRef.current?.value ?? ''
-    if (amount.trim().length === 0) return
+    const typedAmount = amountRef.current?.value ?? ''
+    if (typedAmount.trim().length === 0) return
+    const amount = parseLocalizedDecimal(typedAmount)
+    if (!Number.isFinite(amount)) return toast.error('Digite um valor como 89,90')
     saveMutation.mutate(amount)
   }
 
@@ -80,7 +83,7 @@ export const PriceHistory = ({ visitId }: { visitId: string }) => {
           ref={amountRef}
           inputMode="decimal"
           placeholder="0,00"
-          defaultValue={entry?.amount ?? ''}
+          defaultValue={entry ? formatBrazilianDecimal(entry.amount) : ''}
           className="flex-1"
           onKeyDown={(event) => {
             if (event.key === 'Enter') submit()
