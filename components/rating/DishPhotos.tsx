@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { ImageAdjustButton } from '@/components/share/ImageAdjustButton'
 import { ImagePicker } from '@/components/share/ImagePicker'
 import { Card } from '@/components/ui/Card'
 import { PhotoLightbox } from '@/components/ui/PhotoLightbox'
@@ -106,15 +107,24 @@ export const DishPhotos = ({ visitId, currentMemberId }: { visitId: string; curr
                 {photo.addedByName}
               </span>
               {photo.addedByMemberId === currentMemberId ? (
-                <button
-                  type="button"
-                  aria-label="Apagar foto"
-                  disabled={removeMutation.isPending}
-                  onClick={() => removeMutation.mutate(photo.id)}
-                  className="scheme-dark absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--canvas)_75%,transparent)] text-ink hover:text-accent"
-                >
-                  <X size={13} />
-                </button>
+                <>
+                  <ImageAdjustButton
+                    imageUrl={photo.imageUrl}
+                    uploadPath={`/visits/${visitId}/dish-photos/${photo.id}`}
+                    onUploaded={refreshPhotos}
+                    isIconOnly
+                    className="scheme-dark absolute left-1 top-1 h-7 w-7 bg-[color-mix(in_srgb,var(--canvas)_75%,transparent)]"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Apagar foto"
+                    disabled={removeMutation.isPending}
+                    onClick={() => removeMutation.mutate(photo.id)}
+                    className="scheme-dark absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--canvas)_75%,transparent)] text-ink hover:text-accent"
+                  >
+                    <X size={13} />
+                  </button>
+                </>
               ) : null}
             </li>
           ))}

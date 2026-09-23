@@ -1,9 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Dices, History, LogOut, User, UtensilsCrossed } from 'lucide-react'
-import { apiClient } from '@/lib/http/apiClient'
+import { usePathname } from 'next/navigation'
+import { Dices, History, UtensilsCrossed } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { BrandMark } from '@/components/ui/BrandMark'
 import { BrandWordmark } from '@/components/ui/BrandWordmark'
@@ -27,8 +26,10 @@ const destinations = [
     icon: History,
     routes: ['/history', '/ranking', '/statistics', '/map', '/retrospective'],
   },
-  { href: '/profile', label: 'Perfil', icon: User, routes: ['/profile', '/rules'] },
 ]
+
+const profileHref = '/profile'
+const profileRoutes = [profileHref, '/rules']
 
 const matchesRoute = (pathname: string, route: string) => {
   if (route === homeHref) return pathname === homeHref
@@ -47,13 +48,7 @@ type AppShellProps = {
 
 export const AppShell = ({ displayName, avatarUrl, themePreference, children }: AppShellProps) => {
   const pathname = usePathname()
-  const router = useRouter()
-
-  const signOut = async () => {
-    await apiClient.post('/auth/logout')
-    router.replace('/login')
-    router.refresh()
-  }
+  const isProfileActive = isDestinationActive(pathname, profileRoutes)
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -94,13 +89,17 @@ export const AppShell = ({ displayName, avatarUrl, themePreference, children }: 
         })}
 
         <div className="mt-auto flex items-center gap-1 rounded-xl border border-hairline bg-surface-1 p-1">
-          <button
-            onClick={signOut}
-            className="flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-body-md text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+          <Link
+            href={profileHref}
+            aria-current={isProfileActive ? 'page' : undefined}
+            className={classNames(
+              'flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-body-md transition-colors',
+              isProfileActive ? 'bg-accent-tint font-semibold text-accent' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
+            )}
           >
             <Avatar name={displayName} imageUrl={avatarUrl} size="small" />
-            Sair
-          </button>
+            <span className="truncate">{displayName}</span>
+          </Link>
           <span aria-hidden className="h-6 w-px shrink-0 bg-hairline" />
           <ThemeSwitcher initialPreference={themePreference} className="border-0 bg-transparent p-0" />
         </div>
@@ -122,18 +121,17 @@ export const AppShell = ({ displayName, avatarUrl, themePreference, children }: 
             <div className="flex h-11 shrink-0 items-center gap-1 rounded-pill border border-hairline bg-surface-1 p-1">
               <ThemeSwitcher initialPreference={themePreference} isCompact />
               <span aria-hidden className="h-5 w-px shrink-0 bg-hairline" />
-              <button
-                onClick={signOut}
-                aria-label={`Sair da conta de ${displayName}`}
-                className="group flex h-9 shrink-0 items-center gap-1.5 rounded-pill pl-0.5 pr-2.5 transition-colors hover:bg-surface-2"
+              <Link
+                href={profileHref}
+                aria-label={`Perfil de ${displayName}`}
+                aria-current={isProfileActive ? 'page' : undefined}
+                className={classNames(
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-pill transition-shadow',
+                  isProfileActive && 'ring-2 ring-accent',
+                )}
               >
                 <Avatar name={displayName} imageUrl={avatarUrl} size="small" className="h-8 w-8" />
-                <LogOut
-                  size={14}
-                  strokeWidth={2.2}
-                  className="text-ink-muted transition-colors group-hover:text-accent"
-                />
-              </button>
+              </Link>
             </div>
           </div>
         </header>

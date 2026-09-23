@@ -1,50 +1,47 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
 import { Camera } from 'lucide-react'
-import { useRef, type ChangeEvent } from 'react'
-import { toast } from 'sonner'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { Button } from '@/components/ui/Button'
-import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
-import { downscaleImageInBrowser } from '@/lib/images/downscaleImageInBrowser'
+import type { CropShape } from './ImageCropDialog'
+import { LazyImageCropDialog } from './LazyImageCropDialog'
+import { useImageUpload, type ImageUploadTarget } from './useImageUpload'
+
+type ImagePickerProps = ImageUploadTarget & {
+  label: string
+  cropShape?: CropShape
+  isDisabled?: boolean
+}
 
 export const ImagePicker = ({
   uploadPath,
   label,
   onUploaded,
   uploadMethod = 'put',
+  cropShape = 'rect',
   isDisabled = false,
-}: {
-  uploadPath: string
-  label: string
-  onUploaded: () => void
-  uploadMethod?: 'put' | 'post'
-  isDisabled?: boolean
-}) => {
+}: ImagePickerProps) => {
   const fileInputReference = useRef<HTMLInputElement>(null)
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
 
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData()
-      formData.append('image', await downscaleImageInBrowser(file), 'upload.jpg')
-      await apiClient.request({
-        url: uploadPath,
-        method: uploadMethod,
-        data: formData,
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-    },
-    onSuccess: () => {
-      toast.success('Foto salva')
+  const closeCropDialog = () => {
+    if (selectedImageUrl) URL.revokeObjectURL(selectedImageUrl)
+    setSelectedImageUrl(null)
+  }
+
+  const uploadMutation = useImageUpload({
+    uploadPath,
+    uploadMethod,
+    onUploaded: () => {
+      closeCropDialog()
       onUploaded()
     },
-    onError: (error) => toast.error(extractErrorMessage(error, 'Não foi possível salvar a foto')),
   })
 
   const handleFileSelected = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.item(0)
     event.target.value = ''
-    if (selectedFile) uploadMutation.mutate(selectedFile)
+    if (selectedFile) setSelectedImageUrl(URL.createObjectURL(selectedFile))
   }
 
   return (
@@ -68,6 +65,16 @@ export const ImagePicker = ({
         <Camera size={15} />
         {uploadMutation.isPending ? 'Enviando…' : label}
       </Button>
+      {selectedImageUrl ? (
+        <LazyImageCropDialog
+          imageUrl={selectedImageUrl}
+          title="Ajustar foto"
+          cropShape={cropShape}
+          isSaving={uploadMutation.isPending}
+          onCancel={closeCropDialog}
+          onConfirm={(croppedImage) => uploadMutation.mutate(croppedImage)}
+        />
+      ) : null}
     </>
   )
 }

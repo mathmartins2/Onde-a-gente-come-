@@ -3,14 +3,16 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Trash2 } from 'lucide-react'
+import { LogOut, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { ImageAdjustButton } from '@/components/share/ImageAdjustButton'
 import { ImagePicker } from '@/components/share/ImagePicker'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Field, TextInput } from '@/components/ui/Field'
+import { useSignOut } from '@/lib/auth/useSignOut'
 import { apiClient, extractErrorMessage } from '@/lib/http/apiClient'
 import {
   changePasswordSchema,
@@ -128,8 +130,17 @@ const AvatarCard = ({ displayName, avatarUrl }: { displayName: string; avatarUrl
           <ImagePicker
             uploadPath="/members/me/avatar"
             label={avatarUrl ? 'Trocar foto' : 'Colocar foto'}
+            cropShape="round"
             onUploaded={() => router.refresh()}
           />
+          {avatarUrl ? (
+            <ImageAdjustButton
+              imageUrl={avatarUrl}
+              uploadPath="/members/me/avatar"
+              cropShape="round"
+              onUploaded={() => router.refresh()}
+            />
+          ) : null}
           {avatarUrl ? (
             <Button
               variant="ghost"
@@ -156,6 +167,7 @@ export const ProfileScreen = ({
   avatarUrl: string | null
   hasRatingPin: boolean
 }) => {
+  const signOut = useSignOut()
   const queryClient = useQueryClient()
 
   const nominationsQuery = useQuery({
@@ -212,6 +224,11 @@ export const ProfileScreen = ({
 
       <PinCard hasRatingPin={hasRatingPin} />
       <PasswordCard />
+
+      <Button variant="danger" onClick={signOut}>
+        <LogOut size={16} />
+        Sair da conta
+      </Button>
     </div>
   )
 }

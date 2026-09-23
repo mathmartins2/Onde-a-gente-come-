@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Globe, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ImageAdjustButton } from '@/components/share/ImageAdjustButton'
 import { ImagePicker } from '@/components/share/ImagePicker'
 import { Button } from '@/components/ui/Button'
 import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
@@ -41,6 +42,9 @@ export const RestaurantPhotoEditor = ({
           label={restaurant.photoUrl ? 'Trocar foto' : 'Adicionar foto'}
           onUploaded={refreshPhotos}
         />
+        {restaurant.photoUrl ? (
+          <ImageAdjustButton imageUrl={restaurant.photoUrl} uploadPath={photoPath} onUploaded={refreshPhotos} />
+        ) : null}
         {restaurant.website ? (
           <Button
             type="button"

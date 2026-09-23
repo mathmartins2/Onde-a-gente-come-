@@ -75,6 +75,29 @@ export const addVisitDishPhoto = async (input: { visitId: string; memberId: stri
   return { status: 'added' as const }
 }
 
+export const replaceVisitDishPhoto = async (input: { visitId: string; photoId: string; memberId: string; bytes: Buffer }) => {
+  const rows = await database
+    .select({ imageKey: schema.visitDishPhotos.imageKey })
+    .from(schema.visitDishPhotos)
+    .where(
+      and(
+        eq(schema.visitDishPhotos.id, input.photoId),
+        eq(schema.visitDishPhotos.visitId, input.visitId),
+        eq(schema.visitDishPhotos.addedByMemberId, input.memberId),
+      ),
+    )
+    .limit(1)
+
+  const currentPhoto = rows.at(0)
+  if (!currentPhoto) return false
+
+  const imageStorage = resolveImageStorage()
+  const imageKey = await imageStorage.saveImage(await normalizeImage(input.bytes, 'dishPhoto'))
+  await database.update(schema.visitDishPhotos).set({ imageKey }).where(eq(schema.visitDishPhotos.id, input.photoId))
+  await imageStorage.removeImage(currentPhoto.imageKey)
+  return true
+}
+
 export const removeVisitDishPhoto = async (input: { visitId: string; photoId: string; memberId: string }) => {
   const rows = await database
     .delete(schema.visitDishPhotos)
