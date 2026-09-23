@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, ExternalLink } from 'lucide-react'
+import { ArrowRight, CalendarDays, Dices, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Meter } from '@/components/ui/Meter'
 import { RestaurantPhoto } from '@/components/ui/RestaurantPhoto'
@@ -18,12 +18,19 @@ const describeRoundMoment = (round: HistoryRound) =>
 const describeRatingProgress = (ratingCount: number, participantCount: number) =>
   ratingCount === 0 ? 'ninguém deu nota ainda' : `${ratingCount} de ${participantCount} já deram nota`
 
+type NextDrawAction = {
+  onOpen: () => void
+  isOpening: boolean
+}
+
 export const CurrentRoundHero = ({
   round,
   pendingVisit,
+  nextDrawAction,
 }: {
   round: HistoryRound & { visitId: string }
   pendingVisit: PendingVisit | null
+  nextDrawAction?: NextDrawAction
 }) => {
   const ratingCount = pendingVisit?.ratingCount ?? 0
   const participantCount = Math.max(round.participants.length, ratingCount, 1)
@@ -81,6 +88,22 @@ export const CurrentRoundHero = ({
           <ArrowRight size={18} />
         </Button>
       </Link>
+
+      {nextDrawAction ? (
+        <div className="relative -mx-5 mt-6 flex items-center justify-between gap-3 border-t border-dashed border-hairline-strong px-5 pt-4">
+          <p className="text-caption">Já rolou? Dá pra abrir o próximo.</p>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={nextDrawAction.onOpen}
+            disabled={nextDrawAction.isOpening}
+            className="shrink-0"
+          >
+            <Dices size={15} />
+            {nextDrawAction.isOpening ? 'Abrindo...' : 'Próximo sorteio'}
+          </Button>
+        </div>
+      ) : null}
     </section>
   )
 }

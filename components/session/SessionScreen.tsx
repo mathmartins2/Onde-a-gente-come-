@@ -159,15 +159,11 @@ const ClosedSession = ({ isAdmin, onOpen, isOpening }: {
       <PendingRatings excludedVisitId={currentRound?.visitId ?? null} />
 
       {currentRound?.visitId ? (
-        <>
-          <CurrentRoundHero round={{ ...currentRound, visitId: currentRound.visitId }} pendingVisit={currentPendingVisit} />
-          {isAdmin ? (
-            <Button variant="secondary" onClick={onOpen} disabled={isOpening} className="self-center">
-              <Dices size={17} />
-              {isOpening ? 'Abrindo...' : 'Abrir próximo sorteio'}
-            </Button>
-          ) : null}
-        </>
+        <CurrentRoundHero
+          round={{ ...currentRound, visitId: currentRound.visitId }}
+          pendingVisit={currentPendingVisit}
+          nextDrawAction={isAdmin ? { onOpen, isOpening } : undefined}
+        />
       ) : (
       <section className="relative overflow-hidden rounded-2xl border border-hairline bg-[linear-gradient(150deg,var(--surface-2),var(--surface-1)_55%,var(--canvas))] px-5 py-8 text-center">
         <span
