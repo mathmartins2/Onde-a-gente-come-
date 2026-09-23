@@ -1,6 +1,6 @@
 import { and, eq, exists, sql } from 'drizzle-orm'
 import { database, schema } from '@/lib/database/client'
-import { onlyRevealedVisits } from '@/lib/database/visitFilters'
+import { onlyRevealedVisits, onlyVisitsThatHappened } from '@/lib/database/visitFilters'
 import {
   calculateRestaurantRanking,
   type RestaurantRatingSummary,
@@ -357,6 +357,7 @@ export const loadVisitedRestaurantsForMap = async () => {
     })
     .from(schema.visits)
     .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.visits.restaurantId))
+    .where(onlyVisitsThatHappened)
 
   return rows
     .filter((row) => row.latitude !== null && row.longitude !== null)
